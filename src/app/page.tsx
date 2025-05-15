@@ -46,7 +46,7 @@ export default function Home() {
     setLoading(true);
     setAnalysisResult(null);
     try {
-      const response = await fetch("https://fm9ippyylh.execute-api.us-east-1.amazonaws.com/Prod/agent/", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: `Analyze this ${fen}` }),

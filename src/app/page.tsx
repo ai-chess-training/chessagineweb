@@ -1,103 +1,184 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Paper,
+  Stack,
+  Typography,
+  TextField,
+} from "@mui/material";
+import { grey } from "@mui/material/colors";
+import { Chess} from "chess.js";
+import { Chessboard } from "react-chessboard";
+import ReactMarkdown from "react-markdown";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [game, setGame] = useState(new Chess());
+  const [fen, setFen] = useState(game.fen());
+  const [customFen, setCustomFen] = useState("");
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>(
+    {}
+  );
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const safeGameMutate = (modify: (game: Chess) => void) => {
+    const newGame = new Chess(game.fen());
+    modify(newGame);
+    setGame(newGame);
+    setFen(newGame.fen());
+  };
+
+  const onDrop = (source: string, target: string) => {
+    let moveMade = false;
+    safeGameMutate((game) => {
+      const move = game.move({ from: source, to: target, promotion: "q" });
+      if (move) moveMade = true;
+    });
+    setMoveSquares({});
+    return moveMade;
+  };
+
+  const analyzePosition = async () => {
+    setLoading(true);
+    setAnalysisResult(null);
+    try {
+      const response = await fetch("https://fm9ippyylh.execute-api.us-east-1.amazonaws.com/Prod/agent/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: `Analyze this ${fen}` }),
+      });
+
+      const data = await response.json();
+      setAnalysisResult(data.message);
+    } catch (error) {
+      console.error("Error analyzing position:", error);
+      setAnalysisResult("Error analyzing position. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCustomFen = () => {
+    try {
+      const newGame = new Chess(customFen);
+      setGame(newGame);
+      setFen(newGame.fen());
+      setAnalysisResult(null);
+    } catch (error) {
+      alert("Invalid FEN string.");
+    }
+  };
+
+  return (
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        ♟️ ChessAgine
+      </Typography>
+
+      <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
+        {/* Left column */}
+        <Stack spacing={2} alignItems="center">
+          <Chessboard
+            position={fen}
+            onPieceDrop={onDrop}
+            customSquareStyles={moveSquares}
+            boardWidth={400}
+          />
+
+          <TextField
+            label="Paste FEN"
+            variant="outlined"
+            value={customFen}
+            onChange={(e) => setCustomFen(e.target.value)}
+            size="small"
+            sx={{
+              width: "100%",
+              maxWidth: 400,
+              backgroundColor: grey[900],
+              borderRadius: 1,
+            }}
+            placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+            slotProps={{
+              input: {
+                sx: {
+                  color: "wheat", // text color
+                },
+              },
+              inputLabel: {
+                sx: {
+                  color: "wheat", // label color
+                },
+              },
+            }}
+          />
+
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ maxWidth: 400, width: "100%" }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <Button variant="outlined" onClick={loadCustomFen} fullWidth>
+              Load FEN
+            </Button>
+            <Button
+              variant="contained"
+              onClick={analyzePosition}
+              disabled={loading}
+              fullWidth
+            >
+              {loading ? "Analyzing..." : "Analyze"}
+            </Button>
+          </Stack>
+
+          <Paper
+            elevation={1}
+            sx={{
+              p: 1,
+              width: "100%",
+              maxWidth: 400,
+              color: "wheat",
+              backgroundColor: grey[800],
+              fontFamily: "monospace",
+            }}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            {fen}
+          </Paper>
+        </Stack>
+
+        {/* Right column */}
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            flex: 1,
+            minHeight: 300,
+            color: "white",
+            backgroundColor: grey[800],
+          }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <Typography variant="h6" gutterBottom>
+            AI Analysis
+          </Typography>
+
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : analysisResult ? (
+            <Box sx={{ color: "wheat", fontSize: "0.95rem" }}>
+              <ReactMarkdown>{analysisResult}</ReactMarkdown>
+            </Box>
+          ) : (
+            <Typography sx={{ color: "wheat" }}>
+              Make some moves or paste a FEN and click "Analyze".
+            </Typography>
+          )}
+        </Paper>
+      </Stack>
+    </Box>
   );
 }

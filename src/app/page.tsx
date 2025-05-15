@@ -69,6 +69,7 @@ export default function Home() {
       setFen(newGame.fen());
       setAnalysisResult(null);
     } catch (error) {
+      console.log(error);
       alert("Invalid FEN string.");
     }
   };
@@ -174,7 +175,7 @@ export default function Home() {
             </Box>
           ) : (
             <Typography sx={{ color: "wheat" }}>
-              Make some moves or paste a FEN and click "Analyze".
+              Make some moves or paste a FEN and click Analyze.
             </Typography>
           )}
         </Paper>

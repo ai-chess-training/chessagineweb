@@ -11,9 +11,13 @@ import {
   TextField,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { Chess} from "chess.js";
+import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import ReactMarkdown from "react-markdown";
+import NavBar from "@/componets/Navbar";
+import { RiRobot2Line } from "react-icons/ri";
+import { FaArrowRotateLeft } from "react-icons/fa6";
+import { FaRegArrowAltCircleUp } from "react-icons/fa";
 
 export default function Home() {
   const [game, setGame] = useState(new Chess());
@@ -24,6 +28,7 @@ export default function Home() {
   const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>(
     {}
   );
+  const [isFlipped, setIsFlipped] = useState(false); // ⬅️ NEW
 
   const safeGameMutate = (modify: (game: Chess) => void) => {
     const newGame = new Chess(game.fen());
@@ -46,11 +51,14 @@ export default function Home() {
     setLoading(true);
     setAnalysisResult(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: `Analyze this ${fen}` }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: `Analyze this ${fen}` }),
+        }
+      );
 
       const data = await response.json();
       setAnalysisResult(data.message);
@@ -75,111 +83,121 @@ export default function Home() {
   };
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        ♟️ ChessAgine
-      </Typography>
+    <>
+      <NavBar />
+      <Box sx={{ p: 4 }}>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
+          {/* Left column */}
+          <Stack spacing={2} alignItems="center">
+            <Chessboard
+              position={fen}
+              onPieceDrop={onDrop}
+              customSquareStyles={moveSquares}
+              boardWidth={500}
+              boardOrientation={isFlipped ? "black" : "white"}
+            />
 
-      <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
-        {/* Left column */}
-        <Stack spacing={2} alignItems="center">
-          <Chessboard
-            position={fen}
-            onPieceDrop={onDrop}
-            customSquareStyles={moveSquares}
-            boardWidth={400}
-          />
-
-          <TextField
-            label="Paste FEN"
-            variant="outlined"
-            value={customFen}
-            onChange={(e) => setCustomFen(e.target.value)}
-            size="small"
-            sx={{
-              width: "100%",
-              maxWidth: 400,
-              backgroundColor: grey[900],
-              borderRadius: 1,
-            }}
-            placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-            slotProps={{
-              input: {
-                sx: {
-                  color: "wheat", // text color
-                },
-              },
-              inputLabel: {
-                sx: {
-                  color: "wheat", // label color
-                },
-              },
-            }}
-          />
-
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ maxWidth: 400, width: "100%" }}
-          >
-            <Button variant="outlined" onClick={loadCustomFen} fullWidth>
-              Load FEN
-            </Button>
             <Button
               variant="contained"
               onClick={analyzePosition}
               disabled={loading}
+              startIcon={<RiRobot2Line />}
               fullWidth
             >
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
+
+            <TextField
+              label="Paste FEN"
+              variant="outlined"
+              value={customFen}
+              onChange={(e) => setCustomFen(e.target.value)}
+              size="small"
+              sx={{
+                width: "100%",
+
+                backgroundColor: grey[900],
+                borderRadius: 1,
+              }}
+              placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+              slotProps={{
+                input: {
+                  sx: {
+                    color: "wheat",
+                  },
+                },
+                inputLabel: {
+                  sx: {
+                    color: "wheat",
+                  },
+                },
+              }}
+            />
+
+            <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+              <Button
+                variant="outlined"
+                onClick={loadCustomFen}
+                startIcon={<FaRegArrowAltCircleUp />}
+                fullWidth
+              >
+                Load FEN
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setIsFlipped(!isFlipped)}
+                startIcon={<FaArrowRotateLeft />}
+                sx={{ width: "100%" }}
+              >
+                Flip Board
+              </Button>
+            </Stack>
+
+            <Paper
+              elevation={1}
+              sx={{
+                p: 1,
+                width: "100%",
+                color: "wheat",
+                backgroundColor: grey[800],
+                fontFamily: "monospace",
+              }}
+            >
+              {fen}
+            </Paper>
           </Stack>
 
+          {/* Right column */}
           <Paper
-            elevation={1}
+            elevation={3}
             sx={{
-              p: 1,
-              width: "100%",
-              maxWidth: 400,
-              color: "wheat",
+              p: 3,
+              flex: 1,
+              minHeight: 300,
+              color: "white",
               backgroundColor: grey[800],
-              fontFamily: "monospace",
             }}
           >
-            {fen}
+            <Typography variant="h6" gutterBottom>
+              AI Analysis
+            </Typography>
+
+            {loading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : analysisResult ? (
+              <Box sx={{ color: "wheat", fontSize: "0.95rem" }}>
+                <ReactMarkdown>{analysisResult}</ReactMarkdown>
+              </Box>
+            ) : (
+              <Typography sx={{ color: "wheat" }}>
+                Make some moves or paste a FEN and click Analyze.
+              </Typography>
+            )}
           </Paper>
         </Stack>
-
-        {/* Right column */}
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            flex: 1,
-            minHeight: 300,
-            color: "white",
-            backgroundColor: grey[800],
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            AI Analysis
-          </Typography>
-
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : analysisResult ? (
-            <Box sx={{ color: "wheat", fontSize: "0.95rem" }}>
-              <ReactMarkdown>{analysisResult}</ReactMarkdown>
-            </Box>
-          ) : (
-            <Typography sx={{ color: "wheat" }}>
-              Make some moves or paste a FEN and click Analyze.
-            </Typography>
-          )}
-        </Paper>
-      </Stack>
-    </Box>
+      </Box>
+    </>
   );
 }

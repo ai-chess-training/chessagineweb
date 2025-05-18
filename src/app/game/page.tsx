@@ -55,6 +55,7 @@ export default function PGNUploaderPage() {
       setFen(resetGame.fen());
       setAnalysis(null);
     } catch (err) {
+        console.log(err)
       alert("Invalid PGN input");
     }
   };
@@ -86,6 +87,7 @@ export default function PGNUploaderPage() {
       const data = await response.json();
       setAnalysis(data.message);
     } catch (err) {
+      console.log(err);
       setAnalysis("Error analyzing position.");
     } finally {
       setLoading(false);
@@ -230,7 +232,7 @@ export default function PGNUploaderPage() {
                   <ReactMarkdown>{analysis}</ReactMarkdown>
                 ) : (
                   <Typography variant="body2" sx={{ mt: 1 }}>
-                    Click "Analyze" to get evaluation of this position.
+                    Click Analyze to get evaluation of this position.
                   </Typography>
                 )}
               </Paper>

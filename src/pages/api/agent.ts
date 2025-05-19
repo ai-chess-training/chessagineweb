@@ -34,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     try {
       data = JSON.parse(responseText);
     } catch (e) {
+      console.log(e)
       data = { message: 'Non-JSON response from Lambda', raw: responseText };
     }
 

@@ -63,7 +63,7 @@ export default function HomePage() {
                   Hybrid AI Engine
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Chessagine blends Stockfish's raw calculation with LLM explanations for human-friendly insights.
+                  Chessagine blends Stockfish raw calculation with LLM explanations for human-friendly insights.
                 </Typography>
               </Paper>
 
@@ -83,7 +83,7 @@ export default function HomePage() {
                   Understand Your Game
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Our Agent explains each move in plain language, so you don't have to figure out engine numbers.
+                  Our Agent explains each move in plain language, so you don not have to figure out engine numbers.
                 </Typography>
               </Paper>
             </Stack>

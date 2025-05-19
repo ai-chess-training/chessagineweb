@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     // console.log("Lambda status:", lambdaResponse.status);
     // console.log("Lambda raw response:", responseText);
 
-    let data: any;
+    let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     res.status(lambdaResponse.status).json(data);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Proxy error:", error);
     res.status(500).json({
       message: "Internal proxy error",

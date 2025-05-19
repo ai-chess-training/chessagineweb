@@ -1,10 +1,21 @@
 "use client";
 
-import { AppBar, Button, Stack, Toolbar, Typography } from "@mui/material";
-import { FaChessPawn } from "react-icons/fa6";
-import { FaChessBoard } from "react-icons/fa6";
+import {
+  AppBar,
+  Button,
+  Stack,
+  Toolbar,
+  Typography,
+} from "@mui/material";
+import { FaChessPawn, FaChessBoard, FaDiscord } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
-import { FaDiscord } from "react-icons/fa";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
 
 export default function NavBar() {
   const router = useRouter();
@@ -12,7 +23,6 @@ export default function NavBar() {
   return (
     <AppBar position="static" sx={{ backgroundColor: "#111", mb: 3 }}>
       <Toolbar sx={{ justifyContent: "space-between" }}>
-        {/* Left: App Name */}
         <Typography
           variant="h6"
           sx={{ fontWeight: "bold", cursor: "pointer" }}
@@ -21,25 +31,34 @@ export default function NavBar() {
           ♟️ ChessAgine
         </Typography>
 
-        <Stack direction="row" spacing={2}>
-          <Button color="inherit" startIcon={<FaChessPawn />} href="/game">
-            Analyze Game
-          </Button>
-          <Button color="inherit" startIcon={<FaChessBoard />} href="/">
-            Analyze Position
-          </Button>
-          <Button
-            variant="text"
-            color="inherit"
-            startIcon={<FaDiscord />}
-            href="https://discord.gg/3RpEnvmZwp"
-            target="_blank"
-            rel="noopener"
-          >
-            Discord
-          </Button>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <SignedIn>
+            <Button color="inherit" startIcon={<FaChessPawn />} href="/game">
+              Analyze Game
+            </Button>
+            <Button color="inherit" startIcon={<FaChessBoard />} href="/position">
+              Analyze Position
+            </Button>
+            <Button
+              variant="text"
+              color="inherit"
+              startIcon={<FaDiscord />}
+              href="https://discord.gg/3RpEnvmZwp"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Discord
+            </Button>
+            <UserButton />
+          </SignedIn>
+
+          <SignedOut>
+            <SignInButton mode="modal" />
+            <SignUpButton mode="modal" />
+          </SignedOut>
         </Stack>
       </Toolbar>
     </AppBar>
   );
 }
+

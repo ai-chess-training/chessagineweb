@@ -1,203 +1,95 @@
-"use client";
+'use client';
 
-import { useState } from "react";
 import {
   Box,
+  Container,
+  Typography,
   Button,
-  CircularProgress,
   Paper,
   Stack,
-  Typography,
-  TextField,
-} from "@mui/material";
-import { grey } from "@mui/material/colors";
-import { Chess } from "chess.js";
-import { Chessboard } from "react-chessboard";
-import ReactMarkdown from "react-markdown";
-import NavBar from "@/componets/Navbar";
-import { RiRobot2Line } from "react-icons/ri";
-import { FaArrowRotateLeft } from "react-icons/fa6";
-import { FaRegArrowAltCircleUp } from "react-icons/fa";
+} from '@mui/material';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import PsychologyAltIcon from '@mui/icons-material/PsychologyAlt';
+import { useUser } from '@clerk/nextjs';
+import PositionPage from './position/page';
 
-export default function Home() {
-  const [game, setGame] = useState(new Chess());
-  const [fen, setFen] = useState(game.fen());
-  const [customFen, setCustomFen] = useState("");
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>(
-    {}
-  );
-  const [isFlipped, setIsFlipped] = useState(false); // ⬅️ NEW
+export default function HomePage() {
+  const { isSignedIn, isLoaded } = useUser();
+  
 
-  const safeGameMutate = (modify: (game: Chess) => void) => {
-    const newGame = new Chess(game.fen());
-    modify(newGame);
-    setGame(newGame);
-    setFen(newGame.fen());
-  };
+  if (isSignedIn && isLoaded) {
+    return (
+     <PositionPage/>
+    )
+  }
 
-  const onDrop = (source: string, target: string) => {
-    let moveMade = false;
-    safeGameMutate((game) => {
-      const move = game.move({ from: source, to: target, promotion: "q" });
-      if (move) moveMade = true;
-    });
-    setMoveSquares({});
-    return moveMade;
-  };
-
-  const analyzePosition = async () => {
-    setLoading(true);
-    setAnalysisResult(null);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: `Analyze this ${fen}` }),
-        }
-      );
-
-      const data = await response.json();
-      setAnalysisResult(data.message);
-    } catch (error) {
-      console.error("Error analyzing position:", error);
-      setAnalysisResult("Error analyzing position. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCustomFen = () => {
-    try {
-      const newGame = new Chess(customFen);
-      setGame(newGame);
-      setFen(newGame.fen());
-      setAnalysisResult(null);
-    } catch (error) {
-      console.log(error);
-      alert("Invalid FEN string.");
-    }
-  };
-
+ 
   return (
-    <>
-      <NavBar />
-      <Box sx={{ p: 4 }}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
-          {/* Left column */}
-          <Stack spacing={2} alignItems="center">
-            <Chessboard
-              position={fen}
-              onPieceDrop={onDrop}
-              customSquareStyles={moveSquares}
-              boardWidth={500}
-              boardOrientation={isFlipped ? "black" : "white"}
-            />
-
-            <Button
-              variant="contained"
-              onClick={analyzePosition}
-              disabled={loading}
-              startIcon={<RiRobot2Line />}
-              fullWidth
-            >
-              {loading ? "Analyzing..." : "Analyze"}
+    <main>
+      <Box bgcolor="black" color="white" py={12}>
+        <Container maxWidth="md">
+          <Stack spacing={4} alignItems="center" textAlign="center">
+            <Typography variant="h2" fontWeight="bold">
+              Welcome to Chessagine
+            </Typography>
+            <Typography variant="h6">
+              Your AI-powered chess companion combining Stockfish precision with LLM intuition.
+              Analyze your games, study openings, and get real-time feedback with access to real-world game data.
+            </Typography>
+            <Button variant="contained" color="primary" size="large">
+              Launch the AI Board
             </Button>
-
-            <TextField
-              label="Paste FEN"
-              variant="outlined"
-              value={customFen}
-              onChange={(e) => setCustomFen(e.target.value)}
-              size="small"
-              sx={{
-                width: "100%",
-
-                backgroundColor: grey[900],
-                borderRadius: 1,
-              }}
-              placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-              slotProps={{
-                input: {
-                  sx: {
-                    color: "wheat",
-                  },
-                },
-                inputLabel: {
-                  sx: {
-                    color: "wheat",
-                  },
-                },
-              }}
-            />
-
-            <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-              <Button
-                variant="outlined"
-                onClick={loadCustomFen}
-                startIcon={<FaRegArrowAltCircleUp />}
-                fullWidth
-              >
-                Load FEN
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => setIsFlipped(!isFlipped)}
-                startIcon={<FaArrowRotateLeft />}
-                sx={{ width: "100%" }}
-              >
-                Flip Board
-              </Button>
-            </Stack>
-
-            <Paper
-              elevation={1}
-              sx={{
-                p: 1,
-                width: "100%",
-                color: "wheat",
-                backgroundColor: grey[800],
-                fontFamily: "monospace",
-              }}
-            >
-              {fen}
-            </Paper>
           </Stack>
+        </Container>
+      </Box>
 
-          {/* Right column */}
-          <Paper
-            elevation={3}
-            sx={{
-              p: 3,
-              flex: 1,
-              minHeight: 300,
-              color: "white",
-              backgroundColor: grey[800],
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              AI Analysis
+      <Box py={10}>
+        <Container maxWidth="lg">
+          <Stack spacing={6} alignItems="center">
+            <Typography variant="h4" fontWeight="bold" textAlign="center">
+              What Makes Chessagine Unique?
             </Typography>
 
-            {loading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : analysisResult ? (
-              <Box sx={{ color: "wheat", fontSize: "0.95rem" }}>
-                <ReactMarkdown>{analysisResult}</ReactMarkdown>
-              </Box>
-            ) : (
-              <Typography sx={{ color: "wheat" }}>
-                Make some moves or paste a FEN and click Analyze.
-              </Typography>
-            )}
-          </Paper>
-        </Stack>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={4}
+              width="100%"
+              justifyContent="center"
+            >
+              <Paper elevation={3} sx={{ p: 4, flex: 1, textAlign: 'center' }}>
+                <SmartToyIcon fontSize="large" color="primary" />
+                <Typography variant="h6" mt={2} fontWeight="bold">
+                  Hybrid AI Engine
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Chessagine blends Stockfish's raw calculation with LLM explanations for human-friendly insights.
+                </Typography>
+              </Paper>
+
+              <Paper elevation={3} sx={{ p: 4, flex: 1, textAlign: 'center' }}>
+                <TravelExploreIcon fontSize="large" color="primary" />
+                <Typography variant="h6" mt={2} fontWeight="bold">
+                  Opening Explorer
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Browse thousands of opening lines with win rates, popularity, and real game outcomes.
+                </Typography>
+              </Paper>
+
+              <Paper elevation={3} sx={{ p: 4, flex: 1, textAlign: 'center' }}>
+                <PsychologyAltIcon fontSize="large" color="primary" />
+                <Typography variant="h6" mt={2} fontWeight="bold">
+                  Understand Your Game
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Our Agent explains each move in plain language, so you don't have to figure out engine numbers.
+                </Typography>
+              </Paper>
+            </Stack>
+          </Stack>
+        </Container>
       </Box>
-    </>
+    </main>
   );
 }

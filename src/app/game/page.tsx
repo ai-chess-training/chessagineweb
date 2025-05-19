@@ -14,10 +14,10 @@ import { grey } from "@mui/material/colors";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import ReactMarkdown from "react-markdown";
-import NavBar from "@/componets/Navbar";
 import { FaRegArrowAltCircleRight } from "react-icons/fa";
 import { FaRegArrowAltCircleLeft } from "react-icons/fa";
 import { RiRobot2Line } from "react-icons/ri";
+import { useSession } from "@clerk/nextjs";
 
 export default function PGNUploaderPage() {
   const [pgnText, setPgnText] = useState("");
@@ -27,6 +27,7 @@ export default function PGNUploaderPage() {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { session } = useSession();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,18 +73,22 @@ export default function PGNUploaderPage() {
   };
 
   const handleAnalyze = async () => {
+    const token = await session?.getToken();
     setLoading(true);
     setAnalysis(null);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`,
+        `/api/agent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ query: `Analyze this ${fen}` }),
         }
       );
-
+      
       const data = await response.json();
       setAnalysis(data.message);
     } catch (err) {
@@ -96,7 +101,7 @@ export default function PGNUploaderPage() {
 
   return (
     <>
-      <NavBar />
+ 
       <Box sx={{ p: 4 }}>
         <Typography variant="h4" gutterBottom>
           Analyze Game with Agine

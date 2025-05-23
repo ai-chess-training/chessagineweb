@@ -133,6 +133,7 @@ export default function PositionPage() {
           // Ensure we always show the latest partial evaluation
           setStockfishAnalysisResult(prevResult => {
             // If we have a previous result and the new one has fewer lines,
+            console.log(prevResult)
             // it might be a restart - use the new one anyway
             return partialEval;
           });
@@ -173,12 +174,12 @@ export default function PositionPage() {
     return "0.00";
   };
 
-  const showBestMoveSan = (fen: string, bestMove: string) => {
-    const tempGame = new Chess(fen);
-    tempGame.move(bestMove);
-    const history = tempGame.history({verbose: true});
-    return history[0].san;
-  }
+  // const showBestMoveSan = (fen: string, bestMove: string) => {
+  //   const tempGame = new Chess(fen);
+  //   tempGame.move(bestMove);
+  //   const history = tempGame.history({verbose: true});
+  //   return history[0].san;
+  // }
 
   const formatPrincipalVariation = (pv: string[], startFen: string) => {
     const tempGame = new Chess(startFen);
@@ -189,7 +190,7 @@ export default function PositionPage() {
         const move = tempGame.move({
           from: uciMove.slice(0, 2),
           to: uciMove.slice(2, 4),
-          promotion: uciMove.length > 4 ? uciMove[4] as any : undefined,
+          promotion: uciMove.length > 4 ? uciMove[4] as string : undefined,
         });
         if (move) {
           moves.push(move.san);

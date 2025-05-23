@@ -10,12 +10,9 @@ import {
   Typography,
   TextField,
   Slider,
-  Switch,
-  FormControlLabel,
   Tabs,
   Tab,
   Chip,
-  Grid,
   Link,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
@@ -499,7 +496,7 @@ Provide both theoretical background and practical advice.`;
     if (!openingData) {
       return (
         <Typography sx={{ color: "wheat", py: 2 }}>
-          Click "Opening Explorer" to load master game statistics for this position.
+          Click Opening Explorer to load master game statistics for this position.
         </Typography>
       );
     }
@@ -978,7 +975,7 @@ Provide both theoretical background and practical advice.`;
                 </Box>
               ) : (
                 <Typography sx={{ color: "wheat" }}>
-                  Click "AI Analysis" to get comprehensive analysis powered by Stockfish engine data and opening theory, or click "Stockfish Only" for raw engine evaluation. You can also click individual engine lines or opening moves for specific analysis.
+                  Click AI Analysis to get comprehensive analysis powered by Stockfish engine data and opening theory, or click Stockfish Only for raw engine evaluation. You can also click individual engine lines or opening moves for specific analysis.
                 </Typography>
               )}
             </TabPanel>

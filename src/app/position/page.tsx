@@ -214,8 +214,8 @@ export default function PositionPage() {
 
       try {
         // Run Stockfish analysis and wait for completion
-        console.log("=== Running Stockfish Analysis for LLM ===");
-        console.log("Depth:", engineDepth, "Lines:", engineLines);
+        // console.log("=== Running Stockfish Analysis for LLM ===");
+        // console.log("Depth:", engineDepth, "Lines:", engineLines);
         
         const stockfishResult = await engine.evaluatePositionWithUpdate({
           fen,
@@ -292,10 +292,10 @@ Make your analysis accessible for players of different skill levels and integrat
     }
     
     // Log the query for local testing
-    console.log("=== LLM Query ===");
-    console.log("Query:", query);
-    console.log("FEN:", fen);
-    console.log("================");
+    // console.log("=== LLM Query ===");
+    // console.log("Query:", query);
+    // console.log("FEN:", fen);
+    // console.log("================");
 
     try {
       const response = await fetch(`/api/agent`, {
@@ -308,8 +308,8 @@ Make your analysis accessible for players of different skill levels and integrat
       });
 
       const data = await response.json();
-      console.log('Response', response);
-      console.log(data);
+      // console.log('Response', response);
+      // console.log(data);
       setLlmAnalysisResult(data.message);
     } catch (error) {
       console.error("Error analyzing position:", error);

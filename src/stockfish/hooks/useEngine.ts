@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EngineName } from '../engine/engine';
 import { Stockfish11 } from '../engine/Stockfish11';
-// import { Stockfish16 } from '../engine/Stockfish16';
+import { Stockfish16 } from '../engine/Stockfish16';
 // import { Stockfish17 } from '../engine/Stockfish17';
 import { UciEngine } from '../engine/UciEngine';
 

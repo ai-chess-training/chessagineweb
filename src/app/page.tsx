@@ -11,11 +11,12 @@ import {
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import PsychologyAltIcon from '@mui/icons-material/PsychologyAlt';
-import { useUser } from '@clerk/nextjs';
+import { useClerk, useUser } from '@clerk/nextjs';
 import PositionPage from './position/page';
 
 export default function HomePage() {
   const { isSignedIn, isLoaded } = useUser();
+  const clerk = useClerk();
   
 
   if (isSignedIn && isLoaded) {
@@ -37,7 +38,7 @@ export default function HomePage() {
               Your AI-powered chess companion combining Stockfish precision with LLM intuition.
               Analyze your games, study openings, and get real-time feedback with access to real-world game data.
             </Typography>
-            <Button variant="contained" color="primary" size="large">
+            <Button variant="contained" color="primary" size="large" onClick={() => clerk.openSignUp()}>
               Launch the AI Board
             </Button>
           </Stack>

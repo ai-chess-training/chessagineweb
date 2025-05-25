@@ -308,17 +308,43 @@ ${formattedEngineLines}`;
 ${openingSpeech}`;
         }
 
-        query += `\n\nPlease provide a comprehensive analysis including:
-1. Overall position evaluation and who stands better
-2. Detailed explanation of the best line(s) and key moves
-3. Main strategic and tactical themes
-4. Opening context and theoretical considerations (if applicable)
-5. Historical precedent from master games (if opening data available)
-6. Critical variations and what to watch out for
-7. Practical advice for both sides
-8. Any important alternative moves not shown in the engine lines
+        query += `\n\n1. Describe the key features of the position in terms of Silman's imbalances from the book "Reassess Your Chess" below:
 
-Make your analysis accessible for players of different skill levels and integrate both the engine evaluation and opening theory context.`;
+- Superior minor piece
+	
+	- Pawn structure
+	
+	- Space
+	
+	- Material
+	
+	- Control of a key file
+	
+	- Control of a hole/weak square
+	
+	- Lead in development
+	
+	- Initiative (and Tempo)
+	
+	- King safety
+	
+	- Statics vs. Dynamics
+	
+	2. To this list add a summary of piece activity and coordination, and weaknesses for both sides
+
+	
+	3. Answer the following "ChessMood 7Q" seven questions:
+		a. What problems does the opponent have?,
+		b. What problems do I have?,
+		c. Where am I strong?,
+		d. Which of my pieces can be happier?,
+		e. Which pieces do I want to trade?,
+		f. What is the opponent's next move or plan?,
+		g. How can I advance (if none of the other six questions have compelling answers)
+
+	4. Based on the features and the seven questions summarize the goals for both sides
+	5. Using the engine analysis in the PGN, please explain the candidate moves.  Assess the candidate moves in terms of the features, seven questions, and goals.  How do the candidates further our goals or stop the opponent goals.  Which candidate is more practical and which entails the most risk.   Recommend a strategy or alternative strategies explaining which are more tactical and which are more positional.  Use games from the master or lichess database as model games when relevant.
+	6. Consider Fine's 30 chess principles below and supplementary additional principles identified below.  In your explanation of the candidate moves, include reference and quote any of the principles which are clearly relevant and how that makes the candidate move a "principled move" because it follows one or more principles below:`;
       } catch (error) {
         console.error("Error running Stockfish analysis:", error);
         setLlmAnalysisResult(
@@ -373,12 +399,27 @@ Make your analysis accessible for players of different skill levels and integrat
 
     try {
       const token = await session?.getToken();
-      let query = chatInput;
+      let query = `USER PROMPT ${chatInput}`;
+
+      query += `\n\nCurrent Position: ${fen}`;
 
       if (sessionMode) {
+        // Ensure engine is started and get analysis if not already available
+        let engineResult = stockfishAnalysisResult;
+        if (!engineResult && engine) {
+          // Run engine analysis if not present
+          engineResult = await engine.evaluatePositionWithUpdate({
+            fen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+          setStockfishAnalysisResult(engineResult);
+        }
+
         // Add engine analysis if available
-        if (stockfishAnalysisResult) {
-          const formattedEngineLines = stockfishAnalysisResult.lines
+        if (engineResult) {
+          const formattedEngineLines = engineResult.lines
             .map((line, index) => {
               const evaluation = formatEvaluation(line);
               const moves = formatPrincipalVariation(line.pv, line.fen);
@@ -392,7 +433,6 @@ Make your analysis accessible for players of different skill levels and integrat
             })
             .join("\n");
 
-          query += `\n\nCurrent Position: ${fen}`;
           query += `\nEngine Analysis:\n${formattedEngineLines}`;
         }
 
@@ -402,18 +442,7 @@ Make your analysis accessible for players of different skill levels and integrat
           query += `\n\nOpening Information:\n${openingSpeech}`;
         }
 
-        query += `\n\nDescribe the features of the position in terms of Material Balance, King Safety, Pawn Structure, Piece Activity and Coordination, Control of Key Squares, Space Advantage, Initiative and Tempo, and Weaknesses.
-
-1. Evaluate the position providing answers to the following seven questions:
-   1. What problems does the opponent have?
-   2. What problems do I have?
-   3. Where am I strong?
-   4. Which of my pieces can be happier?
-   5. Which pieces do I want to trade?
-   6. What is the opponent's next move or plan?
-   7. How can I advance (if the other six do not have relevant answers)?
-
-2. Based on (1) and (2) provide a synopsis of the goals for both sides in this position`;
+        query += `\n\n`;
       }
 
       const response = await fetch(`/api/agent`, {

@@ -182,7 +182,7 @@ export default function AiChessboardPanel({
     }
 
     // Check if the clicked square has a piece
-    const piece = game.get(square as any);
+    const piece = game.get(square as Square);
     if (!piece) {
       setSelectedSquare(null);
       setLegalMoves([]);
@@ -197,7 +197,7 @@ export default function AiChessboardPanel({
     }
 
     // Get legal moves for this piece
-    const moves = game.moves({ square: square as any, verbose: true });
+    const moves = game.moves({ square: square as Square, verbose: true });
     const targetSquares = moves.map((move) => move.to);
 
     setSelectedSquare(square);
@@ -223,7 +223,7 @@ export default function AiChessboardPanel({
 
     // Highlight legal move squares
     legalMoves.forEach((square) => {
-      const piece = game.get(square as any);
+      const piece = game.get(square as Square);
       if (piece) {
         // Target square has an enemy piece (capture)
         styles[square] = {

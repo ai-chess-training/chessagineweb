@@ -69,7 +69,7 @@ export function useChessDB(fen: string) {
         return;
       }
 
-      const processedMoves = moves.slice(0, 3).map((move: any) => {
+      const processedMoves = moves.slice(0, 3).map((move: CandidateMove) => {
         const scoreNum = Number(move.score);
         const scoreStr = isNaN(scoreNum) ? "N/A" : String(scoreNum * 100);
         return {
@@ -81,8 +81,8 @@ export function useChessDB(fen: string) {
       });
 
       setData(processedMoves);
-    } catch (err: any) {
-      setError(err.message || "An error occurred while fetching data");
+    } catch (err) {
+      console.log('error!')
       setData([]);
     } finally {
       setLoading(false);

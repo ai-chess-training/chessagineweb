@@ -1,27 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
   CircularProgress,
-  FormControlLabel,
   Paper,
   Stack,
-  Switch,
+  Tabs,
+  Tab,
   TextField,
   Typography,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { Chess } from "chess.js";
-import { Chessboard } from "react-chessboard";
 import ReactMarkdown from "react-markdown";
-import {
-  FaRegArrowAltCircleRight,
-  FaRegArrowAltCircleLeft,
-} from "react-icons/fa";
-import { RiRobot2Line } from "react-icons/ri";
+import useAgine from "@/componets/agine/useAgine";
+import AiChessboardPanel from "@/componets/analysis/AiChessboard";
+import { TabPanel } from "@/componets/tabs/tab";
+import OpeningExplorer from "@/componets/tabs/OpeningTab";
+import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
+import ChatTab from "@/componets/tabs/ChatTab";
 import { useSession } from "@clerk/nextjs";
+import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -32,7 +33,9 @@ function parsePgnChapters(pgnText: string) {
   });
 }
 
-function extractMovesWithComments(pgn: string): { move: string; comment?: string }[] {
+function extractMovesWithComments(
+  pgn: string
+): { move: string; comment?: string }[] {
   const strippedHeaders = pgn.replace(/\[.*?\]\s*/g, ""); // remove PGN tags
   const tokenRegex = /(\{[^}]*\})|(;[^\n]*)|([^\s{};]+)/g;
   const tokens = [...strippedHeaders.matchAll(tokenRegex)];
@@ -57,6 +60,8 @@ function extractMovesWithComments(pgn: string): { move: string; comment?: string
 }
 
 export default function PGNUploaderPage() {
+  const session = useSession();
+
   const [pgnText, setPgnText] = useState("");
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
@@ -65,18 +70,51 @@ export default function PGNUploaderPage() {
     { move: string; comment?: string }[]
   >([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [analysis, setAnalysis] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [studyUrl, setStudyUrl] = useState("");
   const [inputsVisible, setInputsVisible] = useState(true);
   const [chapters, setChapters] = useState<
     { title: string; url: string; pgn: string }[]
   >([]);
   const [comment, setComment] = useState("");
-  const [includeCommentsInAnalysis, setIncludeCommentsInAnalysis] = useState(true);
 
-  const { session } = useSession();
- 
+  const {
+    llmAnalysisResult,
+    setLlmAnalysisResult,
+    stockfishAnalysisResult,
+    setStockfishAnalysisResult,
+    openingData,
+    setOpeningData,
+    llmLoading,
+    stockfishLoading,
+    openingLoading,
+    moveSquares,
+    analysisTab,
+    setAnalysisTab,
+    chatMessages,
+    chatInput,
+    setChatInput,
+    chatLoading,
+    sessionMode,
+    setSessionMode,
+    engineDepth,
+    setEngineDepth,
+    engineLines,
+    setEngineLines,
+    engine,
+    fetchOpeningData,
+    analyzePosition,
+    sendChatMessage,
+    handleChatKeyPress,
+    clearChatHistory,
+    analyzeWithStockfish,
+    formatEvaluation,
+    formatPrincipalVariation,
+    handleEngineLineClick,
+    handleOpeningMoveClick,
+    chessdbdata
+  } = useAgine(fen);
+
+  // Move useEffect to before conditional returns
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft" && currentMoveIndex > 0) {
@@ -89,6 +127,26 @@ export default function PGNUploaderPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentMoveIndex, moves]);
+
+  // Show a spinner while session is loading
+  if (!session.isLoaded) {
+    return (
+      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // If user is not signed in, redirect them to sign-in page
+  if (!session.isSignedIn) {
+    return (
+      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+        <Typography variant="h6" color="wheat">
+          Please sign in to view this page.
+        </Typography>
+      </Box>
+    );
+  }
 
   const loadPGN = () => {
     try {
@@ -104,7 +162,7 @@ export default function PGNUploaderPage() {
       const resetGame = new Chess();
       setGame(resetGame);
       setFen(resetGame.fen());
-      setAnalysis(null);
+      setLlmAnalysisResult(null);
       setComment("");
     } catch (err) {
       console.log(err);
@@ -121,38 +179,7 @@ export default function PGNUploaderPage() {
     setFen(tempGame.fen());
     setCurrentMoveIndex(index);
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
-    setAnalysis(null);
-  };
-
-  const handleAnalyze = async () => {
-    const token = await session?.getToken();
-    setLoading(true);
-    setAnalysis(null);
-    
-    // Construct the query based on whether comments should be included
-    let query = `Analyze this position: ${fen}`;
-    if (includeCommentsInAnalysis && comment) {
-      query += `\n\nExisting comment about this position: "${comment}"`;
-    }
-    
-    try {
-      const response = await fetch(`/api/agent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ query }),
-      });
-
-      const data = await response.json();
-      setAnalysis(data.message);
-    } catch (err) {
-      console.log(err);
-      setAnalysis("Error analyzing position.");
-    } finally {
-      setLoading(false);
-    }
+    setLlmAnalysisResult(null);
   };
 
   return (
@@ -163,7 +190,8 @@ export default function PGNUploaderPage() {
             Analyze Your Chess Game with Agine
           </Typography>
           <Typography variant="subtitle1" sx={{ color: "wheat", mb: 1 }}>
-            Paste a Lichess Study URL or PGN to load your game and get instant move-by-move AI analysis and comments.
+            Paste a Lichess Study URL or PGN to load your game and get instant
+            move-by-move AI analysis and comments.
           </Typography>
         </Box>
       )}
@@ -180,7 +208,7 @@ export default function PGNUploaderPage() {
               sx={{ backgroundColor: grey[900], borderRadius: 1 }}
               slotProps={{
                 inputLabel: { sx: { color: "wheat" } },
-                input: { sx: { color: "wheat" } }
+                input: { sx: { color: "wheat" } },
               }}
             />
             <Button
@@ -238,19 +266,29 @@ export default function PGNUploaderPage() {
       <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
         {!inputsVisible && (
           <Stack spacing={2} alignItems="center">
-            <Chessboard position={fen} boardWidth={500} />
+            <AiChessboardPanel
+              game={game}
+              fen={fen}
+              moveSquares={moveSquares}
+              engine={engine}
+              setFen={setFen}
+              setGame={setGame}
+              setLlmAnalysisResult={setLlmAnalysisResult}
+              setOpeningData={setOpeningData}
+              setStockfishAnalysisResult={setStockfishAnalysisResult}
+              fetchOpeningData={fetchOpeningData}
+              analyzePosition={analyzePosition}
+              analyzeWithStockfish={analyzeWithStockfish}
+              llmLoading={llmLoading}
+              stockfishLoading={stockfishLoading}
+              openingLoading={openingLoading}
+            />
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} width="100%">
-              <Button
-                variant="contained"
-                onClick={handleAnalyze}
-                disabled={loading}
-                startIcon={<RiRobot2Line />}
-                fullWidth
-              >
-                {loading ? "Analyzing..." : "Analyze"}
-              </Button>
-
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              width="100%"
+            >
               <Button
                 variant="outlined"
                 onClick={() => {
@@ -258,7 +296,7 @@ export default function PGNUploaderPage() {
                   setMoves([]);
                   setPgnText("");
                   setStudyUrl("");
-                  setAnalysis(null);
+                  setLlmAnalysisResult(null);
                   setComment("");
                   const reset = new Chess();
                   setGame(reset);
@@ -269,56 +307,6 @@ export default function PGNUploaderPage() {
                 Load New Game
               </Button>
             </Stack>
-
-            <Stack direction="row" spacing={2} alignItems="center" width="100%">
-              <Stack direction="row" spacing={2} flexGrow={1}>
-                <Button
-                  onClick={() => goToMove(currentMoveIndex - 1)}
-                  disabled={currentMoveIndex === 0}
-                  startIcon={<FaRegArrowAltCircleLeft />}
-                >
-                  Prev
-                </Button>
-                <Button
-                  onClick={() => goToMove(currentMoveIndex + 1)}
-                  disabled={currentMoveIndex >= moves.length}
-                  endIcon={<FaRegArrowAltCircleRight />}
-                >
-                  Next
-                </Button>
-              </Stack>
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={includeCommentsInAnalysis}
-                    onChange={(e) => setIncludeCommentsInAnalysis(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Typography variant="body2" sx={{ color: "wheat" }}>
-                    Include comments in analysis
-                  </Typography>
-                }
-                sx={{ 
-                  color: "wheat",
-                  mr: 0
-                }}
-              />
-            </Stack>
-
-            <Paper
-              sx={{
-                p: 1,
-                backgroundColor: grey[800],
-                color: "wheat",
-                fontFamily: "monospace",
-                width: "100%"
-              }}
-            >
-              {fen}
-            </Paper>
           </Stack>
         )}
         <Stack spacing={2} sx={{ flex: 1 }}>
@@ -402,7 +390,9 @@ export default function PGNUploaderPage() {
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ${move}` : move}
+                        {i % 2 === 0
+                          ? `${Math.floor(i / 2) + 1}. ${move}`
+                          : move}
                       </Button>
                     </Box>
                   ))}
@@ -422,28 +412,119 @@ export default function PGNUploaderPage() {
                 <Typography variant="h6" gutterBottom>
                   Comments
                 </Typography>
-                <Typography>{comment || "Select a move to see comments."}</Typography>
+                <Typography>
+                  {comment || "Select a move to see comments."}
+                </Typography>
               </Paper>
 
               <Paper
+                elevation={3}
                 sx={{
-                  p: 2,
-                  minHeight: 150,
-                  borderRadius: 2,
+                  p: 3,
+                  flex: 1,
+                  minHeight: 300,
+                  color: "white",
                   backgroundColor: grey[800],
-                  color: "wheat",
+                  maxHeight: "80vh",
+                  overflow: "auto",
                 }}
               >
-                <Typography variant="h6">AI Analysis</Typography>
-                {loading ? (
-                  <CircularProgress sx={{ mt: 2 }} />
-                ) : analysis ? (
-                  <ReactMarkdown>{analysis}</ReactMarkdown>
-                ) : (
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Click Analyze to get evaluation of this position. {includeCommentsInAnalysis && comment && "Comments will be included in the analysis."}
+                <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+                  <Tabs
+                    value={analysisTab}
+                    onChange={(_, newValue) => setAnalysisTab(newValue)}
+                    sx={{
+                      "& .MuiTab-root": { color: "wheat" },
+                      "& .Mui-selected": { color: "white !important" },
+                    }}
+                  >
+                    <Tab label="AI Analysis" />
+                    <Tab label="Stockfish Analysis" />
+                    <Tab label="AI Chat" />
+                    <Tab label="Opening Explorer" />
+                    <Tab label="Chess DB" />
+                  </Tabs>
+                </Box>
+
+                <TabPanel value={analysisTab} index={0}>
+                  <Typography variant="h6" gutterBottom>
+                    AI Analysis
                   </Typography>
-                )}
+
+                  {llmLoading ? (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", mt: 4 }}
+                    >
+                      <CircularProgress />
+                    </Box>
+                  ) : llmAnalysisResult ? (
+                    <Box sx={{ color: "wheat", fontSize: "0.95rem" }}>
+                      <ReactMarkdown>{llmAnalysisResult}</ReactMarkdown>
+                    </Box>
+                  ) : (
+                    <Typography sx={{ color: "wheat" }}>
+                      Click on individual
+                  engine lines or opening moves for specific Agine analysis.
+                    </Typography>
+                  )}
+                </TabPanel>
+
+                <TabPanel value={analysisTab} index={1}>
+                  <Typography variant="h6" gutterBottom>
+                    Stockfish Analysis
+                  </Typography>
+
+                  {!stockfishLoading && !stockfishAnalysisResult ? (
+                    <Typography sx={{ color: "wheat" }}>
+                      Make some moves or paste a FEN and click Stockfish to see
+                      engine evaluation with real-time updates.
+                    </Typography>
+                  ) : (
+                    <StockfishAnalysisTab
+                      stockfishAnalysisResult={stockfishAnalysisResult}
+                      stockfishLoading={stockfishLoading}
+                      handleEngineLineClick={handleEngineLineClick}
+                      engineDepth={engineDepth}
+                      engineLines={engineLines}
+                      engine={engine}
+                      llmLoading={llmLoading}
+                      analyzeWithStockfish={analyzeWithStockfish}
+                      formatEvaluation={formatEvaluation}
+                      formatPrincipalVariation={formatPrincipalVariation}
+                      setEngineDepth={setEngineDepth}
+                      setEngineLines={setEngineLines}
+                    />
+                  )}
+                </TabPanel>
+
+                <TabPanel value={analysisTab} index={2}>
+                  <ChatTab
+                    chatMessages={chatMessages}
+                    chatInput={chatInput}
+                    setChatInput={setChatInput}
+                    sendChatMessage={sendChatMessage}
+                    chatLoading={chatLoading}
+                    handleChatKeyPress={handleChatKeyPress}
+                    clearChatHistory={clearChatHistory}
+                    sessionMode={sessionMode}
+                    setSessionMode={setSessionMode}
+                  />
+                </TabPanel>
+
+                <TabPanel value={analysisTab} index={3}>
+                  <Typography variant="h6" gutterBottom>
+                    Opening Explorer
+                  </Typography>
+                  <OpeningExplorer
+                    openingLoading={openingLoading}
+                    openingData={openingData}
+                    llmLoading={llmLoading}
+                    handleOpeningMoveClick={handleOpeningMoveClick}
+                  />
+                </TabPanel>
+                <TabPanel value={analysisTab} index={4}>
+                  <ChessDBDisplay data={chessdbdata}/>
+                </TabPanel>
               </Paper>
             </>
           )}

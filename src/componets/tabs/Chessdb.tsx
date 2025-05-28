@@ -82,7 +82,7 @@ export function useChessDB(fen: string) {
 
       setData(processedMoves);
     } catch (err) {
-      console.log('error!')
+      console.log('error!', err)
       setData([]);
     } finally {
       setLoading(false);

@@ -156,13 +156,13 @@ export default function useAgine(fen: string) {
     }
   };
 
-  const analyzePosition = async (localFen: string, customQuery?: string): Promise<void> => {
+  const analyzePosition = async (customQuery?: string): Promise<void> => {
     const token = await session?.getToken();
     setLlmLoading(true);
     setLlmAnalysisResult(null);
 
     let query = customQuery;
-    const customfen = localFen;
+    const customfen = fen;
 
     // If no custom query, build comprehensive analysis query
     if (!customQuery) {
@@ -424,7 +424,7 @@ Side To Move ${sideToMove}
     query += `\n\n Analyze this from different point of views.`
 
     setAnalysisTab(0);
-    analyzePosition(fen, query);
+    analyzePosition(query);
   };
 
   const handleOpeningMoveClick = (move: Moves): void => {
@@ -457,7 +457,7 @@ Move Statistics from Master Games:
 Provide both theoretical background and practical advice.`;
 
     setAnalysisTab(0);
-    analyzePosition(fen, query);
+    analyzePosition(query);
   };
 
   // ==================== RETURN OBJECT ====================

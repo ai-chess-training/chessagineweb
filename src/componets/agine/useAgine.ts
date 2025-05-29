@@ -342,7 +342,7 @@ ${formattedEngineLines}`;
   const sendChatMessage = useCallback(async (): Promise<void> => {
     if (!chatInput.trim() || !fen) return;
 
-    const userMessage = addChatMessage("user", chatInput);
+    addChatMessage("user", chatInput);
     setChatInput("");
     updateLoadingState('chat', true);
 

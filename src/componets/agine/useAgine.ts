@@ -300,7 +300,9 @@ ${formattedEngineLines}`;
 
     try {
       const token = await session?.getToken();
-      let query = `USER PROMPT ${chatInput}\n\nCurrent Position: ${fen}`;
+      const chessInstance = new Chess(fen);
+      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+      let query = `USER PROMPT: ${chatInput}\n\nCurrent Position: ${fen}\nSide to Move: ${sideToMove}`;
 
       if (sessionMode) {
         // Get engine analysis if not available
@@ -389,24 +391,22 @@ ${formattedEngineLines}`;
 
   const handleEngineLineClick = (line: LineEval, lineIndex: number): void => {
     if (llmLoading) return;
-
+     const chessInstance = new Chess(fen);
+     const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
     const formattedLine = formatLineForLLM(line, lineIndex);
     let query = `Analyze this chess position and explain the following engine line in detail:
 
 Position: ${fen}
-Engine Line: ${formattedLine}`;
+Engine Line: ${formattedLine}
+Side To Move ${sideToMove}
+`;
 
     if (openingData) {
       const openingSpeech = getOpeningStatSpeech(openingData);
       query += `\n\nOpening Context:\n${openingSpeech}`;
     }
 
-    query += `\n\nPlease explain:
-1. Why this line is recommended
-2. The key tactical and strategic ideas
-3. What happens after these moves
-4. Opening theoretical considerations (if applicable)
-5. Any important variations or alternatives`;
+    query += `\n\n Analyze this from different point of views.`
 
     setAnalysisTab(0);
     analyzePosition(query);
@@ -414,6 +414,9 @@ Engine Line: ${formattedLine}`;
 
   const handleOpeningMoveClick = (move: Moves): void => {
     if (llmLoading) return;
+
+    const chessInstance = new Chess(fen);
+    const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
 
     const totalGames = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
     const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
@@ -424,6 +427,7 @@ Engine Line: ${formattedLine}`;
 
 Position: ${fen}
 Opening: ${openingData?.opening?.name || "Unknown"} (${openingData?.opening?.eco || "N/A"})
+Side To Move ${sideToMove}
 
 Move Statistics from Master Games:
 - Move: ${move.san}
@@ -433,12 +437,7 @@ Move Statistics from Master Games:
 - Draws: ${drawRate}%
 - Black wins: ${blackWinRate}%
 
-Please explain:
-1. Why ${move.san} is played in this opening
-2. The strategic and tactical ideas behind this move
-3. How the statistics reflect the move's strength
-4. What typical plans and themes arise after this move
-5. Any important alternatives to consider
+ Analyze this from different point of views.
 
 Provide both theoretical background and practical advice.`;
 

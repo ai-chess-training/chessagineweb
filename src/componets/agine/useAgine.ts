@@ -162,7 +162,7 @@ export default function useAgine(fen: string) {
     setLlmAnalysisResult(null);
 
     let query = customQuery;
-    let customfen = fen;
+    const customfen = fen;
 
     // If no custom query, build comprehensive analysis query
     if (!customQuery) {
@@ -314,7 +314,7 @@ ${formattedEngineLines}`;
       const chessInstance = new Chess(fen);
       const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
       let query = `USER PROMPT: ${chatInput}\n\nCurrent Position: ${fen}\nSide to Move: ${sideToMove}`;
-      let customFen = fen;
+      const customFen = fen;
 
       if (sessionMode) {
         // Get engine analysis if not available

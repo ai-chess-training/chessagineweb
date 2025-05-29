@@ -17,12 +17,10 @@ import { BsArrowsMove } from "react-icons/bs";
 import {
   MdNavigateBefore,
   MdNavigateNext,
-  MdSkipPrevious,
-  MdSkipNext,
 } from "react-icons/md";
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect} from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../opening/helper";
@@ -30,11 +28,6 @@ import { Arrow } from "react-chessboard/dist/chessboard/types";
 
 interface AiChessboardPanelProps {
   fen: string;
-  onDrop?: (
-    sourceSquare: string,
-    targetSquare: string,
-    piece: string
-  ) => boolean;
   moveSquares: { [square: string]: string };
   llmLoading: boolean;
   engine: UciEngine | undefined;
@@ -51,11 +44,11 @@ interface AiChessboardPanelProps {
   game: Chess;
   moves?: string[];
   stockfishAnalysisResult?: PositionEval | null;
+  setMoveSquares: (square: { [square: string]: string }) => void;
 }
 
 export default function AiChessboardPanel({
   fen,
-  onDrop,
   moveSquares,
   setGame,
   setFen,
@@ -65,6 +58,7 @@ export default function AiChessboardPanel({
   game,
   moves,
   stockfishAnalysisResult,
+  setMoveSquares,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
   const [isFlipped, setIsFlipped] = useState(false);
@@ -75,54 +69,54 @@ export default function AiChessboardPanel({
   const [showArrows, setShowArrows] = useState(true);
   const [boardSize, setBoardSize] = useState(500);
 
-  // Update move history when game changes
-  useEffect(() => {
-    const history = game.history();
-    setMoveHistory(history);
-    setCurrentMoveIndex(history.length - 1);
-  }, [game]);
+useEffect(() => {
+  const baseGame = new Chess();
+  const history: string[] = [baseGame.fen()];
 
-  // Clear selection when position changes
-  useEffect(() => {
-    setSelectedSquare(null);
-    setLegalMoves([]);
-  }, [fen]);
-
-  // Keyboard navigation for moves
-  const handleKeyPress = useCallback((event: KeyboardEvent) => {
-    if (!moves || moveHistory.length === 0) return;
-    
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault();
-        if (currentMoveIndex > -1) {
-          goToMove(currentMoveIndex - 1);
-        }
+  if (moves && moves.length > 0) {
+    for (const move of moves) {
+      try {
+        baseGame.move(move);
+        history.push(baseGame.fen());
+      } catch (err) {
+        console.warn("Invalid move in provided history:", move);
         break;
-      case 'ArrowRight':
-        event.preventDefault();
-        if (currentMoveIndex < moveHistory.length - 1) {
-          goToMove(currentMoveIndex + 1);
-        }
-        break;
-      case 'Home':
-        event.preventDefault();
-        goToFirstMove();
-        break;
-      case 'End':
-        event.preventDefault();
-        goToLastMove();
-        break;
+      }
     }
-  }, [currentMoveIndex, moveHistory.length, moves]);
+  }
 
-  // Add keyboard event listeners
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyPress);
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [handleKeyPress]);
+  const startGame = new Chess(history[0]);
+
+  setGame(startGame);
+  setFen(history[0]);
+  setMoveHistory(history);
+  setCurrentMoveIndex(0);
+}, [moves]);
+
+const safeGameMutate = (modify: (game: Chess) => void) => {
+  const baseFen = moveHistory[currentMoveIndex]; // always safe now
+  const newGame = new Chess(baseFen);
+  modify(newGame);
+
+  const newFen = newGame.fen();
+
+  const newHistory = [...moveHistory.slice(0, currentMoveIndex + 1), newFen];
+  setGame(newGame);
+  setFen(newFen);
+  setMoveHistory(newHistory);
+  setCurrentMoveIndex(newHistory.length - 1);
+  setOpeningData(null);
+};
+
+  const onDrop = (source: string, target: string) => {
+    let moveMade = false;
+    safeGameMutate((game) => {
+      const move = game.move({ from: source, to: target, promotion: "q" });
+      if (move) moveMade = true;
+    });
+    setMoveSquares({});
+    return moveMade;
+  };
 
   // Convert UCI moves to arrow format for the chessboard
   const getCustomArrows = () => {
@@ -157,24 +151,24 @@ export default function AiChessboardPanel({
 
     // If a square is already selected and clicking on a legal move target
     if (selectedSquare && legalMoves.includes(square)) {
-      // Try to make the move
-      try {
-        const move = game.move({
-          from: selectedSquare,
-          to: square,
-          promotion: "q", // Default to queen promotion, you might want to add promotion selection UI
-        });
+      // Try to make the move using safeGameMutate
+      safeGameMutate((newGame) => {
+        try {
+          const move = newGame.move({
+            from: selectedSquare,
+            to: square,
+            promotion: "q", // Default to queen promotion, you might want to add promotion selection UI
+          });
 
-        if (move) {
-          setGame(new Chess(game.fen()));
-          setFen(game.fen());
-          setLlmAnalysisResult(null);
-          setStockfishAnalysisResult(null);
-          setOpeningData(null);
+          if (move) {
+            setLlmAnalysisResult(null);
+            setStockfishAnalysisResult(null);
+            setOpeningData(null);
+          }
+        } catch (error) {
+          console.log("Invalid move:", error);
         }
-      } catch (error) {
-        console.log("Invalid move:", error);
-      }
+      });
 
       setSelectedSquare(null);
       setLegalMoves([]);
@@ -244,6 +238,30 @@ export default function AiChessboardPanel({
     return styles;
   };
 
+  const goToPreviousMove = () => {
+    if (currentMoveIndex > 0) {
+      const newFen = moveHistory[currentMoveIndex - 1];
+      const newGame = new Chess(newFen);
+      setGame(newGame);
+      setFen(newFen);
+      setCurrentMoveIndex(currentMoveIndex - 1);
+      setSelectedSquare(null);
+      setLegalMoves([]);
+    }
+  };
+
+  const goToNextMove = () => {
+    if (currentMoveIndex < moveHistory.length - 1) {
+      const newFen = moveHistory[currentMoveIndex + 1];
+      const newGame = new Chess(newFen);
+      setGame(newGame);
+      setFen(newFen);
+      setCurrentMoveIndex(currentMoveIndex + 1);
+      setSelectedSquare(null);
+      setLegalMoves([]);
+    }
+  };
+
   const loadCustomFen = () => {
     try {
       const newGame = new Chess(customFen);
@@ -257,47 +275,6 @@ export default function AiChessboardPanel({
       alert("Invalid FEN string.");
     }
   };
-
-  const goToMove = (index: number) => {
-    if (moves) {
-      const tempGame = new Chess();
-      for (let i = 0; i <= index; i++) {
-        tempGame.move(moves[i]);
-      }
-      setGame(tempGame);
-      setFen(tempGame.fen());
-      setCurrentMoveIndex(index);
-    }
-  };
-
-  const goToFirstMove = () => {
-    const tempGame = new Chess();
-    setGame(tempGame);
-    setFen(tempGame.fen());
-    setCurrentMoveIndex(-1);
-  };
-
-  const goToPreviousMove = () => {
-    if (currentMoveIndex > -1) {
-      goToMove(currentMoveIndex - 1);
-    }
-  };
-
-  const goToNextMove = () => {
-    if (currentMoveIndex < moveHistory.length - 1) {
-      goToMove(currentMoveIndex + 1);
-    }
-  };
-
-  const goToLastMove = () => {
-    if (moveHistory.length > 0) {
-      goToMove(moveHistory.length - 1);
-    }
-  };
-
-  const isAtStart = currentMoveIndex === -1;
-  const isAtEnd = currentMoveIndex === moveHistory.length - 1;
-  const hasHistory = moveHistory.length > 0;
 
   return (
     <Stack spacing={2} alignItems="center">
@@ -314,11 +291,7 @@ export default function AiChessboardPanel({
 
       {/* Board Size Control */}
       <Box sx={{ width: "100%", px: 2 }}>
-        <Typography 
-          variant="body2" 
-          sx={{ color: "wheat", mb: 1 }}
-          gutterBottom
-        >
+        <Typography variant="body2" sx={{ color: "wheat", mb: 1 }} gutterBottom>
           Board Size: {boardSize}px
         </Typography>
         <Slider
@@ -330,13 +303,13 @@ export default function AiChessboardPanel({
           valueLabelDisplay="auto"
           sx={{
             color: "wheat",
-            '& .MuiSlider-thumb': {
+            "& .MuiSlider-thumb": {
               backgroundColor: "wheat",
             },
-            '& .MuiSlider-track': {
+            "& .MuiSlider-track": {
               backgroundColor: "wheat",
             },
-            '& .MuiSlider-rail': {
+            "& .MuiSlider-rail": {
               backgroundColor: grey[600],
             },
           }}
@@ -361,76 +334,28 @@ export default function AiChessboardPanel({
         sx={{ alignSelf: "flex-start" }}
       />
 
-      {/* Move Navigation Controls */}
-      {hasHistory && moves && (
-        <Stack direction="column" spacing={1} sx={{ width: "100%" }}>
-          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-            <Button
-              variant="outlined"
-              onClick={goToFirstMove}
-              disabled={isAtStart}
-              startIcon={<MdSkipPrevious />}
-              size="small"
-            >
-              Start
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={goToPreviousMove}
-              disabled={isAtStart}
-              startIcon={<MdNavigateBefore />}
-              size="small"
-            >
-              Previous
-            </Button>
-            <Paper
-              sx={{
-                px: 2,
-                py: 0.5,
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: grey[700],
-                color: "wheat",
-                fontSize: "0.875rem",
-                minWidth: "80px",
-                justifyContent: "center",
-              }}
-            >
-              {currentMoveIndex + 1} / {moveHistory.length}
-            </Paper>
-            <Button
-              variant="outlined"
-              onClick={goToNextMove}
-              disabled={isAtEnd}
-              endIcon={<MdNavigateNext />}
-              size="small"
-            >
-              Next
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={goToLastMove}
-              disabled={isAtEnd}
-              endIcon={<MdSkipNext />}
-              size="small"
-            >
-              End
-            </Button>
-          </Stack>
-          
-          {/* Keyboard Navigation Hint */}
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: grey[400], 
-              textAlign: "center",
-              fontSize: "0.75rem"
-            }}
-          >
-            Use ← → arrow keys to navigate moves, Home/End for start/end
-          </Typography>
-        </Stack>
-      )}
+      <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+        <Button
+          onClick={goToPreviousMove}
+          variant="contained"
+          color="primary"
+          disabled={currentMoveIndex <= 0}
+          startIcon={<MdNavigateBefore />}
+          fullWidth
+        >
+          Back
+        </Button>
+        <Button
+          onClick={goToNextMove}
+          variant="contained"
+          color="primary"
+          disabled={currentMoveIndex >= moveHistory.length - 1}
+          endIcon={<MdNavigateNext />}
+          fullWidth
+        >
+          Forward
+        </Button>
+      </Stack>
 
       <TextField
         label="Paste FEN"

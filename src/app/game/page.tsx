@@ -105,6 +105,7 @@ export default function PGNUploaderPage() {
     analyzePosition,
     sendChatMessage,
     handleChatKeyPress,
+    setMoveSquares,
     clearChatHistory,
     analyzeWithStockfish,
     formatEvaluation,
@@ -181,6 +182,7 @@ export default function PGNUploaderPage() {
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
     setLlmAnalysisResult(null);
   };
+
 
   return (
     <Box sx={{ p: 4 }}>
@@ -271,11 +273,14 @@ export default function PGNUploaderPage() {
               fen={fen}
               moveSquares={moveSquares}
               engine={engine}
+              setMoveSquares={setMoveSquares}
+              moves={moves}
               setFen={setFen}
               setGame={setGame}
               setLlmAnalysisResult={setLlmAnalysisResult}
               setOpeningData={setOpeningData}
               setStockfishAnalysisResult={setStockfishAnalysisResult}
+              stockfishAnalysisResult={stockfishAnalysisResult}
               fetchOpeningData={fetchOpeningData}
               analyzePosition={analyzePosition}
               analyzeWithStockfish={analyzeWithStockfish}

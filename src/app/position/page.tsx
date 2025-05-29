@@ -88,26 +88,6 @@ export default function PositionPage() {
     )
   }
 
-
-  const safeGameMutate = (modify: (game: Chess) => void) => {
-    const newGame = new Chess(game.fen());
-    modify(newGame);
-    setGame(newGame);
-    setFen(newGame.fen());
-    // Clear opening data when position changes
-    setOpeningData(null);
-  };
-
-  const onDrop = (source: string, target: string) => {
-    let moveMade = false;
-    safeGameMutate((game) => {
-      const move = game.move({ from: source, to: target, promotion: "q" });
-      if (move) moveMade = true;
-    });
-    setMoveSquares({});
-    return moveMade;
-  };
-
   return (
     <>
       <Box sx={{ p: 4 }}>
@@ -115,8 +95,8 @@ export default function PositionPage() {
           <AiChessboardPanel
             game={game}
             fen={fen}
-            onDrop={onDrop}
             moveSquares={moveSquares}
+            setMoveSquares={setMoveSquares}
             engine={engine}
             setFen={setFen}
             setGame={setGame}

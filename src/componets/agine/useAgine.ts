@@ -269,7 +269,10 @@ ${formattedEngineLines}`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ query, fen }),
+        body: JSON.stringify({
+          fen: fen,
+          query: query,
+        }),
       });
 
       const data = await response.json();
@@ -349,7 +352,7 @@ ${formattedEngineLines}`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ query, fen }),
+        body: JSON.stringify({ fen: fen, query: query }),
       });
 
       const data = await response.json();

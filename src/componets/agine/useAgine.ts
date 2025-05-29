@@ -162,6 +162,7 @@ export default function useAgine(fen: string) {
     setLlmAnalysisResult(null);
 
     let query = customQuery;
+    let customfen = fen;
 
     // If no custom query, build comprehensive analysis query
     if (!customQuery) {
@@ -269,11 +270,16 @@ ${formattedEngineLines}`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        
         body: JSON.stringify({
-          fen: fen,
+          fen: customfen,
           query: query,
         }),
       });
+
+      console.log('FEN', fen);
+      console.log('Custom fen', customfen);
+      console.log('query', query);
 
       const data = await response.json();
       setLlmAnalysisResult(data.message);
@@ -297,6 +303,8 @@ ${formattedEngineLines}`;
       timestamp: new Date(),
     };
 
+
+
     setChatMessages((prev) => [...prev, userMessage]);
     setChatInput("");
     setChatLoading(true);
@@ -306,6 +314,7 @@ ${formattedEngineLines}`;
       const chessInstance = new Chess(fen);
       const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
       let query = `USER PROMPT: ${chatInput}\n\nCurrent Position: ${fen}\nSide to Move: ${sideToMove}`;
+      let customFen = fen;
 
       if (sessionMode) {
         // Get engine analysis if not available
@@ -352,8 +361,11 @@ ${formattedEngineLines}`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fen: fen, query: query }),
+        body: JSON.stringify({ fen: customFen, query: query }),
       });
+      console.log('fen', fen);
+      console.log('customFen', customFen)
+      console.log(query);
 
       const data = await response.json();
 

@@ -6,79 +6,67 @@ import {
   getOpeningStats,
   Moves,
 } from "@/componets/opening/helper";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
-import { useChessDB } from "../tabs/Chessdb";
-
-// Types
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
-
-interface AnalysisState {
-  llmResult: string | null;
-  stockfishResult: PositionEval | null;
-  openingData: MasterGames | null;
-  error: string | null;
-}
-
-interface LoadingState {
-  llm: boolean;
-  stockfish: boolean;
-  opening: boolean;
-  chat: boolean;
-}
-
-// Constants
-const DEFAULT_ENGINE_DEPTH = 15;
-const DEFAULT_ENGINE_LINES = 3;
-const ANALYSIS_DEBOUNCE_DELAY = 300;
-const MAX_PV_MOVES = 6;
+import { useChessDB} from "../tabs/Chessdb";
 
 export default function useAgine(fen: string) {
-  // ==================== STATE ====================
-  
-  // Analysis Results
-  const [analysisState, setAnalysisState] = useState<AnalysisState>({
-    llmResult: null,
-    stockfishResult: null,
-    openingData: null,
-    error: null,
-  });
+  // Analysis Results State
+  const [llmAnalysisResult, setLlmAnalysisResult] = useState<string | null>(null);
+  const [stockfishAnalysisResult, setStockfishAnalysisResult] = useState<PositionEval | null>(null);
+  const [openingData, setOpeningData] = useState<MasterGames | null>(null);
 
   // Loading States
-  const [loadingState, setLoadingState] = useState<LoadingState>({
-    llm: false,
-    stockfish: false,
-    opening: false,
-    chat: false,
-  });
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [stockfishLoading, setStockfishLoading] = useState(false);
+  const [openingLoading, setOpeningLoading] = useState(false);
 
   // UI State
   const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>({});
   const [analysisTab, setAnalysisTab] = useState(0);
 
   // Chat State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    timestamp: Date;
+  }>>([]);
   const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
   const [sessionMode, setSessionMode] = useState(true);
+  const chessdbdata = useChessDB(fen).data;
 
   // Engine Settings
-  const [engineDepth, setEngineDepth] = useState(DEFAULT_ENGINE_DEPTH);
-  const [engineLines, setEngineLines] = useState(DEFAULT_ENGINE_LINES);
+  const [engineDepth, setEngineDepth] = useState(15);
+  const [engineLines, setEngineLines] = useState(3);
 
   // Hooks
   const { session } = useSession();
   const engine = useEngine(true, EngineName.Stockfish16);
-  const chessdbData = useChessDB(fen).data;
+
+  // Auto-recalculate engine results when FEN changes
+  useEffect(() => {
+    if (engine && fen) {
+      // Clear previous results
+      setStockfishAnalysisResult(null);
+      setLlmAnalysisResult(null);
+      setOpeningData(null);
+      
+      // Auto-analyze with slight delay to avoid rapid fire requests
+      const timeoutId = setTimeout(() => {
+        analyzeWithStockfish();
+        fetchOpeningData();
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [fen, engine]);
 
   // ==================== UTILITY FUNCTIONS ====================
 
-  const formatEvaluation = useCallback((line: LineEval): string => {
+  const formatEvaluation = (line: LineEval): string => {
     if (line.mate !== undefined) {
       return `M${line.mate}`;
     }
@@ -87,13 +75,13 @@ export default function useAgine(fen: string) {
       return eval1 > 0 ? `+${eval1.toFixed(2)}` : eval1.toFixed(2);
     }
     return "0.00";
-  }, []);
+  };
 
-  const formatPrincipalVariation = useCallback((pv: string[], startFen: string): string => {
+  const formatPrincipalVariation = (pv: string[], startFen: string): string => {
     const tempGame = new Chess(startFen);
     const moves: string[] = [];
 
-    for (const uciMove of pv.slice(0, MAX_PV_MOVES)) {
+    for (const uciMove of pv.slice(0, 6)) {
       try {
         const move = tempGame.move({
           from: uciMove.slice(0, 2),
@@ -111,9 +99,9 @@ export default function useAgine(fen: string) {
     }
 
     return moves.join(" ");
-  }, []);
+  };
 
-  const formatLineForLLM = useCallback((line: LineEval, lineIndex: number): string => {
+  const formatLineForLLM = (line: LineEval, lineIndex: number): string => {
     const evaluation = formatEvaluation(line);
     const moves = formatPrincipalVariation(line.pv, line.fen);
 
@@ -124,80 +112,30 @@ export default function useAgine(fen: string) {
     }
 
     return formattedLine;
-  }, [formatEvaluation, formatPrincipalVariation]);
-
-  const getSideToMove = useCallback((fen: string): string => {
-    try {
-      const chessInstance = new Chess(fen);
-      return chessInstance.turn() === "w" ? "White" : "Black";
-    } catch {
-      return "Unknown";
-    }
-  }, []);
+  };
 
   // ==================== API FUNCTIONS ====================
 
-  const updateLoadingState = useCallback((key: keyof LoadingState, value: boolean) => {
-    setLoadingState(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  const updateAnalysisState = useCallback((updates: Partial<AnalysisState>) => {
-    setAnalysisState(prev => ({ ...prev, ...updates }));
-  }, []);
-
-  const makeApiRequest = useCallback(async (query: string, fen: string): Promise<string> => {
-    const token = await session?.getToken();
-    
-    const response = await fetch('/api/agent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ 
-        query,
-        fen, // Send FEN in body as requested
-        engineDepth,
-        engineLines,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.message;
-  }, [session, engineDepth, engineLines]);
-
-  const fetchOpeningData = useCallback(async (): Promise<void> => {
-    if (!fen) return;
-    
-    updateLoadingState('opening', true);
-    updateAnalysisState({ error: null });
-
+  const fetchOpeningData = async (): Promise<void> => {
+    setOpeningLoading(true);
     try {
       const data = await getOpeningStats(fen);
-      updateAnalysisState({ openingData: data });
+      setOpeningData(data);
     } catch (error) {
       console.error("Error fetching opening data:", error);
-      updateAnalysisState({ 
-        openingData: null, 
-        error: error instanceof Error ? error.message : 'Failed to fetch opening data'
-      });
+      setOpeningData(null);
     } finally {
-      updateLoadingState('opening', false);
+      setOpeningLoading(false);
     }
-  }, [fen, updateLoadingState, updateAnalysisState]);
+  };
 
-  const analyzeWithStockfish = useCallback(async (): Promise<PositionEval | null> => {
-    if (!engine || !fen) {
-      console.warn("Stockfish engine not ready or FEN not provided");
-      return null;
+  const analyzeWithStockfish = async (): Promise<void> => {
+    if (!engine) {
+      console.warn("Stockfish engine not ready");
+      return;
     }
 
-    updateLoadingState('stockfish', true);
-    updateAnalysisState({ error: null });
+    setStockfishLoading(true);
 
     try {
       const result = await engine.evaluatePositionWithUpdate({
@@ -205,65 +143,90 @@ export default function useAgine(fen: string) {
         depth: engineDepth,
         multiPv: engineLines,
         setPartialEval: (partialEval: PositionEval) => {
-          updateAnalysisState({ stockfishResult: partialEval });
+          setStockfishAnalysisResult(partialEval);
         },
       });
 
-      updateAnalysisState({ stockfishResult: result });
-      return result;
+      setStockfishAnalysisResult(result);
     } catch (error) {
       console.error("Error analyzing position with Stockfish:", error);
-      updateAnalysisState({ 
-        stockfishResult: null,
-        error: error instanceof Error ? error.message : 'Stockfish analysis failed'
-      });
-      return null;
+      setStockfishAnalysisResult(null);
     } finally {
-      updateLoadingState('stockfish', false);
+      setStockfishLoading(false);
     }
-  }, [engine, fen, engineDepth, engineLines, updateLoadingState, updateAnalysisState]);
+  };
 
-  const buildComprehensiveQuery = useCallback((customQuery?: string): string => {
-    if (customQuery) return customQuery;
+  const analyzePosition = async (customQuery?: string): Promise<void> => {
+    const token = await session?.getToken();
+    setLlmLoading(true);
+    setLlmAnalysisResult(null);
 
-    const { stockfishResult, openingData } = analysisState;
-    
-    if (!stockfishResult) {
-      return "Please wait for Stockfish analysis to complete.";
-    }
+    let query = customQuery;
 
-    // Format engine analysis
-    const formattedEngineLines = stockfishResult.lines
-      .map((line, index) => {
-        const evaluation = formatEvaluation(line);
-        const moves = formatPrincipalVariation(line.pv, line.fen);
-        let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+    // If no custom query, build comprehensive analysis query
+    if (!customQuery) {
+      if (!engine) {
+        setLlmAnalysisResult("Stockfish engine not ready. Please wait for initialization.");
+        setLlmLoading(false);
+        return;
+      }
 
-        if (line.resultPercentages) {
-          formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+      try {
+        // Get fresh Stockfish analysis
+        const stockfishResult = await engine.evaluatePositionWithUpdate({
+          fen,
+          depth: engineDepth,
+          multiPv: engineLines,
+          setPartialEval: (partialEval: PositionEval) => {
+            setStockfishAnalysisResult(partialEval);
+          },
+        });
+
+        setStockfishAnalysisResult(stockfishResult);
+
+        // Get opening data if not available
+        let currentOpeningData = openingData;
+        if (!currentOpeningData) {
+          try {
+            currentOpeningData = await getOpeningStats(fen);
+            setOpeningData(currentOpeningData);
+          } catch (error) {
+            console.error("Error fetching opening data for analysis:", error);
+          }
         }
 
-        formattedLine += ` [Depth: ${line.depth}]`;
-        return formattedLine;
-      })
-      .join("\n");
+        // Format engine analysis for LLM
+        const formattedEngineLines = stockfishResult.lines
+          .map((line, index) => {
+            const evaluation = formatEvaluation(line);
+            const moves = formatPrincipalVariation(line.pv, line.fen);
+            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
 
-    let query = `Analyze this chess position in detail using the Stockfish engine analysis and opening database information provided:
+            if (line.resultPercentages) {
+              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+            }
+
+            formattedLine += ` [Depth: ${line.depth}]`;
+            return formattedLine;
+          })
+          .join("\n");
+
+        // Build comprehensive query
+        query = `Analyze this chess position in detail using the Stockfish engine analysis and opening database information provided:
 
 Position FEN: ${fen}
-Side to Move: ${getSideToMove(fen)}
 Best Move: ${stockfishResult.bestMove || "Not available"}
 
 Engine Analysis (Depth ${engineDepth}, ${engineLines} line${engineLines > 1 ? "s" : ""}):
 ${formattedEngineLines}`;
 
-    // Add opening data if available
-    if (openingData) {
-      const openingSpeech = getOpeningStatSpeech(openingData);
-      query += `\n\nOpening Database Information:\n${openingSpeech}`;
-    }
+        // Add opening data if available
+        if (currentOpeningData) {
+          const openingSpeech = getOpeningStatSpeech(currentOpeningData);
+          query += `\n\nOpening Database Information:\n${openingSpeech}`;
+        }
 
-    query += `\n\n1. Describe the key features of the position in terms of Silman's imbalances from the book "Reassess Your Chess" below:
+        query += `\n\n1. Describe the key features of the position in terms of Silman's imbalances from the book "Reassess Your Chess" below:
 
 - Superior minor piece
 - Pawn structure
@@ -291,70 +254,67 @@ ${formattedEngineLines}`;
 5. Using the engine analysis in the PGN, please explain the candidate moves. Assess the candidate moves in terms of the features, seven questions, and goals. How do the candidates further our goals or stop the opponent goals. Which candidate is more practical and which entails the most risk. Recommend a strategy or alternative strategies explaining which are more tactical and which are more positional. Use games from the master or lichess database as model games when relevant.
 6. Consider Fine's 30 chess principles below and supplementary additional principles identified below. In your explanation of the candidate moves, include reference and quote any of the principles which are clearly relevant and how that makes the candidate move a "principled move" because it follows one or more principles below:`;
 
-    return query;
-  }, [analysisState, fen, engineDepth, engineLines, formatEvaluation, formatPrincipalVariation, getSideToMove]);
-
-  const analyzePosition = useCallback(async (customQuery?: string): Promise<void> => {
-    if (!fen) return;
-
-    updateLoadingState('llm', true);
-    updateAnalysisState({ llmResult: null, error: null });
+      } catch (error) {
+        console.error("Error running Stockfish analysis:", error);
+        setLlmAnalysisResult("Error running Stockfish analysis. Please try again.");
+        setLlmLoading(false);
+        return;
+      }
+    }
 
     try {
-      // Ensure we have fresh Stockfish analysis if no custom query
-      if (!customQuery && !analysisState.stockfishResult) {
-        await analyzeWithStockfish();
-      }
+      const response = await fetch(`/api/agent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query, fen }),
+      });
 
-      // Ensure we have opening data if not available
-      if (!analysisState.openingData) {
-        await fetchOpeningData();
-      }
-
-      const query = buildComprehensiveQuery(customQuery);
-      const result = await makeApiRequest(query, fen);
-      
-      updateAnalysisState({ llmResult: result });
+      const data = await response.json();
+      setLlmAnalysisResult(data.message);
     } catch (error) {
       console.error("Error analyzing position:", error);
-      updateAnalysisState({ 
-        llmResult: null,
-        error: error instanceof Error ? error.message : 'Analysis failed'
-      });
+      setLlmAnalysisResult("Error analyzing position. Please try again.");
     } finally {
-      updateLoadingState('llm', false);
+      setLlmLoading(false);
     }
-  }, [fen, analysisState, analyzeWithStockfish, fetchOpeningData, buildComprehensiveQuery, makeApiRequest, updateLoadingState, updateAnalysisState]);
+  };
 
   // ==================== CHAT FUNCTIONS ====================
 
-  const addChatMessage = useCallback((role: "user" | "assistant", content: string): ChatMessage => {
-    const message: ChatMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      role,
-      content,
+  const sendChatMessage = async (): Promise<void> => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      role: "user" as const,
+      content: chatInput,
       timestamp: new Date(),
     };
-    setChatMessages(prev => [...prev, message]);
-    return message;
-  }, []);
 
-  const sendChatMessage = useCallback(async (): Promise<void> => {
-    if (!chatInput.trim() || !fen) return;
-
-    addChatMessage("user", chatInput);
+    setChatMessages((prev) => [...prev, userMessage]);
     setChatInput("");
-    updateLoadingState('chat', true);
+    setChatLoading(true);
 
     try {
-      const sideToMove = getSideToMove(fen);
+      const token = await session?.getToken();
+      const chessInstance = new Chess(fen);
+      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
       let query = `USER PROMPT: ${chatInput}\n\nCurrent Position: ${fen}\nSide to Move: ${sideToMove}`;
 
       if (sessionMode) {
         // Get engine analysis if not available
-        let engineResult = analysisState.stockfishResult;
+        let engineResult = stockfishAnalysisResult;
         if (!engineResult && engine) {
-          engineResult = await analyzeWithStockfish();
+          engineResult = await engine.evaluatePositionWithUpdate({
+            fen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+          setStockfishAnalysisResult(engineResult);
         }
 
         // Add engine analysis
@@ -377,66 +337,88 @@ ${formattedEngineLines}`;
         }
 
         // Add opening data
-        if (analysisState.openingData) {
-          const openingSpeech = getOpeningStatSpeech(analysisState.openingData);
+        if (openingData) {
+          const openingSpeech = getOpeningStatSpeech(openingData);
           query += `\n\nOpening Information:\n${openingSpeech}`;
         }
       }
 
-      const result = await makeApiRequest(query, fen);
-      addChatMessage("assistant", result);
+      const response = await fetch(`/api/agent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query, fen }),
+      });
+
+      const data = await response.json();
+
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant" as const,
+        content: data.message,
+        timestamp: new Date(),
+      };
+
+      setChatMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending chat message:", error);
-      addChatMessage("assistant", "Sorry, there was an error processing your message. Please try again.");
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant" as const,
+        content: "Sorry, there was an error processing your message. Please try again.",
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, errorMessage]);
     } finally {
-      updateLoadingState('chat', false);
+      setChatLoading(false);
     }
-  }, [chatInput, fen, sessionMode, analysisState, engine, analyzeWithStockfish, getSideToMove, formatEvaluation, formatPrincipalVariation, makeApiRequest, addChatMessage, updateLoadingState]);
+  };
 
-  const handleChatKeyPress = useCallback((e: React.KeyboardEvent): void => {
+  const handleChatKeyPress = (e: React.KeyboardEvent): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendChatMessage();
     }
-  }, [sendChatMessage]);
+  };
 
-  const clearChatHistory = useCallback((): void => {
+  const clearChatHistory = (): void => {
     setChatMessages([]);
-  }, []);
+  };
 
   // ==================== CLICK HANDLERS ====================
 
-  const handleEngineLineClick = useCallback((line: LineEval, lineIndex: number): void => {
-    if (loadingState.llm || !fen) return;
-
-    const sideToMove = getSideToMove(fen);
+  const handleEngineLineClick = (line: LineEval, lineIndex: number): void => {
+    if (llmLoading) return;
+     const chessInstance = new Chess(fen);
+     const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
     const formattedLine = formatLineForLLM(line, lineIndex);
-    
     let query = `Analyze this chess position and explain the following engine line in detail:
 
 Position: ${fen}
 Engine Line: ${formattedLine}
-Side To Move: ${sideToMove}`;
+Side To Move ${sideToMove}
+`;
 
-    if (analysisState.openingData) {
-      const openingSpeech = getOpeningStatSpeech(analysisState.openingData);
+    if (openingData) {
+      const openingSpeech = getOpeningStatSpeech(openingData);
       query += `\n\nOpening Context:\n${openingSpeech}`;
     }
 
-    query += `\n\nAnalyze this from different point of views.`;
+    query += `\n\n Analyze this from different point of views.`
 
     setAnalysisTab(0);
     analyzePosition(query);
-  }, [loadingState.llm, fen, getSideToMove, formatLineForLLM, analysisState.openingData, analyzePosition]);
+  };
 
-  const handleOpeningMoveClick = useCallback((move: Moves): void => {
-    if (loadingState.llm || !fen) return;
+  const handleOpeningMoveClick = (move: Moves): void => {
+    if (llmLoading) return;
 
-    const sideToMove = getSideToMove(fen);
+    const chessInstance = new Chess(fen);
+    const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+
     const totalGames = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
-    
-    if (totalGames === 0) return;
-    
     const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
     const drawRate = ((move.draws / totalGames) * 100 || 0).toFixed(1);
     const blackWinRate = ((move.black / totalGames) * 100 || 0).toFixed(1);
@@ -444,8 +426,8 @@ Side To Move: ${sideToMove}`;
     const query = `Analyze the chess move ${move.san} in this position:
 
 Position: ${fen}
-Opening: ${analysisState.openingData?.opening?.name || "Unknown"} (${analysisState.openingData?.opening?.eco || "N/A"})
-Side To Move: ${sideToMove}
+Opening: ${openingData?.opening?.name || "Unknown"} (${openingData?.opening?.eco || "N/A"})
+Side To Move ${sideToMove}
 
 Move Statistics from Master Games:
 - Move: ${move.san}
@@ -455,59 +437,33 @@ Move Statistics from Master Games:
 - Draws: ${drawRate}%
 - Black wins: ${blackWinRate}%
 
-Analyze this from different point of views.
+ Analyze this from different point of views.
 
 Provide both theoretical background and practical advice.`;
 
     setAnalysisTab(0);
     analyzePosition(query);
-  }, [loadingState.llm, fen, getSideToMove, analysisState.openingData, analyzePosition]);
+  };
 
-  // ==================== EFFECTS ====================
+  // ==================== RETURN OBJECT ====================
 
-  // Auto-recalculate when FEN or engine settings change
-  useEffect(() => {
-    if (!engine || !fen) return;
-
-    // Clear previous results
-    updateAnalysisState({
-      stockfishResult: null,
-      llmResult: null,
-      openingData: null,
-      error: null,
-    });
-
-    // Debounce analysis to avoid rapid fire requests
-    const timeoutId = setTimeout(() => {
-      analyzeWithStockfish();
-      fetchOpeningData();
-    }, ANALYSIS_DEBOUNCE_DELAY);
-
-    return () => clearTimeout(timeoutId);
-  }, [fen, engine, engineDepth, engineLines]); // Only depend on actual changing values
-
-  // ==================== MEMOIZED VALUES ====================
-
-  const returnValue = useMemo(() => ({
+  return {
     // Analysis Results
-    llmAnalysisResult: analysisState.llmResult,
-    setLlmAnalysisResult: (result: string | null) => updateAnalysisState({ llmResult: result }),
-    stockfishAnalysisResult: analysisState.stockfishResult,
-    setStockfishAnalysisResult: (result: PositionEval | null) => updateAnalysisState({ stockfishResult: result }),
-    openingData: analysisState.openingData,
-    setOpeningData: (data: MasterGames | null) => updateAnalysisState({ openingData: data }),
-    chessdbdata: chessdbData,
-    error: analysisState.error,
+    llmAnalysisResult,
+    setLlmAnalysisResult,
+    stockfishAnalysisResult,
+    setStockfishAnalysisResult,
+    openingData,
+    setOpeningData,
+    chessdbdata,
 
     // Loading States
-    llmLoading: loadingState.llm,
-    setLlmLoading: (loading: boolean) => updateLoadingState('llm', loading),
-    stockfishLoading: loadingState.stockfish,
-    setStockfishLoading: (loading: boolean) => updateLoadingState('stockfish', loading),
-    openingLoading: loadingState.opening,
-    setOpeningLoading: (loading: boolean) => updateLoadingState('opening', loading),
-    chatLoading: loadingState.chat,
-    setChatLoading: (loading: boolean) => updateLoadingState('chat', loading),
+    llmLoading,
+    setLlmLoading,
+    stockfishLoading,
+    setStockfishLoading,
+    openingLoading,
+    setOpeningLoading,
 
     // UI State
     moveSquares,
@@ -520,6 +476,8 @@ Provide both theoretical background and practical advice.`;
     setChatMessages,
     chatInput,
     setChatInput,
+    chatLoading,
+    setChatLoading,
     sessionMode,
     setSessionMode,
 
@@ -544,34 +502,5 @@ Provide both theoretical background and practical advice.`;
     formatEvaluation,
     formatPrincipalVariation,
     formatLineForLLM,
-    getSideToMove,
-  }), [
-    analysisState,
-    loadingState,
-    chessdbData,
-    moveSquares,
-    analysisTab,
-    chatMessages,
-    chatInput,
-    sessionMode,
-    engineDepth,
-    engineLines,
-    engine,
-    fetchOpeningData,
-    analyzePosition,
-    analyzeWithStockfish,
-    sendChatMessage,
-    handleChatKeyPress,
-    clearChatHistory,
-    handleEngineLineClick,
-    handleOpeningMoveClick,
-    formatEvaluation,
-    formatPrincipalVariation,
-    formatLineForLLM,
-    getSideToMove,
-    updateAnalysisState,
-    updateLoadingState,
-  ]);
-
-  return returnValue;
+  };
 }

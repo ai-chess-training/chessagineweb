@@ -11,6 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   const token = req.headers.authorization || "";
   const query = req.body.query;
+  const fen = req.body.fen;
 
  
   try {
@@ -22,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           "Content-Type": "application/json",
           Authorization: token,
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, fen }),
       }
     );
 

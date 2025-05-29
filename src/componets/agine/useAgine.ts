@@ -162,7 +162,7 @@ export default function useAgine(fen: string) {
     setLlmAnalysisResult(null);
 
     let query = customQuery;
-    const customfen = fen;
+   
 
     // If no custom query, build comprehensive analysis query
     if (!customQuery) {
@@ -272,14 +272,14 @@ ${formattedEngineLines}`;
         },
         
         body: JSON.stringify({
-          fen: customfen,
+          fen: fen,
           query: query,
         }),
       });
 
-      console.log('FEN', fen);
-      console.log('Custom fen', customfen);
-      console.log('query', query);
+      // console.log('FEN', fen);
+      // console.log('Custom fen', customfen);
+      // console.log('query', query);
 
       const data = await response.json();
       setLlmAnalysisResult(data.message);

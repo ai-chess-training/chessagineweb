@@ -79,6 +79,7 @@ useEffect(() => {
         baseGame.move(move);
         history.push(baseGame.fen());
       } catch (err) {
+        console.log(err)
         console.warn("Invalid move in provided history:", move);
         break;
       }

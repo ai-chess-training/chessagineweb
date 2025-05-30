@@ -112,6 +112,7 @@ export default function PGNUploaderPage() {
     formatPrincipalVariation,
     handleEngineLineClick,
     handleOpeningMoveClick,
+    handleMoveClick,
     chessdbdata
   } = useAgine(fen);
 
@@ -528,7 +529,7 @@ export default function PGNUploaderPage() {
                   />
                 </TabPanel>
                 <TabPanel value={analysisTab} index={4}>
-                  <ChessDBDisplay data={chessdbdata}/>
+                  <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
                 </TabPanel>
               </Paper>
             </>

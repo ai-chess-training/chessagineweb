@@ -65,6 +65,7 @@ export default function PositionPage() {
     formatPrincipalVariation,
     handleEngineLineClick,
     handleOpeningMoveClick,
+    handleMoveClick,
     chessdbdata
   } = useAgine(fen);
 
@@ -217,7 +218,7 @@ export default function PositionPage() {
             </TabPanel>
 
             <TabPanel value={analysisTab} index={4}>
-              <ChessDBDisplay data={chessdbdata} />
+              <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
             </TabPanel>
           </Paper>
         </Stack>

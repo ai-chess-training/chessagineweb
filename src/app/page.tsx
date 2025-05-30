@@ -19,6 +19,7 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ViewBoardIcon from '@mui/icons-material/Bolt';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import { TfiWrite } from 'react-icons/tfi';
 
 export default function HomePage() {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -31,20 +32,16 @@ export default function HomePage() {
       <main>
         <Box bgcolor="#7c3aed" color="white" py={8}>
           <Container maxWidth="md">
-            <Stack spacing={3}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ bgcolor: '#f5deb3', color: '#7c3aed' }}>
-                  <SmartToyIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    Welcome back, {user?.firstName || 'Chess Player'}!
-                  </Typography>
-                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                    Ready to train with Agine today?
-                  </Typography>
-                </Box>
-              </Box>
+            <Stack spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: '#f5deb3', color: '#7c3aed', width: 72, height: 72 }}>
+                <SmartToyIcon sx={{ fontSize: 48 }} />
+              </Avatar>
+              <Typography variant="h4" fontWeight="bold" textAlign="center">
+                Welcome back, {user?.firstName || 'Chess Player'}!
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9 }} textAlign="center">
+                Ready to train with Agine today?
+              </Typography>
             </Stack>
           </Container>
         </Box>
@@ -55,66 +52,74 @@ export default function HomePage() {
               direction={{ xs: 'column', md: 'row' }}
               spacing={4}
               alignItems="stretch"
+              justifyContent="center"
             >
-              <Card 
-                elevation={6} 
-                sx={{ 
-                  flex: 1,
-                  height: 320,
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  borderRadius: 3,
-                  '&:hover': { 
-                    transform: 'translateY(-8px) scale(1.02)',
-                    boxShadow: '0 20px 40px rgba(124, 58, 237, 0.3)'
-                  }
-                }}
-                onClick={() => router.push('/position')}
-              >
-                <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <Box display="flex" alignItems="center" gap={2} mb={3}>
-                    <ViewBoardIcon sx={{ fontSize: 48 }} />
-                    <Typography variant="h4" fontWeight="bold">
-                      Position Board
+              {[
+                {
+                  icon: <ViewBoardIcon sx={{ fontSize: 48 }} />,
+                  title: 'Position Board',
+                  description:
+                    'Set up any position and analyze it with Agine. Perfect for studying specific scenarios or exploring tactical ideas.',
+                  onClick: () => router.push('/position'),
+                },
+                {
+                  icon: <AnalyticsIcon sx={{ fontSize: 48 }} />,
+                  title: 'Game Analysis',
+                  description:
+                    'Upload your games or paste PGN to get detailed analysis and insights from Agine about your play.',
+                  onClick: () => router.push('/game'),
+                },
+                {
+                  icon: <TfiWrite style={{ fontSize: 48 }} />,
+                  title: 'Annotation Analysis',
+                  description:
+                    'Paste Game PGNs for Agine to analyze/comment on moves, make your annotations smarter and fun.',
+                  onClick: () => router.push('/game'),
+                },
+              ].map((card) => (
+                <Card
+                  key={card.title}
+                  elevation={6}
+                  sx={{
+                    flex: 1,
+                    height: 320,
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    borderRadius: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(124, 58, 237, 0.3)',
+                    },
+                  }}
+                  onClick={card.onClick}
+                >
+                  <CardContent
+                    sx={{
+                      p: 4,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 2,
+                    }}
+                  >
+                    <Box mb={2}>{card.icon}</Box>
+                    <Typography variant="h5" fontWeight="bold" textAlign="center" gutterBottom>
+                      {card.title}
                     </Typography>
-                  </Box>
-                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                    Set up any position and analyze it with Agine. Perfect for studying specific scenarios or exploring tactical ideas.
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card 
-                elevation={6} 
-                sx={{ 
-                  flex: 1,
-                  height: 320,
-                  background: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  borderRadius: 3,
-                  '&:hover': { 
-                    transform: 'translateY(-8px) scale(1.02)',
-                    boxShadow: '0 20px 40px rgba(91, 33, 182, 0.3)'
-                  }
-                }}
-                onClick={() => router.push('/game')}
-              >
-                <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <Box display="flex" alignItems="center" gap={2} mb={3}>
-                    <AnalyticsIcon sx={{ fontSize: 48 }} />
-                    <Typography variant="h4" fontWeight="bold">
-                      Game Analysis
+                    <Typography variant="body1" sx={{ opacity: 0.9 }} textAlign="center">
+                      {card.description}
                     </Typography>
-                  </Box>
-                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                    Upload your games or paste PGN to get detailed analysis and insights from Agine about your play.
-                  </Typography>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ))}
             </Stack>
           </Container>
         </Box>

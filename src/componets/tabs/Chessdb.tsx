@@ -69,9 +69,9 @@ export function useChessDB(fen: string) {
         return;
       }
 
-      const processedMoves = moves.slice(0, 3).map((move: CandidateMove) => {
+      const processedMoves = moves.slice(0, 5).map((move: CandidateMove) => {
         const scoreNum = Number(move.score);
-        const scoreStr = isNaN(scoreNum) ? "N/A" : String(scoreNum * 100);
+        const scoreStr = isNaN(scoreNum) ? "N/A" : String(scoreNum);
         return {
           uci: move.uci || "N/A",
           san: move.san || "N/A",
@@ -110,6 +110,7 @@ interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
   title?: string;
   showTitle?: boolean;
+  analyzeMove: (move: CandidateMove) => void;
 }
 
 // Component for displaying ChessDB information
@@ -117,6 +118,7 @@ export function ChessDBDisplay({
   data,
   title = "ChessDB Analysis",
   showTitle = true,
+  analyzeMove,
 }: ChessDBDisplayProps) {
   const wheatDark = "#f2da2f";
   const wheatLight = "#FFF8E1";
@@ -194,16 +196,26 @@ export function ChessDBDisplay({
               </Stack>
             )}
 
+            <Typography variant="caption" sx={{ color: wheatDark }}>
+              Tip: Click a move below to analyze it.
+            </Typography>
+
             <Stack spacing={2}>
               {data.map((move, index) => (
                 <Paper
                   key={`${move.uci}-${index}`}
                   elevation={2}
+                  onClick={() => analyzeMove(move)}
                   sx={{
                     p: 2,
                     backgroundColor: grey[800],
                     border: "1px solid",
                     borderColor: index === 0 ? wheatDark : borderGrey,
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                    "&:hover": {
+                      backgroundColor: grey[700],
+                    },
                   }}
                 >
                   <Stack

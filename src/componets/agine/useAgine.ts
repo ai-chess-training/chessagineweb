@@ -9,7 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
-import { useChessDB} from "../tabs/Chessdb";
+import { CandidateMove, useChessDB} from "../tabs/Chessdb";
 
 export default function useAgine(fen: string) {
   // Analysis Results State
@@ -63,6 +63,14 @@ export default function useAgine(fen: string) {
       return () => clearTimeout(timeoutId);
     }
   }, [fen, engine]);
+
+  // Re-analyze when engineDepth or engineLines change
+  useEffect(() => {
+    if (engine && fen) {
+      analyzeWithStockfish();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineDepth, engineLines]);
 
   // ==================== UTILITY FUNCTIONS ====================
 
@@ -460,6 +468,35 @@ Provide both theoretical background and practical advice.`;
     analyzePosition(query);
   };
 
+  const handleMoveClick = (move: CandidateMove) => {
+    if (llmLoading) return;
+
+    const chessInstance = new Chess(fen);
+    const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+    const updatedFen = chessInstance.move(move.san);
+
+    let query = `Analyze the chess move ${move.san} (${move.uci}) in this position:
+
+Position: ${fen}
+Side To Move: ${sideToMove}
+ChessDb Score For Move ${move.score} the higher the postive score the better white is, the negative the score is better black is
+ChessDb Winrate: ${move.winrate}
+
+Move leads to FEN: ${updatedFen}
+
+Discuss the strategic and tactical implications of this move. Provide both theoretical background and practical advice.`;
+
+    if (openingData) {
+      const openingSpeech = getOpeningStatSpeech(openingData);
+      query += `\n\nOpening Context:\n${openingSpeech}`;
+    }
+
+    query += `\n\nAnalyze this move from different points of view.`;
+
+    setAnalysisTab(0);
+    analyzePosition(query);
+  };
+
   // ==================== RETURN OBJECT ====================
 
   return {
@@ -512,6 +549,7 @@ Provide both theoretical background and practical advice.`;
     clearChatHistory,
     handleEngineLineClick,
     handleOpeningMoveClick,
+    handleMoveClick,
 
     // Utility Functions
     formatEvaluation,

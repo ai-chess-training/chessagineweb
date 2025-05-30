@@ -74,7 +74,7 @@ export default function HomePage() {
                   title: 'Annotation Analysis',
                   description:
                     'Paste Game PGNs for Agine to analyze/comment on moves, make your annotations smarter and fun.',
-                  onClick: () => router.push('/game'),
+                  onClick: () => router.push('/annonate'),
                 },
               ].map((card) => (
                 <Card

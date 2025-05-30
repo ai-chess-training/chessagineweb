@@ -126,7 +126,7 @@ export default function PgnReviewPage() {
                         textShadow: "0 2px 8px rgba(0,0,0,0.3)" 
                     }}
                 >
-                    AgineAnnotator
+                    Agine Annotator
                 </Typography>
             </Box>
 
@@ -182,7 +182,7 @@ export default function PgnReviewPage() {
                                 color="wheat"
                                 sx={{ mb: 2, opacity: 0.8 }}
                             >
-                                Welcome to AgineAnnotator
+                                Welcome to Agine Annotator
                             </Typography>
                             <Typography
                                 variant="body1"

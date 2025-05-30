@@ -189,7 +189,7 @@ export default function PgnReviewPage() {
                                 color="wheat"
                                 sx={{ opacity: 0.6, maxWidth: 500 }}
                             >
-                                Paste your PGN notation below and I'll provide detailed analysis and annotations for your chess game.
+                                Paste your PGN notation below and I will provide detailed analysis and annotations for your chess game.
                             </Typography>
                         </Box>
                     )}

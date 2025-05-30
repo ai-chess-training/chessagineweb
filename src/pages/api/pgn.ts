@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-export type ResponseData = {
+type ResponseData = {
   message: string
 }
 
@@ -10,26 +10,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   const token = req.headers.authorization || "";
-  const query = req.body.query;
-  const fen = req.body.fen;
+  console.log('TOKEN', token);
+  const pgn = req.body.pgn;
+  console.log('PGN', pgn);
 
- 
   try {
     const lambdaResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/Prod/pgn/`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: token,
         },
-        body: JSON.stringify({ query, fen }),
+        body: JSON.stringify({ pgn }),
       }
     );
 
-    const responseText = await lambdaResponse.text(); // 🔍 Only read once
-    // console.log("Lambda status:", lambdaResponse.status);
-    // console.log("Lambda raw response:", responseText);
+    const responseText = await lambdaResponse.text(); 
+    console.log("Lambda status:", lambdaResponse.status);
+    console.log("Lambda raw response:", responseText);
 
     let data;
     try {

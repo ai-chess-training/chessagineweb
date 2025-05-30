@@ -16,6 +16,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import { TfiWrite } from "react-icons/tfi";
 
 export default function NavBar() {
   const router = useRouter();
@@ -33,11 +34,15 @@ export default function NavBar() {
 
         <Stack direction="row" spacing={2} alignItems="center">
           <SignedIn>
+            
+            <Button color="inherit" startIcon={<FaChessBoard />} href="/position">
+              Analyze Position
+            </Button>
             <Button color="inherit" startIcon={<FaChessPawn />} href="/game">
               Analyze Game
             </Button>
-            <Button color="inherit" startIcon={<FaChessBoard />} href="/position">
-              Analyze Position
+            <Button color="inherit" startIcon={<TfiWrite/>} href="/annonate">
+              Analyze annotations
             </Button>
             <Button
               variant="text"

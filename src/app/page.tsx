@@ -33,8 +33,8 @@ export default function HomePage() {
         <Box bgcolor="#7c3aed" color="white" py={8}>
           <Container maxWidth="md">
             <Stack spacing={3} alignItems="center">
-              <Avatar sx={{ bgcolor: '#f5deb3', color: '#7c3aed', width: 72, height: 72 }}>
-                <SmartToyIcon sx={{ fontSize: 48 }} />
+              <Avatar sx={{ bgcolor: '#f5deb3', color: '#7c3aed', width: 72, height: 72 }} src='/static/images/agineowl.png'> 
+               W
               </Avatar>
               <Typography variant="h4" fontWeight="bold" textAlign="center">
                 Welcome back, {user?.firstName || 'Chess Player'}!
@@ -144,13 +144,14 @@ export default function HomePage() {
             {/* Agine Avatar */}
             <Box sx={{ position: 'relative' }}>
               <Avatar 
+                src='/static/images/agineowl.png'
                 sx={{ 
                   width: 140, 
                   height: 140, 
                   bgcolor: '#f5deb3',
                   color: '#7c3aed',
                   fontSize: '4rem',
-                  boxShadow: '0 10px 30px rgba(245, 222, 179, 0.3)'
+                  
                 }}
               >
                 <SmartToyIcon fontSize="inherit" />

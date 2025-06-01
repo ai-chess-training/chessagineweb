@@ -145,9 +145,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               >
                 {message.role === "assistant" ? (
                   <ReactMarkdown
-                    components={{
-                      p: ({ node, ...props }) => <span {...props} />,
-                    }}
                   >
                     {message.content}
                   </ReactMarkdown>

@@ -112,7 +112,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           }}
         >
           <Message sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
-          <Typography variant="body2" sx={{ textAlign: "center" }}>
+       
             Start a conversation with the AI
             {sessionMode && (
               <>
@@ -122,7 +122,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 </Typography>
               </>
             )}
-          </Typography>
         </Box>
       ) : (
         <Stack spacing={2}>
@@ -144,13 +143,19 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   color: "white",
                 }}
               >
-                <Typography variant="body2">
-                  {message.role === "assistant" ? (
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
-                  ) : (
-                    message.content
-                  )}
-                </Typography>
+                {message.role === "assistant" ? (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ node, ...props }) => <span {...props} />,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                ) : (
+                  <Typography variant="body2">
+                    {message.content}
+                  </Typography>
+                )}
                 <Typography
                   variant="caption"
                   sx={{ opacity: 0.7, display: "block", mt: 1 }}

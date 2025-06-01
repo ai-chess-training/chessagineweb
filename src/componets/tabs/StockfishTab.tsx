@@ -201,7 +201,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                             value={engineDepth}
                             onChange={(_, value) => {
                                 setEngineDepth(value as number);
-                                if (stockfishLoading && engine) {
+                                if (engine) {
                                     analyzeWithStockfish();
                                 }
                             }}
@@ -221,7 +221,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                             value={engineLines}
                             onChange={(_, value) => {
                                 setEngineLines(value as number);
-                                if (stockfishLoading && engine) {
+                                if (engine) {
                                     analyzeWithStockfish();
                                 }
                             }}

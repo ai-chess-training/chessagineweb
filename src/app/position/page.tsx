@@ -134,7 +134,6 @@ export default function PositionPage() {
                   "& .Mui-selected": { color: "white !important" },
                 }}
               >
-                <Tab label="AI Analysis" />
                 <Tab label="Stockfish Analysis" />
                 <Tab label="AI Chat" />
                 <Tab label="Opening Explorer" />
@@ -142,28 +141,9 @@ export default function PositionPage() {
               </Tabs>
             </Box>
 
+            
+
             <TabPanel value={analysisTab} index={0}>
-              <Typography variant="h6" gutterBottom>
-                AI Analysis
-              </Typography>
-
-              {llmLoading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                  <CircularProgress />
-                </Box>
-              ) : llmAnalysisResult ? (
-                <Box sx={{ color: "wheat", fontSize: "0.95rem" }}>
-                  <ReactMarkdown>{llmAnalysisResult}</ReactMarkdown>
-                </Box>
-              ) : (
-                <Typography sx={{ color: "wheat" }}>
-                  Click on individual
-                  engine lines or opening moves for specific Agine analysis.
-                </Typography>
-              )}
-            </TabPanel>
-
-            <TabPanel value={analysisTab} index={1}>
               <Typography variant="h6" gutterBottom>
                 Stockfish Analysis
               </Typography>
@@ -191,7 +171,7 @@ export default function PositionPage() {
               )}
             </TabPanel>
 
-            <TabPanel value={analysisTab} index={2}>
+            <TabPanel value={analysisTab} index={1}>
               <ChatTab
                 chatMessages={chatMessages}
                 chatInput={chatInput}
@@ -205,7 +185,7 @@ export default function PositionPage() {
               />
             </TabPanel>
 
-            <TabPanel value={analysisTab} index={3}>
+            <TabPanel value={analysisTab} index={2}>
               <Typography variant="h6" gutterBottom>
                 Opening Explorer
               </Typography>
@@ -217,7 +197,7 @@ export default function PositionPage() {
               />
             </TabPanel>
 
-            <TabPanel value={analysisTab} index={4}>
+            <TabPanel value={analysisTab} index={3}>
               <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
             </TabPanel>
           </Paper>

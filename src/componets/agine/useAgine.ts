@@ -64,13 +64,7 @@ export default function useAgine(fen: string) {
     }
   }, [fen, engine]);
 
-  // Re-analyze when engineDepth or engineLines change
-  useEffect(() => {
-    if (engine && fen) {
-      analyzeWithStockfish();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineDepth, engineLines]);
+  
 
   // ==================== UTILITY FUNCTIONS ====================
 
@@ -410,43 +404,94 @@ ${formattedEngineLines}`;
     setChatMessages([]);
   };
 
-  // ==================== CLICK HANDLERS ====================
 
-  const handleEngineLineClick = (line: LineEval, lineIndex: number): void => {
-    if (llmLoading) return;
-     const chessInstance = new Chess(fen);
-     const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-    const formattedLine = formatLineForLLM(line, lineIndex);
-    let query = `Analyze this chess position and explain the following engine line in detail:
+// ==================== CLICK HANDLERS ====================
+
+const handleEngineLineClick = async (line: LineEval, lineIndex: number): Promise<void> => {
+  if (llmLoading) return;
+  
+  const chessInstance = new Chess(fen);
+  const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+  const formattedLine = formatLineForLLM(line, lineIndex);
+  
+  let query = `Analyze this chess position and explain the following engine line in detail:
 
 Position: ${fen}
 Engine Line: ${formattedLine}
 Side To Move ${sideToMove}
 `;
 
-    if (openingData) {
-      const openingSpeech = getOpeningStatSpeech(openingData);
-      query += `\n\nOpening Context:\n${openingSpeech}`;
-    }
+  if (openingData) {
+    const openingSpeech = getOpeningStatSpeech(openingData);
+    query += `\n\nOpening Context:\n${openingSpeech}`;
+  }
 
-    query += `\n\n Analyze this from different point of views.`
+  query += `\n\n Analyze this from different point of views.`;
 
-    setAnalysisTab(0);
-    analyzePosition(query);
+  setAnalysisTab(1);
+  
+  // Add user message to chat
+  const userMessage = {
+    id: Date.now().toString(),
+    role: "user" as const,
+    content: `Analyze engine line: ${formattedLine}`,
+    timestamp: new Date(),
   };
+  setChatMessages((prev) => [...prev, userMessage]);
+  
+  setLlmLoading(true);
+  
+  try {
+    const token = await session?.getToken();
+    const response = await fetch(`/api/agent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fen: fen,
+        query: query,
+      }),
+    });
 
-  const handleOpeningMoveClick = (move: Moves): void => {
-    if (llmLoading) return;
+    const data = await response.json();
+    
+    // Add assistant response to chat
+    const assistantMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant" as const,
+      content: data.message,
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, assistantMessage]);
+    
+  } catch (error) {
+    console.error("Error analyzing engine line:", error);
+    const errorMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant" as const,
+      content: "Sorry, there was an error analyzing the engine line. Please try again.",
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, errorMessage]);
+  } finally {
+    setLlmLoading(false);
+  }
+};
 
-    const chessInstance = new Chess(fen);
-    const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+const handleOpeningMoveClick = async (move: Moves): Promise<void> => {
+  if (llmLoading) return;
 
-    const totalGames = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
-    const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
-    const drawRate = ((move.draws / totalGames) * 100 || 0).toFixed(1);
-    const blackWinRate = ((move.black / totalGames) * 100 || 0).toFixed(1);
+  const chessInstance = new Chess(fen);
+  const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
 
-    const query = `Analyze the chess move ${move.san} in this position:
+  const totalGames = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
+  const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
+  const drawRate = ((move.draws / totalGames) * 100 || 0).toFixed(1);
+  const blackWinRate = ((move.black / totalGames) * 100 || 0).toFixed(1);
+
+  const query = `Analyze the chess move ${move.san} in this position:
 
 Position: ${fen}
 Opening: ${openingData?.opening?.name || "Unknown"} (${openingData?.opening?.eco || "N/A"})
@@ -464,18 +509,66 @@ Move Statistics from Master Games:
 
 Provide both theoretical background and practical advice.`;
 
-    setAnalysisTab(0);
-    analyzePosition(query);
+  setAnalysisTab(1);
+  
+  // Add user message to chat
+  const userMessage = {
+    id: Date.now().toString(),
+    role: "user" as const,
+    content: `Analyze opening move: ${move.san}`,
+    timestamp: new Date(),
   };
+  setChatMessages((prev) => [...prev, userMessage]);
+  
+  setLlmLoading(true);
+  
+  try {
+    const token = await session?.getToken();
+    const response = await fetch(`/api/agent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fen: fen,
+        query: query,
+      }),
+    });
 
-  const handleMoveClick = (move: CandidateMove) => {
-    if (llmLoading) return;
+    const data = await response.json();
+    
+    // Add assistant response to chat
+    const assistantMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant" as const,
+      content: data.message,
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, assistantMessage]);
+    
+  } catch (error) {
+    console.error("Error analyzing opening move:", error);
+    const errorMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant" as const,
+      content: "Sorry, there was an error analyzing the opening move. Please try again.",
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, errorMessage]);
+  } finally {
+    setLlmLoading(false);
+  }
+};
 
-    const chessInstance = new Chess(fen);
-    const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-    const updatedFen = chessInstance.move(move.san);
+const handleMoveClick = async (move: CandidateMove): Promise<void> => {
+  if (llmLoading) return;
 
-    let query = `Analyze the chess move ${move.san} (${move.uci}) in this position:
+  const chessInstance = new Chess(fen);
+  const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+  const updatedFen = chessInstance.fen();
+
+  let query = `Analyze the chess move ${move.san} (${move.uci}) in this position:
 
 Position: ${fen}
 Side To Move: ${sideToMove}
@@ -486,16 +579,64 @@ Move leads to FEN: ${updatedFen}
 
 Discuss the strategic and tactical implications of this move. Provide both theoretical background and practical advice.`;
 
-    if (openingData) {
-      const openingSpeech = getOpeningStatSpeech(openingData);
-      query += `\n\nOpening Context:\n${openingSpeech}`;
-    }
+  if (openingData) {
+    const openingSpeech = getOpeningStatSpeech(openingData);
+    query += `\n\nOpening Context:\n${openingSpeech}`;
+  }
 
-    query += `\n\nAnalyze this move from different points of view.`;
+  query += `\n\nAnalyze this move from different points of view.`;
 
-    setAnalysisTab(0);
-    analyzePosition(query);
+  setAnalysisTab(1);
+  
+  // Add user message to chat
+  const userMessage = {
+    id: Date.now().toString(),
+    role: "user" as const,
+    content: `Analyze move: ${move.san}`,
+    timestamp: new Date(),
   };
+  setChatMessages((prev) => [...prev, userMessage]);
+  
+  setLlmLoading(true);
+  
+  try {
+    const token = await session?.getToken();
+    const response = await fetch(`/api/agent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fen: fen,
+        query: query,
+      }),
+    });
+
+    const data = await response.json();
+    
+    // Add assistant response to chat
+    const assistantMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant" as const,
+      content: data.message,
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, assistantMessage]);
+    
+  } catch (error) {
+    console.error("Error analyzing move:", error);
+    const errorMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant" as const,
+      content: "Sorry, there was an error analyzing the move. Please try again.",
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, errorMessage]);
+  } finally {
+    setLlmLoading(false);
+  }
+};
 
   // ==================== RETURN OBJECT ====================
 

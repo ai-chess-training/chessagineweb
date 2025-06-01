@@ -439,7 +439,7 @@ Side To Move ${sideToMove}
   };
   setChatMessages((prev) => [...prev, userMessage]);
   
-  setLlmLoading(true);
+  setChatLoading(true);
   
   try {
     const token = await session?.getToken();
@@ -476,7 +476,7 @@ Side To Move ${sideToMove}
     };
     setChatMessages((prev) => [...prev, errorMessage]);
   } finally {
-    setLlmLoading(false);
+    setChatLoading(false);
   }
 };
 
@@ -520,7 +520,7 @@ Provide both theoretical background and practical advice.`;
   };
   setChatMessages((prev) => [...prev, userMessage]);
   
-  setLlmLoading(true);
+  setChatLoading(true);
   
   try {
     const token = await session?.getToken();
@@ -557,7 +557,7 @@ Provide both theoretical background and practical advice.`;
     };
     setChatMessages((prev) => [...prev, errorMessage]);
   } finally {
-    setLlmLoading(false);
+    setChatLoading(false);
   }
 };
 
@@ -597,7 +597,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   };
   setChatMessages((prev) => [...prev, userMessage]);
   
-  setLlmLoading(true);
+  setChatLoading(true);
   
   try {
     const token = await session?.getToken();
@@ -634,7 +634,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     };
     setChatMessages((prev) => [...prev, errorMessage]);
   } finally {
-    setLlmLoading(false);
+    setChatLoading(false);
   }
 };
 

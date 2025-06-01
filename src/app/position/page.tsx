@@ -12,7 +12,6 @@ import {
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { Chess } from "chess.js";
-import ReactMarkdown from "react-markdown";
 import { TabPanel } from "@/componets/tabs/tab";
 import OpeningExplorer from "@/componets/tabs/OpeningTab";
 import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
@@ -31,7 +30,6 @@ export default function PositionPage() {
 
   
   const {
-    llmAnalysisResult,
     setLlmAnalysisResult,
     stockfishAnalysisResult,
     setStockfishAnalysisResult,

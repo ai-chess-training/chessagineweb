@@ -14,7 +14,6 @@ import {
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { Chess } from "chess.js";
-import ReactMarkdown from "react-markdown";
 import useAgine from "@/componets/agine/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import { TabPanel } from "@/componets/tabs/tab";
@@ -78,7 +77,6 @@ export default function PGNUploaderPage() {
   const [comment, setComment] = useState("");
 
   const {
-    llmAnalysisResult,
     setLlmAnalysisResult,
     stockfishAnalysisResult,
     setStockfishAnalysisResult,

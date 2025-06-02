@@ -9,7 +9,7 @@ import {
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
-import { CandidateMove, useChessDB} from "../tabs/Chessdb";
+import { CandidateMove, getChessDBSpeech, useChessDB} from "../tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
 
 export default function useAgine(fen: string) {
@@ -422,6 +422,12 @@ ${formattedEngineLines}`;
           const openingSpeech = getOpeningStatSpeech(openingData);
           query += `\n\nOpening Information:\n${openingSpeech}`;
         }
+
+        if(chessdbdata){
+           const candiateMoves = getChessDBSpeech(chessdbdata);
+           query += `${candiateMoves}`
+        }
+
       }
 
       const result = await makeApiRequest(currentFen, query);

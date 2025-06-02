@@ -113,6 +113,16 @@ interface ChessDBDisplayProps {
   analyzeMove: (move: CandidateMove) => void;
 }
 
+export function getChessDBSpeech(data: CandidateMove[]): string {
+   let query = 'Candidate Moves \n\n'
+
+   for(let i = 0; i < data.length; i++){
+     query += `Move: ${data[i].san} Score ${data[i].score} WinRate ${data[i].winrate}\n`;
+   }
+
+   return query;
+}
+
 // Component for displaying ChessDB information
 export function ChessDBDisplay({
   data,

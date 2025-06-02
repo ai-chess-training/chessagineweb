@@ -20,7 +20,7 @@ import {
 } from "react-icons/md";
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useState, useEffect} from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../opening/helper";
@@ -69,63 +69,82 @@ export default function AiChessboardPanel({
   const [showArrows, setShowArrows] = useState(true);
   const [boardSize, setBoardSize] = useState(500);
 
-useEffect(() => {
-  const baseGame = new Chess();
-  const history: string[] = [baseGame.fen()];
+  // Memoize the initial game setup to avoid recalculation
+  const gameHistory = useMemo(() => {
+    const baseGame = new Chess();
+    const history: string[] = [baseGame.fen()];
 
-  if (moves && moves.length > 0) {
-    for (const move of moves) {
-      try {
-        baseGame.move(move);
-        history.push(baseGame.fen());
-      } catch (err) {
-        console.log(err)
-        console.warn("Invalid move in provided history:", move);
-        break;
+    if (moves && moves.length > 0) {
+      for (const move of moves) {
+        try {
+          baseGame.move(move);
+          history.push(baseGame.fen());
+        } catch (err) {
+          console.log(err);
+          console.warn("Invalid move in provided history:", move);
+          break;
+        }
       }
     }
-  }
 
-  const startGame = new Chess(history[0]);
+    return history;
+  }, [moves]);
 
-  setGame(startGame);
-  setFen(history[0]);
-  setMoveHistory(history);
-  setCurrentMoveIndex(0);
-}, [moves]);
+  // Effect to update game state when moves change
+  useEffect(() => {
+    const startGame = new Chess(gameHistory[0]);
+    
+    setGame(startGame);
+    setFen(gameHistory[0]);
+    setMoveHistory(gameHistory);
+    setCurrentMoveIndex(0);
+  }, [gameHistory, setGame, setFen]);
 
-const safeGameMutate = (modify: (game: Chess) => void) => {
-  const baseFen = moveHistory[currentMoveIndex]; // always safe now
-  const newGame = new Chess(baseFen);
-  modify(newGame);
+  // Memoized function to safely mutate game state
+  const safeGameMutate = useCallback((modify: (game: Chess) => void) => {
+    const baseFen = moveHistory[currentMoveIndex];
+    if (!baseFen) return;
+    
+    const newGame = new Chess(baseFen);
+    modify(newGame);
 
-  const newFen = newGame.fen();
+    const newFen = newGame.fen();
+    const newHistory = [...moveHistory.slice(0, currentMoveIndex + 1), newFen];
+    
+    setGame(newGame);
+    setFen(newFen);
+    setMoveHistory(newHistory);
+    setCurrentMoveIndex(newHistory.length - 1);
+    setOpeningData(null);
+  }, [moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]);
 
-  const newHistory = [...moveHistory.slice(0, currentMoveIndex + 1), newFen];
-  setGame(newGame);
-  setFen(newFen);
-  setMoveHistory(newHistory);
-  setCurrentMoveIndex(newHistory.length - 1);
-  setOpeningData(null);
-};
+  // Memoized clear analysis callback
+  const clearAnalysis = useCallback(() => {
+    setLlmAnalysisResult(null);
+    setStockfishAnalysisResult(null);
+    setOpeningData(null);
+  }, [setLlmAnalysisResult, setStockfishAnalysisResult, setOpeningData]);
 
-  const onDrop = (source: string, target: string) => {
+  // Optimized onDrop handler
+  const onDrop = useCallback((source: string, target: string) => {
     let moveMade = false;
     safeGameMutate((game) => {
       const move = game.move({ from: source, to: target, promotion: "q" });
-      if (move) moveMade = true;
+      if (move) {
+        moveMade = true;
+        clearAnalysis();
+      }
     });
     setMoveSquares({});
     return moveMade;
-  };
+  }, [safeGameMutate, clearAnalysis, setMoveSquares]);
 
-  // Convert UCI moves to arrow format for the chessboard
-  const getCustomArrows = () => {
+  // Memoized arrows calculation
+  const customArrows = useMemo((): Arrow[] => {
     if (!showArrows || !stockfishAnalysisResult?.lines) {
       return [];
     }
 
-    const arrows: Arrow[] = [];
     const bestLine = stockfishAnalysisResult.lines[0]?.pv;
     if (!bestLine || bestLine.length === 0) {
       return [];
@@ -135,14 +154,14 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
     if (move && move.length >= 4) {
       const from = move.substring(0, 2);
       const to = move.substring(2, 4);
-
-      arrows.push([from as Square, to as Square, "#4caf50"]);
+      return [[from as Square, to as Square, "#4caf50"]];
     }
 
-    return arrows;
-  };
+    return [];
+  }, [showArrows, stockfishAnalysisResult]);
 
-  const handleSquareClick = (square: string) => {
+  // Optimized square click handler
+  const handleSquareClick = useCallback((square: string) => {
     // If clicking on the same square, deselect
     if (selectedSquare === square) {
       setSelectedSquare(null);
@@ -152,19 +171,16 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
 
     // If a square is already selected and clicking on a legal move target
     if (selectedSquare && legalMoves.includes(square)) {
-      // Try to make the move using safeGameMutate
       safeGameMutate((newGame) => {
         try {
           const move = newGame.move({
             from: selectedSquare,
             to: square,
-            promotion: "q", // Default to queen promotion, you might want to add promotion selection UI
+            promotion: "q",
           });
 
           if (move) {
-            setLlmAnalysisResult(null);
-            setStockfishAnalysisResult(null);
-            setOpeningData(null);
+            clearAnalysis();
           }
         } catch (error) {
           console.log("Invalid move:", error);
@@ -178,14 +194,7 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
 
     // Check if the clicked square has a piece
     const piece = game.get(square as Square);
-    if (!piece) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-
-    // Check if it's the correct player's turn
-    if (piece.color !== game.turn()) {
+    if (!piece || piece.color !== game.turn()) {
       setSelectedSquare(null);
       setLegalMoves([]);
       return;
@@ -197,15 +206,15 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
 
     setSelectedSquare(square);
     setLegalMoves(targetSquares);
-  };
+  }, [selectedSquare, legalMoves, game, safeGameMutate, clearAnalysis]);
 
-  // Create custom square styles combining moveSquares with legal move highlighting
-  const getCustomSquareStyles = () => {
+  // Memoized custom square styles
+  const customSquareStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
 
     // Copy existing moveSquares styles
-    Object.keys(moveSquares).forEach((square) => {
-      styles[square] = { backgroundColor: moveSquares[square] };
+    Object.entries(moveSquares).forEach(([square, color]) => {
+      styles[square] = { backgroundColor: color };
     });
 
     // Highlight selected square
@@ -219,63 +228,79 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
     // Highlight legal move squares
     legalMoves.forEach((square) => {
       const piece = game.get(square as Square);
-      if (piece) {
-        // Target square has an enemy piece (capture)
-        styles[square] = {
-          background:
-            "radial-gradient(circle, rgba(255,0,0,0.8) 85%, transparent 85%)",
-          ...styles[square],
-        };
-      } else {
-        // Empty target square
-        styles[square] = {
-          background:
-            "radial-gradient(circle, rgba(0,0,0,0.3) 25%, transparent 25%)",
-          ...styles[square],
-        };
-      }
+      const background = piece
+        ? "radial-gradient(circle, rgba(255,0,0,0.8) 85%, transparent 85%)"
+        : "radial-gradient(circle, rgba(0,0,0,0.3) 25%, transparent 25%)";
+      
+      styles[square] = {
+        background,
+        ...styles[square],
+      };
     });
 
     return styles;
-  };
+  }, [moveSquares, selectedSquare, legalMoves, game]);
 
-  const goToPreviousMove = () => {
+  // Navigation callbacks
+  const goToPreviousMove = useCallback(() => {
     if (currentMoveIndex > 0) {
-      const newFen = moveHistory[currentMoveIndex - 1];
+      const newIndex = currentMoveIndex - 1;
+      const newFen = moveHistory[newIndex];
       const newGame = new Chess(newFen);
+      
       setGame(newGame);
       setFen(newFen);
-      setCurrentMoveIndex(currentMoveIndex - 1);
+      setCurrentMoveIndex(newIndex);
       setSelectedSquare(null);
       setLegalMoves([]);
     }
-  };
+  }, [currentMoveIndex, moveHistory, setGame, setFen]);
 
-  const goToNextMove = () => {
+  const goToNextMove = useCallback(() => {
     if (currentMoveIndex < moveHistory.length - 1) {
-      const newFen = moveHistory[currentMoveIndex + 1];
+      const newIndex = currentMoveIndex + 1;
+      const newFen = moveHistory[newIndex];
       const newGame = new Chess(newFen);
+      
       setGame(newGame);
       setFen(newFen);
-      setCurrentMoveIndex(currentMoveIndex + 1);
+      setCurrentMoveIndex(newIndex);
       setSelectedSquare(null);
       setLegalMoves([]);
     }
-  };
+  }, [currentMoveIndex, moveHistory, setGame, setFen]);
 
-  const loadCustomFen = () => {
+  // Load custom FEN callback
+  const loadCustomFen = useCallback(() => {
     try {
       const newGame = new Chess(customFen);
       setGame(newGame);
       setFen(newGame.fen());
-      setLlmAnalysisResult(null);
-      setStockfishAnalysisResult(null);
-      setOpeningData(null);
+      clearAnalysis();
     } catch (error) {
       console.log(error);
       alert("Invalid FEN string.");
     }
-  };
+  }, [customFen, setGame, setFen, clearAnalysis]);
+
+  // Flip board callback
+  const flipBoard = useCallback(() => {
+    setIsFlipped(!isFlipped);
+  }, [isFlipped]);
+
+  // Board size change callback
+  const handleBoardSizeChange = useCallback((_: Event, newValue: number | number[]) => {
+    setBoardSize(newValue as number);
+  }, []);
+
+  // Arrow toggle callback
+  const toggleArrows = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowArrows(e.target.checked);
+  }, []);
+
+  // Navigation button disabled states
+  const isPreviousDisabled = currentMoveIndex <= 0;
+  const isNextDisabled = currentMoveIndex >= moveHistory.length - 1;
 
   return (
     <Stack spacing={2} alignItems="center">
@@ -284,8 +309,8 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
         onPieceDrop={onDrop}
         onSquareClick={handleSquareClick}
         allowDragOutsideBoard={false}
-        customSquareStyles={getCustomSquareStyles()}
-        customArrows={getCustomArrows()}
+        customSquareStyles={customSquareStyles}
+        customArrows={customArrows}
         boardWidth={boardSize}
         boardOrientation={isFlipped ? "black" : "white"}
       />
@@ -297,7 +322,7 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
         </Typography>
         <Slider
           value={boardSize}
-          onChange={(_, newValue) => setBoardSize(newValue as number)}
+          onChange={handleBoardSizeChange}
           min={300}
           max={800}
           step={25}
@@ -322,7 +347,7 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
         control={
           <Switch
             checked={showArrows}
-            onChange={(e) => setShowArrows(e.target.checked)}
+            onChange={toggleArrows}
             color="primary"
           />
         }
@@ -340,7 +365,7 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
           onClick={goToPreviousMove}
           variant="contained"
           color="primary"
-          disabled={currentMoveIndex <= 0}
+          disabled={isPreviousDisabled}
           startIcon={<MdNavigateBefore />}
           fullWidth
         >
@@ -350,7 +375,7 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
           onClick={goToNextMove}
           variant="contained"
           color="primary"
-          disabled={currentMoveIndex >= moveHistory.length - 1}
+          disabled={isNextDisabled}
           endIcon={<MdNavigateNext />}
           fullWidth
         >
@@ -395,7 +420,7 @@ const safeGameMutate = (modify: (game: Chess) => void) => {
         </Button>
         <Button
           variant="outlined"
-          onClick={() => setIsFlipped(!isFlipped)}
+          onClick={flipBoard}
           startIcon={<FaArrowRotateLeft />}
           sx={{ width: "100%" }}
         >

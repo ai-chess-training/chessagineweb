@@ -1,8 +1,9 @@
 import React from "react";
-import { Stack, Paper, Typography, Box, Slider, CircularProgress } from "@mui/material";
+import { Stack, Paper, Typography, Box, CircularProgress } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { LineEval, PositionEval,  } from "@/stockfish/engine/engine";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
+import Slider from "../stockfish/Slider";
 
 
 interface StockfishAnalysisProps {
@@ -28,68 +29,16 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     engineLines,
     setEngineLines,
     engine,
-    analyzeWithStockfish,
     handleEngineLineClick,
     llmLoading,
     formatEvaluation,
     formatPrincipalVariation,
 }) => {
-    // Show loading animation when engine data isn't present
+  
     if (!stockfishAnalysisResult) {
         return (
             <Stack spacing={2}>
-                <Paper
-                    sx={{
-                        p: 2,
-                        width: "100%",
-                        backgroundColor: grey[800],
-                    }}
-                >
-                    <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
-                        Stockfish Settings (Used by AI Analysis)
-                    </Typography>
-
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Depth: {engineDepth}
-                            </Typography>
-                            <Slider
-                                value={engineDepth}
-                                onChange={(_, value) => {
-                                    setEngineDepth(value as number);
-                                    if (engine) {
-                                        analyzeWithStockfish();
-                                    }
-                                }}
-                                min={10}
-                                max={25}
-                                step={1}
-                                sx={{ color: "wheat" }}
-                            />
-                        </Box>
-
-                        <Box>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Lines: {engineLines} (AI will analyze all {engineLines} line
-                                {engineLines > 1 ? "s" : ""})
-                            </Typography>
-                            <Slider
-                                value={engineLines}
-                                onChange={(_, value) => {
-                                    setEngineLines(value as number);
-                                    if (engine) {
-                                        analyzeWithStockfish();
-                                    }
-                                }}
-                                min={1}
-                                max={4}
-                                step={1}
-                                sx={{ color: "wheat" }}
-                            />
-                        </Box>
-                    </Stack>
-                </Paper>
+                
 
                 {/* Loading state when no engine data */}
                 <Paper
@@ -181,58 +130,46 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     return (
         <Stack spacing={2}>
             <Paper
-                sx={{
-                    p: 2,
-                    width: "100%",
-                    backgroundColor: grey[800],
-                }}
-            >
-                <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
-                    Stockfish Settings (Used by AI Analysis)
-                </Typography>
+                    sx={{
+                        p: 2,
+                        width: "100%",
+                        backgroundColor: grey[800],
+                    }}
+                >
+                    <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
+                        Stockfish Settings (Used by AI Analysis)
+                    </Typography>
 
-                <Stack spacing={2}>
-                    <Box>
-                        <Typography variant="caption" sx={{ color: "wheat" }}>
-                            Depth: {engineDepth}{" "}
-                            {stockfishLoading && "(will update analysis)"}
-                        </Typography>
-                        <Slider
-                            value={engineDepth}
-                            onChange={(_, value) => {
-                                setEngineDepth(value as number);
-                                if (engine) {
-                                    analyzeWithStockfish();
-                                }
-                            }}
-                            min={10}
-                            max={25}
-                            step={1}
-                            sx={{ color: "wheat" }}
-                        />
-                    </Box>
+                    <Stack spacing={2}>
+                        <Box>
+                            <Typography variant="caption" sx={{ color: "wheat" }}>
+                                Depth: {engineDepth}
+                            </Typography>
+                            <Slider
+                                value={engineDepth}
+                                setValue={setEngineDepth}
+                                min={10}
+                                max={25}
+                                disable={stockfishLoading}
+                                
+                            />
+                        </Box>
 
-                    <Box>
-                        <Typography variant="caption" sx={{ color: "wheat" }}>
-                            Lines: {engineLines} (AI will analyze all {engineLines} line
-                            {engineLines > 1 ? "s" : ""})
-                        </Typography>
-                        <Slider
-                            value={engineLines}
-                            onChange={(_, value) => {
-                                setEngineLines(value as number);
-                                if (engine) {
-                                    analyzeWithStockfish();
-                                }
-                            }}
-                            min={1}
-                            max={4}
-                            step={1}
-                            sx={{ color: "wheat" }}
-                        />
-                    </Box>
-                </Stack>
-            </Paper>
+                        <Box>
+                            <Typography variant="caption" sx={{ color: "wheat" }}>
+                                Lines: {engineLines} (AI will analyze all {engineLines} line
+                                {engineLines > 1 ? "s" : ""})
+                            </Typography>
+                            <Slider
+                                value={engineLines}
+                                setValue={setEngineLines}
+                                min={1}
+                                max={4}
+                                disable={stockfishLoading}
+                            />
+                        </Box>
+                    </Stack>
+                </Paper>
 
             {stockfishLoading && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

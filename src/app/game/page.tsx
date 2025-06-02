@@ -11,8 +11,11 @@ import {
   Tab,
   TextField,
   Typography,
+  IconButton,
+  Divider,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
+import { ChevronLeft, ChevronRight, SkipBack, SkipForward, User, Clock, Calendar, Trophy } from "lucide-react";
 import { Chess } from "chess.js";
 import useAgine from "@/componets/agine/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -58,6 +61,249 @@ function extractMovesWithComments(
   return result;
 }
 
+function extractGameInfo(pgn: string) {
+  const info: Record<string, string> = {};
+  const lines = pgn.split('\n');
+  
+  for (const line of lines) {
+    const match = line.match(/\[(\w+)\s+"(.*)"\]/);
+    if (match) {
+      info[match[1]] = match[2];
+    }
+  }
+  
+  return info;
+}
+
+// Game Info Tab Component (renamed from MovesTab)
+function GameInfoTab({ 
+  moves, 
+  currentMoveIndex, 
+  goToMove, 
+  comment,
+  gameInfo
+}: { 
+  moves: string[], 
+  currentMoveIndex: number, 
+  goToMove: (index: number) => void,
+  comment: string,
+  gameInfo: Record<string, string>
+}) {
+  const formatTimeControl = (timeControl: string) => {
+    const tc = timeControl.split("+");
+    const time = tc[0];
+    const inc = tc[1];
+    const numberTime = parseInt(time);
+
+    return `${Math.round(numberTime / 60)}+${inc}`;
+  }
+  return (
+    <Stack spacing={3}>
+      {/* Game Information Section */}
+      <Paper
+        sx={{
+          p: 2,
+          bgcolor: grey[900],
+          color: "white",
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Trophy size={20} />
+          Game Information
+        </Typography>
+        
+        <Stack spacing={2}>
+          {/* Players */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={4}>
+            <Stack spacing={0.5} flex={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <User size={16} />
+          <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Players</Typography>
+              </Box>
+              <Typography variant="body2">
+          <strong>White:</strong> {gameInfo.White || 'Unknown'}
+          {gameInfo.WhiteElo && ` (${gameInfo.WhiteElo})`}
+              </Typography>
+              <Typography variant="body2">
+          <strong>Black:</strong> {gameInfo.Black || 'Unknown'}
+          {gameInfo.BlackElo && ` (${gameInfo.BlackElo})`}
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5} flex={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Calendar size={16} />
+          <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Game Details</Typography>
+              </Box>
+              {gameInfo.Date && (
+          <Typography variant="body2">
+            <strong>Date:</strong> {gameInfo.Date}
+          </Typography>
+              )}
+              {gameInfo.Event && (
+          <Typography variant="body2">
+            <strong>Event:</strong> {gameInfo.Event}
+          </Typography>
+              )}
+              {gameInfo.Site && (
+          <Typography variant="body2">
+            <strong>Site:</strong> {gameInfo.Site}
+          </Typography>
+              )}
+              {gameInfo.Result && (
+          <Typography variant="body2">
+            <strong>Result:</strong> {gameInfo.Result}
+          </Typography>
+              )}
+            </Stack>
+          </Stack>
+
+          {/* Time Control */}
+          {gameInfo.TimeControl && (
+            <Stack spacing={0.5}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Clock size={16} />
+          <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Time Control</Typography>
+              </Box>
+              <Typography variant="body2">
+          {formatTimeControl(gameInfo.TimeControl)}
+              </Typography>
+            </Stack>
+          )}
+
+          {/* Additional Info */}
+          {(gameInfo.Opening || gameInfo.ECO) && (
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Opening</Typography>
+              {gameInfo.ECO && (
+          <Typography variant="body2">
+            <strong>ECO:</strong> {gameInfo.ECO}
+          </Typography>
+              )}
+              {gameInfo.Opening && (
+          <Typography variant="body2">
+            <strong>Opening:</strong> {gameInfo.Opening}
+          </Typography>
+              )}
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
+
+      <Divider sx={{ bgcolor: grey[600] }} />
+
+      <Typography variant="h6">Game Navigation</Typography>
+      
+      {/* Navigation Controls */}
+      <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+        <IconButton
+          onClick={() => goToMove(0)}
+          disabled={currentMoveIndex === 0}
+          sx={{ color: "wheat" }}
+          title="Go to start"
+        >
+          <SkipBack size={20} />
+        </IconButton>
+        
+        <IconButton
+          onClick={() => goToMove(Math.max(0, currentMoveIndex - 1))}
+          disabled={currentMoveIndex === 0}
+          sx={{ color: "wheat" }}
+          title="Previous move"
+        >
+          <ChevronLeft size={20} />
+        </IconButton>
+        
+        <Typography variant="body2" sx={{ color: "wheat", minWidth: 120, textAlign: "center" }}>
+          Move {currentMoveIndex} of {moves.length}
+        </Typography>
+        
+        <IconButton
+          onClick={() => goToMove(Math.min(moves.length, currentMoveIndex + 1))}
+          disabled={currentMoveIndex === moves.length}
+          sx={{ color: "wheat" }}
+          title="Next move"
+        >
+          <ChevronRight size={20} />
+        </IconButton>
+        
+        <IconButton
+          onClick={() => goToMove(moves.length)}
+          disabled={currentMoveIndex === moves.length}
+          sx={{ color: "wheat" }}
+          title="Go to end"
+        >
+          <SkipForward size={20} />
+        </IconButton>
+      </Stack>
+
+      {/* Moves List */}
+      <Paper
+        sx={{
+          p: 2,
+          maxHeight: 300,
+          overflowY: "auto",
+          borderRadius: 2,
+          backgroundColor: grey[900],
+          color: "white",
+        }}
+      >
+        <Typography variant="h6" gutterBottom>Moves</Typography>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            mt: 1,
+          }}
+        >
+          {moves.map((move, i) => (
+            <Box key={i}>
+              <Button
+                size="small"
+                variant={
+                  i === currentMoveIndex - 1 ? "contained" : "outlined"
+                }
+                onClick={() => goToMove(i + 1)}
+                sx={{
+                  minWidth: 50,
+                  maxWidth: 80,
+                  whiteSpace: "nowrap",
+                  px: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {i % 2 === 0
+                  ? `${Math.floor(i / 2) + 1}. ${move}`
+                  : move}
+              </Button>
+            </Box>
+          ))}
+        </Box>
+      </Paper>
+
+      {/* Comments */}
+      <Paper
+        sx={{
+          p: 2,
+          bgcolor: grey[800],
+          color: "white",
+          borderRadius: 2,
+          minHeight: 80,
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          Comments
+        </Typography>
+        <Typography>
+          {comment || "Select a move to see comments."}
+        </Typography>
+      </Paper>
+    </Stack>
+  );
+}
+
 export default function PGNUploaderPage() {
   const session = useSession();
 
@@ -75,6 +321,7 @@ export default function PGNUploaderPage() {
     { title: string; url: string; pgn: string }[]
   >([]);
   const [comment, setComment] = useState("");
+  const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
 
   const {
     setLlmAnalysisResult,
@@ -154,9 +401,11 @@ export default function PGNUploaderPage() {
       tempGame.loadPgn(pgnText);
       const moveList = tempGame.history();
       const parsed = extractMovesWithComments(pgnText);
+      const info = extractGameInfo(pgnText);
 
       setMoves(moveList);
       setParsedMovesWithComments(parsed);
+      setGameInfo(info);
       setCurrentMoveIndex(0);
 
       const resetGame = new Chess();
@@ -181,7 +430,6 @@ export default function PGNUploaderPage() {
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
     setLlmAnalysisResult(null);
   };
-
 
   return (
     <Box sx={{ p: 4 }}>
@@ -273,7 +521,6 @@ export default function PGNUploaderPage() {
               moveSquares={moveSquares}
               engine={engine}
               setMoveSquares={setMoveSquares}
-              moves={moves}
               setFen={setFen}
               setGame={setGame}
               setLlmAnalysisResult={setLlmAnalysisResult}
@@ -300,6 +547,7 @@ export default function PGNUploaderPage() {
                   setMoves([]);
                   setPgnText("");
                   setStudyUrl("");
+                  setGameInfo({});
                   setLlmAnalysisResult(null);
                   setComment("");
                   const reset = new Chess();
@@ -357,158 +605,103 @@ export default function PGNUploaderPage() {
           )}
 
           {moves.length > 0 && (
-            <>
-              <Paper
-                sx={{
-                  p: 2,
-                  maxHeight: 300,
-                  overflowY: "auto",
-                  borderRadius: 2,
-                  backgroundColor: grey[900],
-                  color: "white",
-                }}
-              >
-                <Typography variant="h6">Moves</Typography>
-                <Box
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                flex: 1,
+                minHeight: 300,
+                color: "white",
+                backgroundColor: grey[800],
+                maxHeight: "80vh",
+                overflow: "auto",
+              }}
+            >
+              <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+                <Tabs
+                  value={analysisTab}
+                  onChange={(_, newValue) => setAnalysisTab(newValue)}
                   sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 1,
-                    mt: 1,
+                    "& .MuiTab-root": { color: "wheat" },
+                    "& .Mui-selected": { color: "white !important" },
                   }}
                 >
-                  {moves.map((move, i) => (
-                    <Box key={i}>
-                      <Button
-                        size="small"
-                        variant={
-                          i === currentMoveIndex - 1 ? "contained" : "outlined"
-                        }
-                        onClick={() => goToMove(i + 1)}
-                        sx={{
-                          minWidth: 50,
-                          maxWidth: 80,
-                          whiteSpace: "nowrap",
-                          px: 1,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {i % 2 === 0
-                          ? `${Math.floor(i / 2) + 1}. ${move}`
-                          : move}
-                      </Button>
-                    </Box>
-                  ))}
-                </Box>
-              </Paper>
+                  <Tab label="Game Info" />
+                  <Tab label="Stockfish Analysis" />
+                  <Tab label="AI Chat" />
+                  <Tab label="Opening Explorer" />
+                  <Tab label="Chess DB" />
+                </Tabs>
+              </Box>
 
-              {/* Comments */}
-              <Paper
-                sx={{
-                  p: 2,
-                  bgcolor: grey[800],
-                  color: "white",
-                  borderRadius: 2,
-                  minHeight: 80,
-                }}
-              >
+              <TabPanel value={analysisTab} index={0}>
+                <GameInfoTab 
+                  moves={moves}
+                  currentMoveIndex={currentMoveIndex}
+                  goToMove={goToMove}
+                  comment={comment}
+                  gameInfo={gameInfo}
+                />
+              </TabPanel>
+
+              <TabPanel value={analysisTab} index={1}>
                 <Typography variant="h6" gutterBottom>
-                  Comments
+                  Stockfish Analysis
                 </Typography>
-                <Typography>
-                  {comment || "Select a move to see comments."}
-                </Typography>
-              </Paper>
 
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 3,
-                  flex: 1,
-                  minHeight: 300,
-                  color: "white",
-                  backgroundColor: grey[800],
-                  maxHeight: "80vh",
-                  overflow: "auto",
-                }}
-              >
-                <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                  <Tabs
-                    value={analysisTab}
-                    onChange={(_, newValue) => setAnalysisTab(newValue)}
-                    sx={{
-                      "& .MuiTab-root": { color: "wheat" },
-                      "& .Mui-selected": { color: "white !important" },
-                    }}
-                  >
-                    <Tab label="Stockfish Analysis" />
-                    <Tab label="AI Chat" />
-                    <Tab label="Opening Explorer" />
-                    <Tab label="Chess DB" />
-                  </Tabs>
-                </Box>
-
-                
-
-                <TabPanel value={analysisTab} index={0}>
-                  <Typography variant="h6" gutterBottom>
-                    Stockfish Analysis
+                {!stockfishLoading && !stockfishAnalysisResult ? (
+                  <Typography sx={{ color: "wheat" }}>
+                    Make some moves or paste a FEN and click Stockfish to see
+                    engine evaluation with real-time updates.
                   </Typography>
-
-                  {!stockfishLoading && !stockfishAnalysisResult ? (
-                    <Typography sx={{ color: "wheat" }}>
-                      Make some moves or paste a FEN and click Stockfish to see
-                      engine evaluation with real-time updates.
-                    </Typography>
-                  ) : (
-                    <StockfishAnalysisTab
-                      stockfishAnalysisResult={stockfishAnalysisResult}
-                      stockfishLoading={stockfishLoading}
-                      handleEngineLineClick={handleEngineLineClick}
-                      engineDepth={engineDepth}
-                      engineLines={engineLines}
-                      engine={engine}
-                      llmLoading={llmLoading}
-                      analyzeWithStockfish={analyzeWithStockfish}
-                      formatEvaluation={formatEvaluation}
-                      formatPrincipalVariation={formatPrincipalVariation}
-                      setEngineDepth={setEngineDepth}
-                      setEngineLines={setEngineLines}
-                    />
-                  )}
-                </TabPanel>
-
-                <TabPanel value={analysisTab} index={1}>
-                  <ChatTab
-                    chatMessages={chatMessages}
-                    chatInput={chatInput}
-                    setChatInput={setChatInput}
-                    sendChatMessage={sendChatMessage}
-                    chatLoading={chatLoading}
-                    handleChatKeyPress={handleChatKeyPress}
-                    clearChatHistory={clearChatHistory}
-                    sessionMode={sessionMode}
-                    setSessionMode={setSessionMode}
-                  />
-                </TabPanel>
-
-                <TabPanel value={analysisTab} index={2}>
-                  <Typography variant="h6" gutterBottom>
-                    Opening Explorer
-                  </Typography>
-                  <OpeningExplorer
-                    openingLoading={openingLoading}
-                    openingData={openingData}
+                ) : (
+                  <StockfishAnalysisTab
+                    stockfishAnalysisResult={stockfishAnalysisResult}
+                    stockfishLoading={stockfishLoading}
+                    handleEngineLineClick={handleEngineLineClick}
+                    engineDepth={engineDepth}
+                    engineLines={engineLines}
+                    engine={engine}
                     llmLoading={llmLoading}
-                    handleOpeningMoveClick={handleOpeningMoveClick}
+                    analyzeWithStockfish={analyzeWithStockfish}
+                    formatEvaluation={formatEvaluation}
+                    formatPrincipalVariation={formatPrincipalVariation}
+                    setEngineDepth={setEngineDepth}
+                    setEngineLines={setEngineLines}
                   />
-                </TabPanel>
-                <TabPanel value={analysisTab} index={3}>
-                  <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
-                </TabPanel>
-              </Paper>
-            </>
+                )}
+              </TabPanel>
+
+              <TabPanel value={analysisTab} index={2}>
+                <ChatTab
+                  chatMessages={chatMessages}
+                  chatInput={chatInput}
+                  setChatInput={setChatInput}
+                  sendChatMessage={sendChatMessage}
+                  chatLoading={chatLoading}
+                  handleChatKeyPress={handleChatKeyPress}
+                  clearChatHistory={clearChatHistory}
+                  sessionMode={sessionMode}
+                  setSessionMode={setSessionMode}
+                />
+              </TabPanel>
+
+              <TabPanel value={analysisTab} index={3}>
+                <Typography variant="h6" gutterBottom>
+                  Opening Explorer
+                </Typography>
+                <OpeningExplorer
+                  openingLoading={openingLoading}
+                  openingData={openingData}
+                  llmLoading={llmLoading}
+                  handleOpeningMoveClick={handleOpeningMoveClick}
+                />
+              </TabPanel>
+
+              <TabPanel value={analysisTab} index={4}>
+                <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
+              </TabPanel>
+            </Paper>
           )}
         </Stack>
       </Stack>

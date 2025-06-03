@@ -42,6 +42,19 @@ export default function useAgine(fen: string) {
   const [engineDepth, setEngineDepth] = useLocalStorage<number>("engineDepth", 15);
   const [engineLines, setEngineLines] = useLocalStorage<number>("engineLines", 3);
 
+  interface GameReview {
+  moveNumber: number;
+  moveSan: string;
+  moveClassification: MoveClassification;
+  diff: number;
+  side: 'w' | 'b'; // 'w' for white, 'b' for black
+}
+
+type MoveClassification = 'Best' | 'Excellent' | 'Good' | 'Inaccuracy' | 'Mistake' | 'Blunder';
+
+  const [gameReview, setGameReview] = useState<Array<GameReview>>([]);
+  const [gameReviewLoading, setGameReviewLoading] = useState<boolean>(false);
+
   // Hooks
   const { session } = useSession();
   const engine = useEngine(true, EngineName.Stockfish16);
@@ -167,6 +180,86 @@ export default function useAgine(fen: string) {
       }
     }
   }, [engine, engineDepth, engineLines]);
+
+
+ const generateGameReview = useCallback(async (moveList: string[]): Promise<void> => {
+  setGameReviewLoading(true);
+
+  if (!engine) {
+    console.warn("Stockfish engine not ready");
+    setGameReviewLoading(false);
+    return;
+  }
+
+  try {
+    const chess = new Chess();
+    const gameReviewList: GameReview[] = [];
+    const reviewDepth = 17;
+
+    for (let i = 0; i < moveList.length; i++) {
+      const beforeFen = chess.fen();
+      const sideToMove = chess.turn(); // 'w' or 'b'
+      const move = moveList[i];
+      chess.move(move);
+      const afterFen = chess.fen();
+
+      // Evaluate both before and after FEN in parallel
+      const [bestMoveResult, actualMoveResult] = await Promise.all([
+        engine.evaluatePositionWithUpdate({ fen: beforeFen, depth: reviewDepth, multiPv: 1 }),
+        engine.evaluatePositionWithUpdate({ fen: afterFen, depth: reviewDepth, multiPv: 1 })
+      ]);
+
+      const bestEval = normalizeEval(bestMoveResult.lines?.[0], sideToMove);
+      const actualEval = normalizeEval(actualMoveResult.lines?.[0], sideToMove);
+
+      const diff = Math.max(0, +(bestEval - actualEval).toFixed(3));
+      const moveClassification = classifyMove(diff);
+
+      gameReviewList.push({
+        moveNumber: i,
+        moveSan: move,
+        moveClassification,
+        diff,
+        side: sideToMove
+      });
+    }
+    console.log(gameReviewList);
+    setGameReview(gameReviewList);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setGameReviewLoading(false);
+  }
+}, [engine]);
+
+
+function normalizeEval(line: LineEval | undefined, sideToMove: 'w' | 'b'): number {
+  if (!line) return 0.5;
+
+  if (line.mate !== undefined) {
+    return (line.mate > 0) === (sideToMove === 'w') ? 1.0 : 0.0;
+  }
+
+  const cp = line.cp ?? 0;
+  const maxEval = 1000;
+  const bounded = Math.max(-maxEval, Math.min(cp, maxEval));
+  const normalized = bounded / maxEval;
+
+  return sideToMove === 'w' ? 0.5 + normalized / 2 : 0.5 - normalized / 2;
+}
+
+
+
+function classifyMove(diff: number): MoveClassification {
+  diff = Math.abs(diff);
+  if (diff === 0.0) return "Best";
+  if (diff > 0.0 && diff <= 0.02) return "Excellent";
+  if (diff > 0.02 && diff <= 0.05) return "Good";
+  if (diff > 0.05 && diff <= 0.10) return "Inaccuracy";
+  if (diff > 0.10 && diff <= 0.20) return "Mistake";
+  return "Blunder";
+}
+
 
   const makeApiRequest = useCallback(async (fen: string, query: string): Promise<string> => {
     // Cancel previous request if still pending
@@ -732,10 +825,17 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     setEngineLines,
     engine,
 
+    // Game Review
+
+    gameReview,
+    setGameReview,
+    gameReviewLoading,
+    setGameReviewLoading,
     // Functions
     fetchOpeningData,
     analyzePosition,
     analyzeWithStockfish,
+    generateGameReview,
     sendChatMessage,
     handleChatKeyPress,
     clearChatHistory,
@@ -764,6 +864,9 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     engineDepth,
     engineLines,
     engine,
+    gameReview,
+    gameReviewLoading,
+    generateGameReview,
     fetchOpeningData,
     analyzePosition,
     analyzeWithStockfish,

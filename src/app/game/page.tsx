@@ -15,7 +15,16 @@ import {
   Divider,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { ChevronLeft, ChevronRight, SkipBack, SkipForward, User, Clock, Calendar, Trophy } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  SkipBack,
+  SkipForward,
+  User,
+  Clock,
+  Calendar,
+  Trophy,
+} from "lucide-react";
 import { Chess } from "chess.js";
 import useAgine from "@/componets/agine/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -25,6 +34,7 @@ import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
+import GameReviewTab from "@/componets/tabs/GameReviewTab";
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -63,31 +73,31 @@ function extractMovesWithComments(
 
 function extractGameInfo(pgn: string) {
   const info: Record<string, string> = {};
-  const lines = pgn.split('\n');
-  
+  const lines = pgn.split("\n");
+
   for (const line of lines) {
     const match = line.match(/\[(\w+)\s+"(.*)"\]/);
     if (match) {
       info[match[1]] = match[2];
     }
   }
-  
+
   return info;
 }
 
 // Game Info Tab Component (renamed from MovesTab)
-function GameInfoTab({ 
-  moves, 
-  currentMoveIndex, 
-  goToMove, 
+function GameInfoTab({
+  moves,
+  currentMoveIndex,
+  goToMove,
   comment,
-  gameInfo
-}: { 
-  moves: string[], 
-  currentMoveIndex: number, 
-  goToMove: (index: number) => void,
-  comment: string,
-  gameInfo: Record<string, string>
+  gameInfo,
+}: {
+  moves: string[];
+  currentMoveIndex: number;
+  goToMove: (index: number) => void;
+  comment: string;
+  gameInfo: Record<string, string>;
 }) {
   const formatTimeControl = (timeControl: string) => {
     const tc = timeControl.split("+");
@@ -96,7 +106,7 @@ function GameInfoTab({
     const numberTime = parseInt(time);
 
     return `${Math.round(numberTime / 60)}+${inc}`;
-  }
+  };
   return (
     <Stack spacing={3}>
       {/* Game Information Section */}
@@ -108,52 +118,60 @@ function GameInfoTab({
           borderRadius: 2,
         }}
       >
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           <Trophy size={20} />
           Game Information
         </Typography>
-        
+
         <Stack spacing={2}>
           {/* Players */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={4}>
             <Stack spacing={0.5} flex={1}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <User size={16} />
-          <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Players</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <User size={16} />
+                <Typography variant="subtitle2" sx={{ color: "wheat" }}>
+                  Players
+                </Typography>
               </Box>
               <Typography variant="body2">
-          <strong>White:</strong> {gameInfo.White || 'Unknown'}
-          {gameInfo.WhiteElo && ` (${gameInfo.WhiteElo})`}
+                <strong>White:</strong> {gameInfo.White || "Unknown"}
+                {gameInfo.WhiteElo && ` (${gameInfo.WhiteElo})`}
               </Typography>
               <Typography variant="body2">
-          <strong>Black:</strong> {gameInfo.Black || 'Unknown'}
-          {gameInfo.BlackElo && ` (${gameInfo.BlackElo})`}
+                <strong>Black:</strong> {gameInfo.Black || "Unknown"}
+                {gameInfo.BlackElo && ` (${gameInfo.BlackElo})`}
               </Typography>
             </Stack>
             <Stack spacing={0.5} flex={1}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Calendar size={16} />
-          <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Game Details</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Calendar size={16} />
+                <Typography variant="subtitle2" sx={{ color: "wheat" }}>
+                  Game Details
+                </Typography>
               </Box>
               {gameInfo.Date && (
-          <Typography variant="body2">
-            <strong>Date:</strong> {gameInfo.Date}
-          </Typography>
+                <Typography variant="body2">
+                  <strong>Date:</strong> {gameInfo.Date}
+                </Typography>
               )}
               {gameInfo.Event && (
-          <Typography variant="body2">
-            <strong>Event:</strong> {gameInfo.Event}
-          </Typography>
+                <Typography variant="body2">
+                  <strong>Event:</strong> {gameInfo.Event}
+                </Typography>
               )}
               {gameInfo.Site && (
-          <Typography variant="body2">
-            <strong>Site:</strong> {gameInfo.Site}
-          </Typography>
+                <Typography variant="body2">
+                  <strong>Site:</strong> {gameInfo.Site}
+                </Typography>
               )}
               {gameInfo.Result && (
-          <Typography variant="body2">
-            <strong>Result:</strong> {gameInfo.Result}
-          </Typography>
+                <Typography variant="body2">
+                  <strong>Result:</strong> {gameInfo.Result}
+                </Typography>
               )}
             </Stack>
           </Stack>
@@ -161,12 +179,14 @@ function GameInfoTab({
           {/* Time Control */}
           {gameInfo.TimeControl && (
             <Stack spacing={0.5}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Clock size={16} />
-          <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Time Control</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Clock size={16} />
+                <Typography variant="subtitle2" sx={{ color: "wheat" }}>
+                  Time Control
+                </Typography>
               </Box>
               <Typography variant="body2">
-          {formatTimeControl(gameInfo.TimeControl)}
+                {formatTimeControl(gameInfo.TimeControl)}
               </Typography>
             </Stack>
           )}
@@ -174,16 +194,18 @@ function GameInfoTab({
           {/* Additional Info */}
           {(gameInfo.Opening || gameInfo.ECO) && (
             <Stack spacing={0.5}>
-              <Typography variant="subtitle2" sx={{ color: 'wheat' }}>Opening</Typography>
+              <Typography variant="subtitle2" sx={{ color: "wheat" }}>
+                Opening
+              </Typography>
               {gameInfo.ECO && (
-          <Typography variant="body2">
-            <strong>ECO:</strong> {gameInfo.ECO}
-          </Typography>
+                <Typography variant="body2">
+                  <strong>ECO:</strong> {gameInfo.ECO}
+                </Typography>
               )}
               {gameInfo.Opening && (
-          <Typography variant="body2">
-            <strong>Opening:</strong> {gameInfo.Opening}
-          </Typography>
+                <Typography variant="body2">
+                  <strong>Opening:</strong> {gameInfo.Opening}
+                </Typography>
               )}
             </Stack>
           )}
@@ -193,9 +215,14 @@ function GameInfoTab({
       <Divider sx={{ bgcolor: grey[600] }} />
 
       <Typography variant="h6">Game Navigation</Typography>
-      
+
       {/* Navigation Controls */}
-      <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        justifyContent="center"
+      >
         <IconButton
           onClick={() => goToMove(0)}
           disabled={currentMoveIndex === 0}
@@ -204,7 +231,7 @@ function GameInfoTab({
         >
           <SkipBack size={20} />
         </IconButton>
-        
+
         <IconButton
           onClick={() => goToMove(Math.max(0, currentMoveIndex - 1))}
           disabled={currentMoveIndex === 0}
@@ -213,11 +240,14 @@ function GameInfoTab({
         >
           <ChevronLeft size={20} />
         </IconButton>
-        
-        <Typography variant="body2" sx={{ color: "wheat", minWidth: 120, textAlign: "center" }}>
+
+        <Typography
+          variant="body2"
+          sx={{ color: "wheat", minWidth: 120, textAlign: "center" }}
+        >
           Move {currentMoveIndex} of {moves.length}
         </Typography>
-        
+
         <IconButton
           onClick={() => goToMove(Math.min(moves.length, currentMoveIndex + 1))}
           disabled={currentMoveIndex === moves.length}
@@ -226,7 +256,7 @@ function GameInfoTab({
         >
           <ChevronRight size={20} />
         </IconButton>
-        
+
         <IconButton
           onClick={() => goToMove(moves.length)}
           disabled={currentMoveIndex === moves.length}
@@ -248,7 +278,9 @@ function GameInfoTab({
           color: "white",
         }}
       >
-        <Typography variant="h6" gutterBottom>Moves</Typography>
+        <Typography variant="h6" gutterBottom>
+          Moves
+        </Typography>
         <Box
           sx={{
             display: "flex",
@@ -261,9 +293,7 @@ function GameInfoTab({
             <Box key={i}>
               <Button
                 size="small"
-                variant={
-                  i === currentMoveIndex - 1 ? "contained" : "outlined"
-                }
+                variant={i === currentMoveIndex - 1 ? "contained" : "outlined"}
                 onClick={() => goToMove(i + 1)}
                 sx={{
                   minWidth: 50,
@@ -274,9 +304,7 @@ function GameInfoTab({
                   textOverflow: "ellipsis",
                 }}
               >
-                {i % 2 === 0
-                  ? `${Math.floor(i / 2) + 1}. ${move}`
-                  : move}
+                {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ${move}` : move}
               </Button>
             </Box>
           ))}
@@ -296,9 +324,7 @@ function GameInfoTab({
         <Typography variant="h6" gutterBottom>
           Comments
         </Typography>
-        <Typography>
-          {comment || "Select a move to see comments."}
-        </Typography>
+        <Typography>{comment || "Select a move to see comments."}</Typography>
       </Paper>
     </Stack>
   );
@@ -346,6 +372,11 @@ export default function PGNUploaderPage() {
     engineLines,
     setEngineLines,
     engine,
+    gameReview,
+    setGameReview,
+    generateGameReview,
+    gameReviewLoading,
+    setGameReviewLoading,
     fetchOpeningData,
     analyzePosition,
     sendChatMessage,
@@ -358,7 +389,7 @@ export default function PGNUploaderPage() {
     handleEngineLineClick,
     handleOpeningMoveClick,
     handleMoveClick,
-    chessdbdata
+    chessdbdata,
   } = useAgine(fen);
 
   // Move useEffect to before conditional returns
@@ -413,6 +444,7 @@ export default function PGNUploaderPage() {
       setFen(resetGame.fen());
       setLlmAnalysisResult(null);
       setComment("");
+      setGameReview([]);
     } catch (err) {
       console.log(err);
       alert("Invalid PGN input");
@@ -631,11 +663,12 @@ export default function PGNUploaderPage() {
                   <Tab label="AI Chat" />
                   <Tab label="Opening Explorer" />
                   <Tab label="Chess DB" />
+                  <Tab label="Game Review" />
                 </Tabs>
               </Box>
 
               <TabPanel value={analysisTab} index={0}>
-                <GameInfoTab 
+                <GameInfoTab
                   moves={moves}
                   currentMoveIndex={currentMoveIndex}
                   goToMove={goToMove}
@@ -701,7 +734,21 @@ export default function PGNUploaderPage() {
               </TabPanel>
 
               <TabPanel value={analysisTab} index={4}>
-                <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
+                <ChessDBDisplay
+                  data={chessdbdata}
+                  analyzeMove={handleMoveClick}
+                />
+              </TabPanel>
+
+              <TabPanel value={analysisTab} index={5}>
+                <GameReviewTab
+                  gameReview={gameReview}
+                  generateGameReview={generateGameReview}
+                  moves={moves}
+                  gameReviewLoading={gameReviewLoading} // You might want to add this to your useAgine hook
+                  goToMove={goToMove}
+                  currentMoveIndex={currentMoveIndex}
+                />
               </TabPanel>
             </Paper>
           )}

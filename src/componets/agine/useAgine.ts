@@ -361,7 +361,9 @@ ${formattedEngineLines}`;
 
   // ==================== OPTIMIZED CHAT FUNCTIONS ====================
 
-  const sendChatMessage = useCallback(async (): Promise<void> => {
+  const sendChatMessage = useCallback(async (gameInfo?: string, currentMove?: string): Promise<void> => {
+
+   
     if (!chatInput.trim()) return;
 
     const userMessage = {
@@ -382,6 +384,14 @@ ${formattedEngineLines}`;
       const chessInstance = new Chess(currentFen);
       const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
       let query = `USER PROMPT: ${currentInput}\n\nCurrent Position: ${currentFen}\nSide to Move: ${sideToMove}`;
+
+      if(gameInfo){
+        query += `\n\n Game PGN \n ${gameInfo}`;
+      }
+
+      if(currentMove){
+        query += `\n Current Game Move: \n ${currentMove}`
+      }
 
       if (sessionMode) {
         // Get engine analysis if not available
@@ -454,7 +464,7 @@ ${formattedEngineLines}`;
     } finally {
       setChatLoading(false);
     }
-  }, [chatInput, sessionMode, stockfishAnalysisResult, engine, engineDepth, engineLines, openingData, formatEvaluation, formatPrincipalVariation, makeApiRequest]);
+  }, [chatInput, sessionMode, stockfishAnalysisResult, engine, engineDepth, engineLines, openingData, chessdbdata, formatEvaluation, formatPrincipalVariation, makeApiRequest]);
 
   const handleChatKeyPress = useCallback((e: React.KeyboardEvent): void => {
     if (e.key === "Enter" && !e.shiftKey) {

@@ -677,6 +677,8 @@ export default function PGNUploaderPage() {
                   chatMessages={chatMessages}
                   chatInput={chatInput}
                   setChatInput={setChatInput}
+                  gameInfo={pgnText}
+                  currentMove={moves[currentMoveIndex]}
                   sendChatMessage={sendChatMessage}
                   chatLoading={chatLoading}
                   handleChatKeyPress={handleChatKeyPress}

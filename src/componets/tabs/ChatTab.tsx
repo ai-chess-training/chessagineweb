@@ -28,10 +28,12 @@ interface ChatTabProps {
   clearChatHistory: () => void;
   chatMessages: ChatMessage[];
   chatLoading: boolean;
+  gameInfo?: string;
+  currentMove?: string;
   chatInput: string;
   setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  sendChatMessage: () => void;
+  sendChatMessage: (gameInfo?: string, currentMove?: string) => void;
 }
 
 const sessionPrompts = [
@@ -66,6 +68,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   setChatInput,
   handleChatKeyPress,
   sendChatMessage,
+  gameInfo,
+  currentMove
 }) => {
   const handlePromptClick = (prompt: string) => {
     setChatInput(prompt);
@@ -274,7 +278,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         />
         <Button
           variant="contained"
-          onClick={sendChatMessage}
+          onClick={() => sendChatMessage(gameInfo, currentMove)}
           disabled={chatLoading || !chatInput.trim()}
         >
           <Send />

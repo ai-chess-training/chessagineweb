@@ -866,6 +866,8 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     engine,
     gameReview,
     gameReviewLoading,
+    setEngineDepth,
+    setEngineLines,
     generateGameReview,
     fetchOpeningData,
     analyzePosition,

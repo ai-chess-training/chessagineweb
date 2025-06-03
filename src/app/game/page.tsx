@@ -376,7 +376,6 @@ export default function PGNUploaderPage() {
     setGameReview,
     generateGameReview,
     gameReviewLoading,
-    setGameReviewLoading,
     fetchOpeningData,
     analyzePosition,
     sendChatMessage,

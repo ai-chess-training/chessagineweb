@@ -23,14 +23,14 @@ import {
   PlayCircle,
 } from 'lucide-react';
 
-interface GameReview {
+export interface GameReview {
   moveNumber: number;
   moveSan: string;
   moveClassification: MoveClassification;
   side: 'w' | 'b';
 }
 
-type MoveClassification =
+export type MoveClassification =
   | 'Best'
   | 'Excellent'
   | 'Good'
@@ -38,7 +38,7 @@ type MoveClassification =
   | 'Mistake'
   | 'Blunder';
 
-interface MoveStats {
+export interface MoveStats {
   Best: number;
   Excellent: number;
   Good: number;
@@ -190,102 +190,145 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   };
 
 if (!gameReview || gameReview.length === 0) {
-    return (
-        <Stack
-            spacing={4}
-            alignItems="center"
-            justifyContent="center"
-            sx={{
-                minHeight: 420,
-                py: 6,
-                bgcolor: grey[900],
-                borderRadius: 3,
-                border: `1px solid ${grey[800]}`,
-                boxShadow: 2,
-            }}
+  return (
+    <Stack
+      spacing={3}
+      alignItems="center"
+      justifyContent="center"
+      sx={{
+        minHeight: 420,
+        py: 6,
+        bgcolor: grey[900],
+        borderRadius: 3,
+        border: `1px solid ${grey[800]}`,
+        boxShadow: 2,
+      }}
+    >
+      <Paper
+        sx={{
+          width: '100%',
+          maxWidth: 'none',
+          maxHeight: 320,
+          overflowY: 'auto',
+          bgcolor: grey[900],
+          borderRadius: 2,
+          border: `1px solid ${grey[800]}`,
+          boxShadow: 0,
+          p: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {moves.map((_move, index) => {
+            const moveNumber = Math.floor(index / 2) + 1;
+            const isWhiteMove = index % 2 === 0;
+            const isCurrentMove = index === currentMoveIndex - 1;
+
+            return (
+              <Box
+                key={index}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: isCurrentMove ? grey[800] : 'transparent',
+                  border: `1px solid ${grey[800]}`,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: grey[800],
+                  },
+                  transition: 'background 0.2s',
+                  minWidth: 400,
+                }}
+                onClick={() => goToMove(index + 1)}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ color: grey[400], minWidth: 40 }}
+                >
+                  {isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`}
+                </Typography>
+
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: grey[100],
+                    minWidth: 100,
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {moves[index]}
+                </Typography>
+
+                <Box sx={{ flex: 1 }} />
+
+                <Tooltip title="Jump to this move">
+                  <IconButton size="small" sx={{ color: grey[400] }}>
+                    <PlayCircle size={16} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            );
+          })}
+        </Box>
+      </Paper>
+
+      <Button
+        variant="outlined"
+        size="medium"
+        onClick={() => generateGameReview(moves)}
+        disabled={gameReviewLoading || moves.length === 0}
+        startIcon={!gameReviewLoading && <PlayCircle size={18} />}
+        color='success'
+        sx={{
+          px: 2,
+          py: 0.8,
+          bgcolor: '#2563eb10',
+          fontWeight: 500,
+          fontSize: 14,
+          borderRadius: 2,
+          minWidth: 120,
+          boxShadow: 0,
+          '&:hover': { bgcolor: '#2563eb20', borderColor: '#1d4ed8', color: '#1d4ed8' },
+          '&:disabled': { bgcolor: grey[800], color: grey[500], borderColor: grey[800] },
+        }}
+      >
+        {gameReviewLoading ? (
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <LinearProgress
+              sx={{
+                width: 50,
+                height: 6,
+                borderRadius: 5,
+                bgcolor: grey[800],
+                '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' },
+              }}
+            />
+            <Typography variant="body2" sx={{ color: grey[200], fontSize: 12 }}>
+              Analyzing...
+            </Typography>
+          </Stack>
+        ) : (
+          'Generate Review'
+        )}
+      </Button>
+
+      {moves.length === 0 && (
+        <Typography
+          variant="body2"
+          sx={{
+            color: grey[500],
+            fontStyle: 'italic',
+            mt: 1,
+            letterSpacing: 0.2,
+          }}
         >
-            <Box
-                sx={{
-                    textAlign: 'center',
-                    maxWidth: 420,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
-                }}
-            >
-                <BarChart3 size={40} color="#2563eb" />
-                <Typography
-                    variant="h5"
-                    gutterBottom
-                    sx={{ color: grey[100], fontWeight: 700, letterSpacing: 0.5 }}
-                >
-                    Game Review
-                </Typography>
-                <Typography
-                    variant="body1"
-                    sx={{ color: grey[400], mb: 2, fontSize: 16 }}
-                >
-                    Analyze your game with Stockfish to get detailed move classifications and
-                    accuracy ratings for both players.
-                </Typography>
-            </Box>
-
-            <Button
-                variant="contained"
-                size="large"
-                onClick={() => generateGameReview(moves)}
-                disabled={gameReviewLoading || moves.length === 0}
-                startIcon={!gameReviewLoading && <PlayCircle size={22} />}
-                sx={{
-                    px: 5,
-                    py: 1.8,
-                    bgcolor: '#2563eb',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: 17,
-                    borderRadius: 2,
-                    boxShadow: 1,
-                    '&:hover': { bgcolor: '#1d4ed8' },
-                    '&:disabled': { bgcolor: grey[800], color: grey[500] },
-                    minWidth: 220,
-                }}
-            >
-                {gameReviewLoading ? (
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                        <LinearProgress
-                            sx={{
-                                width: 60,
-                                height: 8,
-                                borderRadius: 5,
-                                bgcolor: grey[800],
-                                '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' },
-                            }}
-                        />
-                        <Typography variant="body2" sx={{ color: grey[200] }}>
-                            Analyzing...
-                        </Typography>
-                    </Stack>
-                ) : (
-                    'Generate Game Review'
-                )}
-            </Button>
-
-            {moves.length === 0 && (
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: grey[500],
-                        fontStyle: 'italic',
-                        mt: 1,
-                        letterSpacing: 0.2,
-                    }}
-                >
-                    Load a game first to enable game review
-                </Typography>
-            )}
-        </Stack>
-    );
+          Load a game first to enable game review
+        </Typography>
+      )}
+    </Stack>
+  );
 }
 
   return (
@@ -297,15 +340,49 @@ if (!gameReview || gameReview.length === 0) {
           justifyContent: 'space-between',
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ color: grey[100], display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <BarChart3 size={20} />
-          Game Review
-        </Typography>
       </Box>
-
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => generateGameReview(moves)}
+        disabled={gameReviewLoading || moves.length === 0}
+        startIcon={<BarChart3 size={16} />}
+        sx={{
+          px: 2,
+          py: 0.7,
+          bgcolor: '#2563eb10',
+          fontWeight: 500,
+          fontSize: 13,
+          borderRadius: 2,
+          minWidth: 160,
+          boxShadow: 0,
+          mb: 1,
+          alignSelf: 'flex-end',
+          color: 'wheat',
+          borderColor: 'wheat',
+          
+          '&:disabled': { bgcolor: grey[800], color: grey[500], borderColor: grey[800] },
+        }}
+      >
+        {gameReviewLoading ? (
+          <Stack direction="row" alignItems="center" spacing={1}>
+        <LinearProgress
+          sx={{
+            width: 40,
+            height: 6,
+            borderRadius: 5,
+            bgcolor: grey[800],
+            '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' },
+          }}
+        />
+        <Typography variant="body2" sx={{ color: grey[200], fontSize: 12 }}>
+          Recalculating...
+        </Typography>
+          </Stack>
+        ) : (
+          'Recalculate with Current Engine Depth'
+        )}
+      </Button>
       {getStatistics() && (
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
           <StatCard title="White" stats={getStatistics()!.whiteStats} side="white" />

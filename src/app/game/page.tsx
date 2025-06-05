@@ -11,15 +11,10 @@ import {
   Tab,
   TextField,
   Typography,
-  IconButton,
   Divider,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-  ChevronLeft,
-  ChevronRight,
-  SkipBack,
-  SkipForward,
   User,
   Clock,
   Calendar,
@@ -34,7 +29,7 @@ import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
-import GameReviewTab from "@/componets/tabs/GameReviewTab";
+import GameReviewTab, {GameReview} from "@/componets/tabs/GameReviewTab";
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -92,11 +87,17 @@ function GameInfoTab({
   goToMove,
   comment,
   gameInfo,
+  generateGameReview,
+  gameReviewLoading,
+  gameReview
 }: {
   moves: string[];
   currentMoveIndex: number;
   goToMove: (index: number) => void;
   comment: string;
+  generateGameReview: (moves: string[]) => void;
+  gameReviewLoading: boolean;
+  gameReview: GameReview[];
   gameInfo: Record<string, string>;
 }) {
   const formatTimeControl = (timeControl: string) => {
@@ -214,103 +215,6 @@ function GameInfoTab({
 
       <Divider sx={{ bgcolor: grey[600] }} />
 
-      <Typography variant="h6">Game Navigation</Typography>
-
-      {/* Navigation Controls */}
-      <Stack
-        direction="row"
-        spacing={2}
-        alignItems="center"
-        justifyContent="center"
-      >
-        <IconButton
-          onClick={() => goToMove(0)}
-          disabled={currentMoveIndex === 0}
-          sx={{ color: "wheat" }}
-          title="Go to start"
-        >
-          <SkipBack size={20} />
-        </IconButton>
-
-        <IconButton
-          onClick={() => goToMove(Math.max(0, currentMoveIndex - 1))}
-          disabled={currentMoveIndex === 0}
-          sx={{ color: "wheat" }}
-          title="Previous move"
-        >
-          <ChevronLeft size={20} />
-        </IconButton>
-
-        <Typography
-          variant="body2"
-          sx={{ color: "wheat", minWidth: 120, textAlign: "center" }}
-        >
-          Move {currentMoveIndex} of {moves.length}
-        </Typography>
-
-        <IconButton
-          onClick={() => goToMove(Math.min(moves.length, currentMoveIndex + 1))}
-          disabled={currentMoveIndex === moves.length}
-          sx={{ color: "wheat" }}
-          title="Next move"
-        >
-          <ChevronRight size={20} />
-        </IconButton>
-
-        <IconButton
-          onClick={() => goToMove(moves.length)}
-          disabled={currentMoveIndex === moves.length}
-          sx={{ color: "wheat" }}
-          title="Go to end"
-        >
-          <SkipForward size={20} />
-        </IconButton>
-      </Stack>
-
-      {/* Moves List */}
-      <Paper
-        sx={{
-          p: 2,
-          maxHeight: 300,
-          overflowY: "auto",
-          borderRadius: 2,
-          backgroundColor: grey[900],
-          color: "white",
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Moves
-        </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 1,
-            mt: 1,
-          }}
-        >
-          {moves.map((move, i) => (
-            <Box key={i}>
-              <Button
-                size="small"
-                variant={i === currentMoveIndex - 1 ? "contained" : "outlined"}
-                onClick={() => goToMove(i + 1)}
-                sx={{
-                  minWidth: 50,
-                  maxWidth: 80,
-                  whiteSpace: "nowrap",
-                  px: 1,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ${move}` : move}
-              </Button>
-            </Box>
-          ))}
-        </Box>
-      </Paper>
-
       {/* Comments */}
       <Paper
         sx={{
@@ -326,6 +230,16 @@ function GameInfoTab({
         </Typography>
         <Typography>{comment || "Select a move to see comments."}</Typography>
       </Paper>
+
+      {/* Game Review Tab */}
+      <GameReviewTab
+        gameReview={gameReview} // You may want to pass the actual gameReview prop here
+        generateGameReview={async () => generateGameReview(moves)}
+        moves={moves}
+        gameReviewLoading={gameReviewLoading}
+        goToMove={goToMove}
+        currentMoveIndex={currentMoveIndex}
+      />
     </Stack>
   );
 }
@@ -662,19 +576,21 @@ export default function PGNUploaderPage() {
                   <Tab label="AI Chat" />
                   <Tab label="Opening Explorer" />
                   <Tab label="Chess DB" />
-                  <Tab label="Game Review" />
                 </Tabs>
               </Box>
 
-              <TabPanel value={analysisTab} index={0}>
+                <TabPanel value={analysisTab} index={0}>
                 <GameInfoTab
                   moves={moves}
                   currentMoveIndex={currentMoveIndex}
                   goToMove={goToMove}
                   comment={comment}
                   gameInfo={gameInfo}
+                  generateGameReview={generateGameReview}
+                  gameReviewLoading={gameReviewLoading}
+                  gameReview={gameReview}
                 />
-              </TabPanel>
+                </TabPanel>
 
               <TabPanel value={analysisTab} index={1}>
                 <Typography variant="h6" gutterBottom>
@@ -739,7 +655,7 @@ export default function PGNUploaderPage() {
                 />
               </TabPanel>
 
-              <TabPanel value={analysisTab} index={5}>
+              {/* <TabPanel value={analysisTab} index={5}>
                 <GameReviewTab
                   gameReview={gameReview}
                   generateGameReview={generateGameReview}
@@ -748,7 +664,7 @@ export default function PGNUploaderPage() {
                   goToMove={goToMove}
                   currentMoveIndex={currentMoveIndex}
                 />
-              </TabPanel>
+              </TabPanel> */}
             </Paper>
           )}
         </Stack>

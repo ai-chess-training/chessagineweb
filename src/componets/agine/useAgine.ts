@@ -181,8 +181,7 @@ type MoveClassification = 'Best' | 'Excellent' | 'Good' | 'Inaccuracy' | 'Mistak
     }
   }, [engine, engineDepth, engineLines]);
 
-
- const generateGameReview = useCallback(async (moveList: string[]): Promise<void> => {
+const generateGameReview = useCallback(async (moveList: string[]): Promise<void> => {
   setGameReviewLoading(true);
 
   if (!engine) {
@@ -194,69 +193,116 @@ type MoveClassification = 'Best' | 'Excellent' | 'Good' | 'Inaccuracy' | 'Mistak
   try {
     const chess = new Chess();
     const gameReviewList: GameReview[] = [];
-    const reviewDepth = 17;
+    const reviewDepth = engineDepth; // Use current engineDepth
 
     for (let i = 0; i < moveList.length; i++) {
       const beforeFen = chess.fen();
       const sideToMove = chess.turn(); // 'w' or 'b'
-      const move = moveList[i];
-      chess.move(move);
+      const moveSan = moveList[i];
+      
+      // Get the move object BEFORE making the move
+      const moveObj = chess.move(moveSan);
+      if (!moveObj) {
+        console.error(`Invalid move: ${moveSan} at position ${i}`);
+        continue;
+      }
+      
       const afterFen = chess.fen();
 
-      // Evaluate both before and after FEN in parallel
+      // Evaluate the position BEFORE the move to get the best move
       const [bestMoveResult, actualMoveResult] = await Promise.all([
         engine.evaluatePositionWithUpdate({ fen: beforeFen, depth: reviewDepth, multiPv: 1 }),
         engine.evaluatePositionWithUpdate({ fen: afterFen, depth: reviewDepth, multiPv: 1 })
       ]);
 
+      // Get evaluations from the perspective of the side to move
       const bestEval = normalizeEval(bestMoveResult.lines?.[0], sideToMove);
       const actualEval = normalizeEval(actualMoveResult.lines?.[0], sideToMove);
-
+      
+      // Calculate the evaluation difference (loss in evaluation)
       const diff = Math.max(0, +(bestEval - actualEval).toFixed(3));
-      const moveClassification = classifyMove(diff);
+
+      // Check if played move matches engine's best move
+      let isBest = false;
+      if (bestMoveResult.lines?.[0]?.pv?.length) {
+        const bestUci = bestMoveResult.lines[0].pv[0];
+        
+        // Convert the played move to UCI format for comparison
+        const playedUci = moveObj.from + moveObj.to + (moveObj.promotion || "");
+        isBest = playedUci === bestUci;
+        
+        // Also check for alternative UCI formats (e.g., castling)
+        if (!isBest) {
+          // Handle castling edge cases
+          if (moveObj.flags.includes('k') || moveObj.flags.includes('q')) {
+            // For castling, check if the king move matches
+            isBest = playedUci === bestUci;
+          }
+        }
+      }
+
+      const moveClassification = isBest ? "Best" : classifyMove(diff);
 
       gameReviewList.push({
-        moveNumber: i,
-        moveSan: move,
+        moveNumber: i, // Move numbers typically start from 1
+        moveSan: moveSan,
         moveClassification,
         diff,
         side: sideToMove
       });
     }
-    console.log(gameReviewList);
+    
+    console.log("Game Review Results:", gameReviewList);
     setGameReview(gameReviewList);
   } catch (error) {
-    console.error(error);
+    console.error("Error generating game review:", error);
   } finally {
     setGameReviewLoading(false);
   }
-}, [engine]);
-
+}, [engine, engineDepth]);
 
 function normalizeEval(line: LineEval | undefined, sideToMove: 'w' | 'b'): number {
   if (!line) return 0.5;
 
+  // Handle mate scores
   if (line.mate !== undefined) {
-    return (line.mate > 0) === (sideToMove === 'w') ? 1.0 : 0.0;
+    const mateInN = line.mate;
+    if (mateInN === 0) return sideToMove === 'w' ? 1.0 : 0.0;
+    
+    // Positive mate means advantage for the side to move
+    // Negative mate means disadvantage for the side to move
+    if (sideToMove === 'w') {
+      return mateInN > 0 ? 1.0 : 0.0;
+    } else {
+      return mateInN > 0 ? 0.0 : 1.0;
+    }
   }
 
+  // Handle centipawn scores
   const cp = line.cp ?? 0;
-  const maxEval = 1000;
+  const maxEval = 1000; // Cap evaluation at 10.00 pawns
   const bounded = Math.max(-maxEval, Math.min(cp, maxEval));
-  const normalized = bounded / maxEval;
-
-  return sideToMove === 'w' ? 0.5 + normalized / 2 : 0.5 - normalized / 2;
+  
+  // Convert centipawns to normalized score (0-1)
+  // cp is always from white's perspective
+  let normalized = 0.5 + (bounded / maxEval) * 0.5;
+  
+  // If black to move, flip the evaluation
+  if (sideToMove === 'b') {
+    normalized = 1.0 - normalized;
+  }
+  
+  return +normalized.toFixed(4);
 }
 
-
-
 function classifyMove(diff: number): MoveClassification {
-  diff = Math.abs(diff);
-  if (diff === 0.0) return "Best";
-  if (diff > 0.0 && diff <= 0.02) return "Excellent";
-  if (diff > 0.02 && diff <= 0.05) return "Good";
-  if (diff > 0.05 && diff <= 0.10) return "Inaccuracy";
-  if (diff > 0.10 && diff <= 0.20) return "Mistake";
+  const absDiff = Math.abs(diff);
+  
+  if (absDiff === 0.0) return "Best";
+  if (absDiff <= 0.01) return "Excellent";
+  if (absDiff <= 0.04) return "Good";
+  if (absDiff <= 0.09) return "Inaccuracy";
+  if (absDiff <= 0.19) return "Mistake";
   return "Blunder";
 }
 

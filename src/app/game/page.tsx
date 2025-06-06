@@ -80,6 +80,75 @@ function extractGameInfo(pgn: string) {
   return info;
 }
 
+function isLink(link: string): boolean {
+  return link.includes("/") && link.includes(".");
+}
+
+// Improved function to extract game ID from Lichess URLs
+function getValidGameId(url: string): string {
+  if (!url) return "";
+  
+  try {
+    // Handle various Lichess URL formats
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    
+    // Extract game ID from different URL patterns:
+    // https://lichess.org/abcdefgh
+    // https://lichess.org/abcdefgh/white
+    // https://lichess.org/abcdefgh/black
+    // https://lichess.org/abcdefgh1234
+    const gameIdMatch = pathname.match(/^\/([a-zA-Z0-9]{8,12})(?:\/|$)/);
+    
+    if (gameIdMatch) {
+      let gameId = gameIdMatch[1];
+      
+      // If the ID is longer than 8 characters, it might have extra characters
+      // Lichess game IDs are typically 8 characters, but can be longer
+      if (gameId.length > 8) {
+        // Try to extract the base game ID (first 8 characters)
+        gameId = gameId.substring(0, 8);
+      }
+      
+      return gameId;
+    }
+    
+    return "";
+  } catch (error) {
+    // If URL parsing fails, try simple string manipulation
+    const parts = url.split("/");
+    if (parts.length >= 4) {
+      const gameId = parts[3];
+      // Remove any query parameters or fragments
+      const cleanGameId = gameId.split(/[?#]/)[0];
+      return cleanGameId.substring(0, 8);
+    }
+    
+    return "";
+  }
+}
+
+// Function to fetch game PGN from Lichess
+async function fetchLichessGame(gameId: string): Promise<string> {
+  const response = await fetch(`https://lichess.org/game/export/${gameId}`, {
+    headers: {
+      'Accept': 'application/x-chess-pgn'
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch game: ${response.status} ${response.statusText}`);
+  }
+  
+  const pgnText = await response.text();
+  
+  if (!pgnText || pgnText.trim() === '') {
+    throw new Error('Empty PGN received from Lichess');
+  }
+  
+  return pgnText;
+}
+
 // Game Info Tab Component (renamed from MovesTab)
 function GameInfoTab({
   moves,
@@ -89,7 +158,9 @@ function GameInfoTab({
   gameInfo,
   generateGameReview,
   gameReviewLoading,
-  gameReview
+  gameReview,
+  handleMoveCoachClick,
+  chatLoading
 }: {
   moves: string[];
   currentMoveIndex: number;
@@ -99,6 +170,8 @@ function GameInfoTab({
   gameReviewLoading: boolean;
   gameReview: GameReview[];
   gameInfo: Record<string, string>;
+  handleMoveCoachClick: (gameReview: GameReview) => void;
+  chatLoading: boolean;
 }) {
   const formatTimeControl = (timeControl: string) => {
     const tc = timeControl.split("+");
@@ -233,9 +306,11 @@ function GameInfoTab({
 
       {/* Game Review Tab */}
       <GameReviewTab
-        gameReview={gameReview} // You may want to pass the actual gameReview prop here
+        gameReview={gameReview}
         generateGameReview={async () => generateGameReview(moves)}
         moves={moves}
+        handleMoveCoachClick={handleMoveCoachClick}
+        chatLoading={chatLoading}
         gameReviewLoading={gameReviewLoading}
         goToMove={goToMove}
         currentMoveIndex={currentMoveIndex}
@@ -256,12 +331,14 @@ export default function PGNUploaderPage() {
   >([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [studyUrl, setStudyUrl] = useState("");
+  const [gameUrl, setGameUrl] = useState("");
   const [inputsVisible, setInputsVisible] = useState(true);
   const [chapters, setChapters] = useState<
     { title: string; url: string; pgn: string }[]
   >([]);
   const [comment, setComment] = useState("");
   const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
+  const [loadingGame, setLoadingGame] = useState(false);
 
   const {
     setLlmAnalysisResult,
@@ -302,6 +379,7 @@ export default function PGNUploaderPage() {
     handleEngineLineClick,
     handleOpeningMoveClick,
     handleMoveClick,
+    handleMoveCoachClick,
     chessdbdata,
   } = useAgine(fen);
 
@@ -376,6 +454,68 @@ export default function PGNUploaderPage() {
     setLlmAnalysisResult(null);
   };
 
+  const handleLoadLichessGame = async () => {
+    if (!gameUrl.trim()) {
+      alert("Please enter a Lichess game URL");
+      return;
+    }
+
+    const gameId = getValidGameId(gameUrl);
+    if (!gameId) {
+      alert("Invalid Lichess game URL. Please use a URL like: https://lichess.org/abcdefgh");
+      return;
+    }
+
+    setLoadingGame(true);
+    try {
+      const fetchedPgn = await fetchLichessGame(gameId);
+      console.log("Fetched PGN:", fetchedPgn); // Debug log
+      
+      // Process the PGN immediately instead of relying on state update
+      try {
+        const tempGame = new Chess();
+        tempGame.loadPgn(fetchedPgn);
+        const moveList = tempGame.history();
+        const parsed = extractMovesWithComments(fetchedPgn);
+        const info = extractGameInfo(fetchedPgn);
+
+        // Update all states
+        setPgnText(fetchedPgn);
+        setMoves(moveList);
+        setParsedMovesWithComments(parsed);
+        setGameInfo(info);
+        setCurrentMoveIndex(0);
+
+        const resetGame = new Chess();
+        setGame(resetGame);
+        setFen(resetGame.fen());
+        setLlmAnalysisResult(null);
+        setComment("");
+        setGameReview([]);
+        
+        // Hide input section
+        setInputsVisible(false);
+        
+        console.log("Game loaded successfully:", { 
+          moves: moveList.length, 
+          gameInfo: info,
+          white: info.White,
+          black: info.Black 
+        });
+        
+      } catch (pgnError) {
+        console.error("Error parsing PGN:", pgnError);
+        alert("Invalid PGN data received from Lichess");
+      }
+      
+    } catch (error) {
+      console.error("Error loading Lichess game:", error);
+      alert(`Could not load game from Lichess: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoadingGame(false);
+    }
+  };
+
   return (
     <Box sx={{ p: 4 }}>
       {inputsVisible && (
@@ -384,7 +524,7 @@ export default function PGNUploaderPage() {
             Analyze Your Chess Game with Agine
           </Typography>
           <Typography variant="subtitle1" sx={{ color: "wheat", mb: 1 }}>
-            Paste a Lichess Study URL or PGN to load your game and get instant
+            Paste a Lichess Study URL, Lichess Game URL, or PGN to load your game and get instant
             move-by-move AI analysis and comments.
           </Typography>
         </Box>
@@ -392,41 +532,60 @@ export default function PGNUploaderPage() {
 
       {inputsVisible && (
         <Stack spacing={2} sx={{ mb: 3 }}>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              fullWidth
-              label="Paste Lichess Study URL"
-              value={studyUrl}
-              onChange={(e) => setStudyUrl(e.target.value)}
-              placeholder="https://lichess.org/study/GuglnqGD"
-              sx={{ backgroundColor: grey[900], borderRadius: 1 }}
-              slotProps={{
-                inputLabel: { sx: { color: "wheat" } },
-                input: { sx: { color: "wheat" } },
-              }}
-            />
-            <Button
-              variant="contained"
-              onClick={async () => {
-                const idMatch = studyUrl.match(/study\/([a-zA-Z0-9]+)/);
-                if (!idMatch) return alert("Invalid URL");
+          <TextField
+            fullWidth
+            label="Paste Lichess Study URL"
+            value={studyUrl}
+            onChange={(e) => setStudyUrl(e.target.value)}
+            placeholder="https://lichess.org/study/GuglnqGD"
+            sx={{ backgroundColor: grey[900], borderRadius: 1 }}
+            slotProps={{
+              inputLabel: { sx: { color: "wheat" } },
+              input: { sx: { color: "wheat" } },
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={async () => {
+              const idMatch = studyUrl.match(/study\/([a-zA-Z0-9]+)/);
+              if (!idMatch) return alert("Invalid study URL");
 
-                const res = await fetch(
-                  `https://lichess.org/api/study/${idMatch[1]}.pgn`
-                );
-                const text = await res.text();
-                const parsed = parsePgnChapters(text);
-                if (parsed.length === 0) return alert("No chapters found");
+              const res = await fetch(
+                `https://lichess.org/api/study/${idMatch[1]}.pgn`
+              );
+              const text = await res.text();
+              const parsed = parsePgnChapters(text);
+              if (parsed.length === 0) return alert("No chapters found");
 
-                setChapters(parsed);
-                setPgnText(parsed[0].pgn); // Auto-load first chapter
-                setTimeout(() => loadPGN(), 0);
-                setInputsVisible(false);
-              }}
-            >
-              Load Study
-            </Button>
-          </Stack>
+              setChapters(parsed);
+              setPgnText(parsed[0].pgn); // Auto-load first chapter
+              setTimeout(() => loadPGN(), 0);
+              setInputsVisible(false);
+            }}
+          >
+            Load Study
+          </Button>
+
+          <TextField
+            fullWidth
+            label="Paste Lichess Game URL"
+            value={gameUrl}
+            onChange={(e) => setGameUrl(e.target.value)}
+            placeholder="https://lichess.org/abcdefgh or https://lichess.org/abcdefgh1234"
+            sx={{ backgroundColor: grey[900], borderRadius: 1 }}
+            slotProps={{
+              inputLabel: { sx: { color: "wheat" } },
+              input: { sx: { color: "wheat" } },
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={handleLoadLichessGame}
+            disabled={loadingGame}
+            startIcon={loadingGame ? <CircularProgress size={20} /> : null}
+          >
+            {loadingGame ? "Loading Game..." : "Load Game"}
+          </Button>
 
           <TextField
             multiline
@@ -492,6 +651,7 @@ export default function PGNUploaderPage() {
                   setMoves([]);
                   setPgnText("");
                   setStudyUrl("");
+                  setGameUrl("");
                   setGameInfo({});
                   setLlmAnalysisResult(null);
                   setComment("");
@@ -572,14 +732,14 @@ export default function PGNUploaderPage() {
                   }}
                 >
                   <Tab label="Game Info" />
-                  <Tab label="Stockfish Analysis" />
                   <Tab label="AI Chat" />
+                  <Tab label="Stockfish Analysis" />
                   <Tab label="Opening Explorer" />
                   <Tab label="Chess DB" />
                 </Tabs>
               </Box>
 
-                <TabPanel value={analysisTab} index={0}>
+              <TabPanel value={analysisTab} index={0}>
                 <GameInfoTab
                   moves={moves}
                   currentMoveIndex={currentMoveIndex}
@@ -588,11 +748,29 @@ export default function PGNUploaderPage() {
                   gameInfo={gameInfo}
                   generateGameReview={generateGameReview}
                   gameReviewLoading={gameReviewLoading}
+                  handleMoveCoachClick={handleMoveCoachClick}
+                  chatLoading={chatLoading}
                   gameReview={gameReview}
                 />
-                </TabPanel>
+              </TabPanel>
 
               <TabPanel value={analysisTab} index={1}>
+                <ChatTab
+                  chatMessages={chatMessages}
+                  chatInput={chatInput}
+                  setChatInput={setChatInput}
+                  gameInfo={pgnText}
+                  currentMove={moves[currentMoveIndex]}
+                  sendChatMessage={sendChatMessage}
+                  chatLoading={chatLoading}
+                  handleChatKeyPress={handleChatKeyPress}
+                  clearChatHistory={clearChatHistory}
+                  sessionMode={sessionMode}
+                  setSessionMode={setSessionMode}
+                />
+              </TabPanel>
+
+              <TabPanel value={analysisTab} index={2}>
                 <Typography variant="h6" gutterBottom>
                   Stockfish Analysis
                 </Typography>
@@ -620,22 +798,6 @@ export default function PGNUploaderPage() {
                 )}
               </TabPanel>
 
-              <TabPanel value={analysisTab} index={2}>
-                <ChatTab
-                  chatMessages={chatMessages}
-                  chatInput={chatInput}
-                  setChatInput={setChatInput}
-                  gameInfo={pgnText}
-                  currentMove={moves[currentMoveIndex]}
-                  sendChatMessage={sendChatMessage}
-                  chatLoading={chatLoading}
-                  handleChatKeyPress={handleChatKeyPress}
-                  clearChatHistory={clearChatHistory}
-                  sessionMode={sessionMode}
-                  setSessionMode={setSessionMode}
-                />
-              </TabPanel>
-
               <TabPanel value={analysisTab} index={3}>
                 <Typography variant="h6" gutterBottom>
                   Opening Explorer
@@ -654,17 +816,6 @@ export default function PGNUploaderPage() {
                   analyzeMove={handleMoveClick}
                 />
               </TabPanel>
-
-              {/* <TabPanel value={analysisTab} index={5}>
-                <GameReviewTab
-                  gameReview={gameReview}
-                  generateGameReview={generateGameReview}
-                  moves={moves}
-                  gameReviewLoading={gameReviewLoading} // You might want to add this to your useAgine hook
-                  goToMove={goToMove}
-                  currentMoveIndex={currentMoveIndex}
-                />
-              </TabPanel> */}
             </Paper>
           )}
         </Stack>

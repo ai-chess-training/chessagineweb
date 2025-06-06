@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { EngineName } from '../engine/engine';
 import { Stockfish11 } from '../engine/Stockfish11';
 import { Stockfish16 } from '../engine/Stockfish16';
-// import { Stockfish17 } from '../engine/Stockfish17';
+import { Stockfish17 } from '../engine/Stockfish17';
 import { UciEngine } from '../engine/UciEngine';
 
 export const useEngine = (enabled: boolean, engineName: EngineName | undefined) => {
@@ -30,7 +30,7 @@ export const useEngine = (enabled: boolean, engineName: EngineName | undefined) 
 const pickEngine = (engine: EngineName): UciEngine => {
     switch (engine) {
         case EngineName.Stockfish17:
-            return new Stockfish11();
+            return new Stockfish17();
         case EngineName.Stockfish16:
             return new Stockfish16();
         case EngineName.Stockfish11:

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Button,
@@ -9,42 +9,53 @@ import {
   Chip,
   IconButton,
   Tooltip,
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import { grey } from '@mui/material/colors';
+  Badge,
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
+import { grey } from "@mui/material/colors";
 import {
   TrendingDown,
   Target,
-  Star,
   CheckCircle,
   AlertTriangle,
   XCircle,
   BarChart3,
   PlayCircle,
-} from 'lucide-react';
+  ThumbsUp,
+  MessageCircle,
+  Bot,
+} from "lucide-react";
+
 
 export interface GameReview {
   moveNumber: number;
   moveSan: string;
   moveClassification: MoveClassification;
-  side: 'w' | 'b';
+  side: "w" | "b";
 }
 
 export type MoveClassification =
-  | 'Best'
-  | 'Excellent'
-  | 'Good'
-  | 'Inaccuracy'
-  | 'Mistake'
-  | 'Blunder';
+  | "Best"
+  | "Very Good"
+  | "Good"
+  | "Dubious"
+  | "Mistake"
+  | "Blunder";
 
 export interface MoveStats {
   Best: number;
-  Excellent: number;
+  "Very Good": number;
   Good: number;
-  Inaccuracy: number;
+  Dubious: number;
   Mistake: number;
   Blunder: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
 }
 
 interface GameReviewTabProps {
@@ -54,22 +65,48 @@ interface GameReviewTabProps {
   gameReviewLoading: boolean;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
+  handleMoveCoachClick: (gameReview: GameReview) => void;
+  chatLoading: boolean;
 }
 
 const getMoveClassificationStyle = (classification: MoveClassification) => {
   switch (classification) {
-    case 'Best':
-      return { color: '#4ade80', icon: <Target size={16} />, bgColor: '#16a34a20' };
-    case 'Excellent':
-      return { color: '#22d3ee', icon: <Star size={16} />, bgColor: '#0891b220' };
-    case 'Good':
-      return { color: '#84cc16', icon: <CheckCircle size={16} />, bgColor: '#65a30d20' };
-    case 'Inaccuracy':
-      return { color: '#fbbf24', icon: <TrendingDown size={16} />, bgColor: '#d9770620' };
-    case 'Mistake':
-      return { color: '#f97316', icon: <AlertTriangle size={16} />, bgColor: '#ea580c20' };
-    case 'Blunder':
-      return { color: '#ef4444', icon: <XCircle size={16} />, bgColor: '#dc262620' };
+    case "Best":
+      return {
+        color: "#81C784", // Chess.com green for best moves
+        icon: <Target size={16} />,
+        bgColor: "#81C78420",
+      };
+    case "Very Good":
+      return {
+        color: "#4FC3F7", // Chess.com light blue for very good moves
+        icon: <ThumbsUp size={16} />,
+        bgColor: "#4FC3F720",
+      };
+    case "Good":
+      return {
+        color: "#AED581", // Chess.com light green for good moves
+        icon: <CheckCircle size={16} />,
+        bgColor: "#AED58120",
+      };
+    case "Dubious":
+      return {
+        color: "#FFB74D", // Chess.com orange for dubious moves
+        icon: <TrendingDown size={16} />,
+        bgColor: "#FFB74D20",
+      };
+    case "Mistake":
+      return {
+        color: "#FF8A65", // Chess.com light red for mistakes
+        icon: <AlertTriangle size={16} />,
+        bgColor: "#FF8A6520",
+      };
+    case "Blunder":
+      return {
+        color: "#E57373", // Chess.com red for blunders
+        icon: <XCircle size={16} />,
+        bgColor: "#E5737320",
+      };
   }
 };
 
@@ -80,22 +117,24 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   gameReviewLoading,
   goToMove,
   currentMoveIndex,
+  handleMoveCoachClick,
+  chatLoading
 }) => {
   const getStatistics = () => {
     if (!gameReview) return null;
 
     const whiteStats: MoveStats = {
       Best: 0,
-      Excellent: 0,
+      "Very Good": 0,
       Good: 0,
-      Inaccuracy: 0,
+      Dubious: 0,
       Mistake: 0,
       Blunder: 0,
     };
     const blackStats: MoveStats = { ...whiteStats };
 
     gameReview.forEach((review) => {
-      const stats = review.side === 'w' ? whiteStats : blackStats;
+      const stats = review.side === "w" ? whiteStats : blackStats;
       stats[review.moveClassification]++;
     });
 
@@ -105,9 +144,10 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   const calculateAccuracy = (stats: MoveStats) => {
     const total = Object.values(stats).reduce((a, b) => a + b, 0);
     if (total === 0) return 0;
-    const goodMoves = stats.Best + stats.Excellent + stats.Good;
+    const goodMoves = stats.Best + stats["Very Good"] + stats.Good;
     return Math.round((goodMoves / total) * 100);
   };
+
 
   const StatCard = ({
     title,
@@ -115,7 +155,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   }: {
     title: string;
     stats: MoveStats;
-    side: 'white' | 'black';
+    side: "white" | "black";
   }) => {
     const accuracy = calculateAccuracy(stats);
 
@@ -131,9 +171,9 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         <Stack spacing={2}>
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
             <Typography variant="h6" sx={{ color: grey[200] }}>
@@ -144,9 +184,13 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               size="small"
               sx={{
                 bgcolor:
-                  accuracy >= 90 ? '#16a34a' : accuracy >= 80 ? '#d97706' : '#dc2626',
-                color: 'white',
-                fontWeight: 'bold',
+                  accuracy >= 90
+                    ? "#81C784"
+                    : accuracy >= 80
+                    ? "#FFB74D"
+                    : "#E57373",
+                color: "white",
+                fontWeight: "bold",
               }}
             />
           </Box>
@@ -170,12 +214,15 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     }}
                   >
                     <Box sx={{ color: style.color }}>{style.icon}</Box>
-                    <Typography variant="body2" sx={{ color: grey[200], flex: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: grey[200], flex: 1 }}
+                    >
                       {classification}
                     </Typography>
                     <Typography
                       variant="body2"
-                      sx={{ color: style.color, fontWeight: 'bold' }}
+                      sx={{ color: style.color, fontWeight: "bold" }}
                     >
                       {count}
                     </Typography>
@@ -189,158 +236,180 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     );
   };
 
-if (!gameReview || gameReview.length === 0) {
-  return (
-    <Stack
-      spacing={3}
-      alignItems="center"
-      justifyContent="center"
-      sx={{
-        minHeight: 420,
-        py: 6,
-        bgcolor: grey[900],
-        borderRadius: 3,
-        border: `1px solid ${grey[800]}`,
-        boxShadow: 2,
-      }}
-    >
-      <Paper
+  if (!gameReview || gameReview.length === 0) {
+    return (
+      <Stack
+        spacing={3}
+        alignItems="center"
+        justifyContent="center"
         sx={{
-          width: '100%',
-          maxWidth: 'none',
-          maxHeight: 320,
-          overflowY: 'auto',
+          minHeight: 420,
+          py: 6,
           bgcolor: grey[900],
-          borderRadius: 2,
+          borderRadius: 3,
           border: `1px solid ${grey[800]}`,
-          boxShadow: 0,
-          p: 2,
+          boxShadow: 2,
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {moves.map((_move, index) => {
-            const moveNumber = Math.floor(index / 2) + 1;
-            const isWhiteMove = index % 2 === 0;
-            const isCurrentMove = index === currentMoveIndex - 1;
-
-            return (
-              <Box
-                key={index}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  p: 1,
-                  borderRadius: 1,
-                  bgcolor: isCurrentMove ? grey[800] : 'transparent',
-                  border: `1px solid ${grey[800]}`,
-                  cursor: 'pointer',
-                  '&:hover': {
-                    bgcolor: grey[800],
-                  },
-                  transition: 'background 0.2s',
-                  minWidth: 400,
-                }}
-                onClick={() => goToMove(index + 1)}
+        <Stack spacing={2} alignItems="center" sx={{ width: "100%" }}>
+          <Button
+            variant="outlined"
+            size="medium"
+            onClick={() => generateGameReview(moves)}
+            disabled={gameReviewLoading || moves.length === 0}
+            startIcon={!gameReviewLoading && <PlayCircle size={18} />}
+            sx={{
+              px: 2,
+              py: 0.8,
+              bgcolor: "#2563eb10",
+              fontWeight: "bold",
+              fontSize: 14,
+              borderRadius: 2,
+              minWidth: 120,
+              boxShadow: 0,
+              color: "wheat",
+              borderColor: "wheat",
+              "&:hover": {
+                bgcolor: "#2563eb20",
+                borderColor: "wheat",
+                color: "wheat",
+              },
+              "&:disabled": {
+                bgcolor: grey[800],
+                color: grey[500],
+                borderColor: grey[800],
+              },
+            }}
+          >
+            {gameReviewLoading ? (
+              <Typography
+                variant="body2"
+                sx={{ color: grey[200], fontSize: 12 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{ color: grey[400], minWidth: 40 }}
-                >
-                  {isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`}
-                </Typography>
-
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: grey[100],
-                    minWidth: 100,
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {moves[index]}
-                </Typography>
-
-                <Box sx={{ flex: 1 }} />
-
-                <Tooltip title="Jump to this move">
-                  <IconButton size="small" sx={{ color: grey[400] }}>
-                    <PlayCircle size={16} />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            );
-          })}
-        </Box>
-      </Paper>
-
-      <Button
-        variant="outlined"
-        size="medium"
-        onClick={() => generateGameReview(moves)}
-        disabled={gameReviewLoading || moves.length === 0}
-        startIcon={!gameReviewLoading && <PlayCircle size={18} />}
-        color='success'
-        sx={{
-          px: 2,
-          py: 0.8,
-          bgcolor: '#2563eb10',
-          fontWeight: 500,
-          fontSize: 14,
-          borderRadius: 2,
-          minWidth: 120,
-          boxShadow: 0,
-          '&:hover': { bgcolor: '#2563eb20', borderColor: '#1d4ed8', color: '#1d4ed8' },
-          '&:disabled': { bgcolor: grey[800], color: grey[500], borderColor: grey[800] },
-        }}
-      >
-        {gameReviewLoading ? (
-          <Stack direction="row" alignItems="center" spacing={1}>
+                Analyzing...
+              </Typography>
+            ) : (
+              "Generate Agine Review"
+            )}
+          </Button>
+          {gameReviewLoading && (
             <LinearProgress
               sx={{
-                width: 50,
+                width: 220,
                 height: 6,
                 borderRadius: 5,
                 bgcolor: grey[800],
-                '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' },
+                "& .MuiLinearProgress-bar": { bgcolor: "#2563eb" },
               }}
             />
-            <Typography variant="body2" sx={{ color: grey[200], fontSize: 12 }}>
-              Analyzing...
-            </Typography>
-          </Stack>
-        ) : (
-          'Generate Review'
-        )}
-      </Button>
-
-      {moves.length === 0 && (
-        <Typography
-          variant="body2"
+          )}
+        </Stack>
+        <Paper
           sx={{
-            color: grey[500],
-            fontStyle: 'italic',
-            mt: 1,
-            letterSpacing: 0.2,
+            width: "100%",
+            maxWidth: "none",
+            maxHeight: 320,
+            overflowY: "auto",
+            bgcolor: grey[900],
+            borderRadius: 2,
+            border: `1px solid ${grey[800]}`,
+            boxShadow: 0,
+            p: 2,
           }}
         >
-          Load a game first to enable game review
-        </Typography>
-      )}
-    </Stack>
-  );
-}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {moves.map((_move, index) => {
+              const moveNumber = Math.floor(index / 2) + 1;
+              const isWhiteMove = index % 2 === 0;
+              const isCurrentMove = index === currentMoveIndex - 1;
+
+              return (
+                <Box
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: isCurrentMove ? grey[800] : "transparent",
+                    border: `1px solid ${grey[800]}`,
+                    cursor: "pointer",
+                    "&:hover": {
+                      bgcolor: grey[800],
+                    },
+                    transition: "background 0.2s",
+                    minWidth: 400,
+                  }}
+                  onClick={() => goToMove(index + 1)}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ color: grey[400], minWidth: 40 }}
+                  >
+                    {isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`}
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: grey[100],
+                      minWidth: 100,
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {moves[index]}
+                  </Typography>
+
+                  <Box sx={{ flex: 1 }} />
+
+                  <Tooltip title="Jump to this move">
+                    <IconButton size="small" sx={{ color: grey[400] }}>
+                      <PlayCircle size={16} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              );
+            })}
+          </Box>
+        </Paper>
+
+        {moves.length === 0 && (
+          <Typography
+            variant="body2"
+            sx={{
+              color: grey[500],
+              fontStyle: "italic",
+              mt: 1,
+              letterSpacing: 0.2,
+            }}
+          >
+            Load a game first to enable game review
+          </Typography>
+        )}
+      </Stack>
+    );
+  }
+
+
 
   return (
     <Stack spacing={3}>
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Bot size={20} color="#4FC3F7" />
+            <Typography variant="body2" sx={{ color: grey[300] }}>
+              Click on any move to get Agine insights
+            </Typography>
+          </Stack>
       </Box>
+      
       <Button
         variant="outlined"
         size="small"
@@ -350,43 +419,55 @@ if (!gameReview || gameReview.length === 0) {
         sx={{
           px: 2,
           py: 0.7,
-          bgcolor: '#2563eb10',
+          bgcolor: "#2563eb10",
           fontWeight: 500,
           fontSize: 13,
           borderRadius: 2,
           minWidth: 160,
           boxShadow: 0,
           mb: 1,
-          alignSelf: 'flex-end',
-          color: 'wheat',
-          borderColor: 'wheat',
-          
-          '&:disabled': { bgcolor: grey[800], color: grey[500], borderColor: grey[800] },
+          alignSelf: "flex-end",
+          color: "wheat",
+          borderColor: "wheat",
+          "&:disabled": {
+            bgcolor: grey[800],
+            color: grey[500],
+            borderColor: grey[800],
+          },
         }}
       >
         {gameReviewLoading ? (
           <Stack direction="row" alignItems="center" spacing={1}>
-        <LinearProgress
-          sx={{
-            width: 40,
-            height: 6,
-            borderRadius: 5,
-            bgcolor: grey[800],
-            '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' },
-          }}
-        />
-        <Typography variant="body2" sx={{ color: grey[200], fontSize: 12 }}>
-          Recalculating...
-        </Typography>
+            <LinearProgress
+              sx={{
+                width: 40,
+                height: 6,
+                borderRadius: 5,
+                bgcolor: grey[800],
+                "& .MuiLinearProgress-bar": { bgcolor: "#2563eb" },
+              }}
+            />
+            <Typography variant="body2" sx={{ color: grey[200], fontSize: 12 }}>
+              Recalculating...
+            </Typography>
           </Stack>
         ) : (
-          'Recalculate with Current Engine Depth'
+          "Recalculate with Current Engine Depth"
         )}
       </Button>
+      
       {getStatistics() && (
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <StatCard title="White" stats={getStatistics()!.whiteStats} side="white" />
-          <StatCard title="Black" stats={getStatistics()!.blackStats} side="black" />
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+          <StatCard
+            title="White"
+            stats={getStatistics()!.whiteStats}
+            side="white"
+          />
+          <StatCard
+            title="Black"
+            stats={getStatistics()!.blackStats}
+            side="black"
+          />
         </Stack>
       )}
 
@@ -394,17 +475,17 @@ if (!gameReview || gameReview.length === 0) {
         sx={{
           p: 2,
           maxHeight: 400,
-          overflowY: 'auto',
+          overflowY: "auto",
           bgcolor: grey[900],
           borderRadius: 2,
           border: `1px solid ${grey[800]}`,
         }}
       >
         <Typography variant="h6" gutterBottom sx={{ color: grey[100] }}>
-          Move Classifications
+          Move Classifications        
         </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {gameReview.map((review, index) => {
             const style = getMoveClassificationStyle(review.moveClassification);
             const moveNumber = Math.floor(review.moveNumber / 2) + 1;
@@ -415,17 +496,17 @@ if (!gameReview || gameReview.length === 0) {
               <Box
                 key={index}
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  display: "flex",
+                  alignItems: "center",
                   gap: 2,
                   p: 1.5,
                   borderRadius: 1,
-                  bgcolor: isCurrentMove ? grey[800] : 'transparent',
+                  bgcolor: isCurrentMove ? grey[800] : "transparent",
                   border: isCurrentMove
                     ? `1px solid ${style.color}`
                     : `1px solid ${grey[800]}`,
-                  cursor: 'pointer',
-                  '&:hover': {
+                  cursor: "pointer",
+                  "&:hover": {
                     bgcolor: grey[800],
                   },
                 }}
@@ -443,27 +524,61 @@ if (!gameReview || gameReview.length === 0) {
                   sx={{
                     color: grey[100],
                     minWidth: 60,
-                    fontFamily: 'monospace',
+                    fontFamily: "monospace",
                   }}
                 >
                   {review.moveSan}
                 </Typography>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flex: 1,
+                  }}
+                >
                   <Box sx={{ color: style.color }}>{style.icon}</Box>
                   <Typography
                     variant="body2"
-                    sx={{ color: style.color, fontWeight: 'medium' }}
+                    sx={{ color: style.color, fontWeight: "medium" }}
                   >
                     {review.moveClassification}
                   </Typography>
                 </Box>
 
-                <Tooltip title="Jump to this move">
-                  <IconButton size="small" sx={{ color: grey[400] }}>
-                    <PlayCircle size={16} />
-                  </IconButton>
-                </Tooltip>
+                <Stack direction="row" spacing={1}>
+                  
+                    <Tooltip title="Ask agine about this move">
+                      <IconButton 
+                        size="small" 
+                        sx={{ 
+                          color: "#4FC3F7",
+                          "&:hover": { bgcolor: "#4FC3F720" }
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveCoachClick(review);
+                        }}
+                        disabled={chatLoading}
+                      >
+                        {chatLoading ? (
+                          <Badge badgeContent=" " color="primary" variant="dot">
+                            <MessageCircle size={16} />
+                          </Badge>
+                        ) : (
+                          <MessageCircle size={16} />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+                  
+                  
+                  <Tooltip title="Jump to this move">
+                    <IconButton size="small" sx={{ color: grey[400] }}>
+                      <PlayCircle size={16} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
               </Box>
             );
           })}

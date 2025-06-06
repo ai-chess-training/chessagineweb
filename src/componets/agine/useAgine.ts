@@ -42,15 +42,20 @@ export default function useAgine(fen: string) {
   const [engineDepth, setEngineDepth] = useLocalStorage<number>("engineDepth", 15);
   const [engineLines, setEngineLines] = useLocalStorage<number>("engineLines", 3);
 
-  interface GameReview {
+ interface GameReview {
   moveNumber: number;
   moveSan: string;
   moveClassification: MoveClassification;
-  diff: number;
-  side: 'w' | 'b'; // 'w' for white, 'b' for black
+  side: "w" | "b";
 }
 
-type MoveClassification = 'Best' | 'Excellent' | 'Good' | 'Inaccuracy' | 'Mistake' | 'Blunder';
+type MoveClassification =
+  | "Best"
+  | "Very Good"
+  | "Good"
+  | "Dubious"
+  | "Mistake"
+  | "Blunder";
 
   const [gameReview, setGameReview] = useState<Array<GameReview>>([]);
   const [gameReviewLoading, setGameReviewLoading] = useState<boolean>(false);
@@ -224,8 +229,8 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
 
       // Check if played move matches engine's best move
       let isBest = false;
-      if (bestMoveResult.lines?.[0]?.pv?.length) {
-        const bestUci = bestMoveResult.lines[0].pv[0];
+      if (bestMoveResult.bestMove) {
+        const bestUci = bestMoveResult.bestMove;
         
         // Convert the played move to UCI format for comparison
         const playedUci = moveObj.from + moveObj.to + (moveObj.promotion || "");
@@ -233,9 +238,10 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
         
         // Also check for alternative UCI formats (e.g., castling)
         if (!isBest) {
-          // Handle castling edge cases
-          if (moveObj.flags.includes('k') || moveObj.flags.includes('q')) {
-            // For castling, check if the king move matches
+          if (
+            typeof moveObj.isKingsideCastle === "function" && moveObj.isKingsideCastle() ||
+            typeof moveObj.isQueensideCastle === "function" && moveObj.isQueensideCastle()
+          ) {
             isBest = playedUci === bestUci;
           }
         }
@@ -247,7 +253,6 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
         moveNumber: i, // Move numbers typically start from 1
         moveSan: moveSan,
         moveClassification,
-        diff,
         side: sideToMove
       });
     }
@@ -298,10 +303,9 @@ function normalizeEval(line: LineEval | undefined, sideToMove: 'w' | 'b'): numbe
 function classifyMove(diff: number): MoveClassification {
   const absDiff = Math.abs(diff);
   
-  if (absDiff === 0.0) return "Best";
-  if (absDiff <= 0.01) return "Excellent";
+  if (absDiff <= 0.01) return "Very Good";
   if (absDiff <= 0.04) return "Good";
-  if (absDiff <= 0.09) return "Inaccuracy";
+  if (absDiff <= 0.09) return "Dubious";
   if (absDiff <= 0.19) return "Mistake";
   return "Blunder";
 }
@@ -633,10 +637,16 @@ Engine Line: ${formattedLine}
 Side To Move ${sideToMove}
 `;
 
-    if (openingData) {
-      const openingSpeech = getOpeningStatSpeech(openingData);
-      query += `\n\nOpening Context:\n${openingSpeech}`;
-    }
+     // Add opening data
+        if (openingData) {
+          const openingSpeech = getOpeningStatSpeech(openingData);
+          query += `\n\nOpening Information:\n${openingSpeech}`;
+        }
+
+        if(chessdbdata){
+           const candiateMoves = getChessDBSpeech(chessdbdata);
+           query += `${candiateMoves}`
+        }
 
     query += `\n\n Analyze this from different point of views.`;
 
@@ -771,11 +781,16 @@ Move leads to FEN: ${updatedFen}
 
 Discuss the strategic and tactical implications of this move. Provide both theoretical background and practical advice.`;
 
-    if (openingData) {
-      const openingSpeech = getOpeningStatSpeech(openingData);
-      query += `\n\nOpening Context:\n${openingSpeech}`;
-    }
+     // Add opening data
+        if (openingData) {
+          const openingSpeech = getOpeningStatSpeech(openingData);
+          query += `\n\nOpening Information:\n${openingSpeech}`;
+        }
 
+        if(chessdbdata){
+           const candiateMoves = getChessDBSpeech(chessdbdata);
+           query += `${candiateMoves}`
+        }
     query += `\n\nAnalyze this move from different points of view.`;
 
     setAnalysisTab(1);
@@ -818,6 +833,90 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       setChatLoading(false);
     }
   }, [llmLoading, openingData, makeApiRequest]);
+
+  const handleMoveCoachClick = useCallback(async (review: GameReview): Promise<void> => {
+      if (!setChatMessages || !setChatLoading || !setAnalysisTab || !makeApiRequest || !currentFenRef) {
+        console.warn("Chat functionality not properly configured");
+        return;
+      }
+  
+      if (chatLoading) return;
+  
+      const currentFen = currentFenRef.current;
+      const sideToMove = review.side === "w" ? "White" : "Black";
+      
+      const moveNumber = Math.floor(review.moveNumber / 2) + 1;
+      const isWhiteMove = review.moveNumber % 2 === 0;
+      const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
+  
+      let query = `As a chess buddy, analyze this move from the game review:
+  
+  Move: ${moveNotation} ${review.moveSan}
+  Classification: ${review.moveClassification}
+  Side: ${sideToMove}
+  Position FEN: ${currentFen}
+  
+  Please provide coaching insights about this move:
+  1. Why was this move classified as "${review.moveClassification}"?
+  2. What were the key strategic or tactical considerations?
+  3. If this was a mistake or blunder, what would have been better alternatives?
+  4. What can be learned from this move for future games?
+  
+  Provide practical advice that would help improve understanding of similar positions.`;
+  
+       // Add opening data
+        if (openingData) {
+          const openingSpeech = getOpeningStatSpeech(openingData);
+          query += `\n\nOpening Information:\n${openingSpeech}`;
+        }
+
+        if(chessdbdata){
+           const candiateMoves = getChessDBSpeech(chessdbdata);
+           query += `${candiateMoves}`
+        }
+  
+      // Switch to analysis tab (assuming tab 1 is for chat)
+      setAnalysisTab(1);
+      
+      // Add user message to chat
+      const userMessage = {
+        id: Date.now().toString(),
+        role: "user" as const,
+        content: `Agine, analyze move: ${moveNotation} ${review.moveSan} (${review.moveClassification})`,
+        timestamp: new Date(),
+      };
+
+      setChatMessages((prev) => [...prev, userMessage]);
+      
+      setChatLoading(true);
+      
+      try {
+        const result = await makeApiRequest(currentFen, query);
+        
+        // Add assistant response to chat
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant" as const,
+          content: result,
+          timestamp: new Date(),
+        };
+        setChatMessages((prev) => [...prev, assistantMessage]);
+        
+      } catch (error) {
+        console.error("Error getting coach analysis:", error);
+        if (!(error instanceof Error && error.message === 'Request cancelled')) {
+          const errorMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant" as const,
+            content: "Sorry, I couldn't analyze that move right now. Please try again.",
+            timestamp: new Date(),
+          };
+          setChatMessages((prev) => [...prev, errorMessage]);
+        }
+      } finally {
+        setChatLoading(false);
+      }
+    }, [chatLoading, setChatMessages, setChatLoading, setAnalysisTab, makeApiRequest, currentFenRef, openingData]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -888,6 +987,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     handleEngineLineClick,
     handleOpeningMoveClick,
     handleMoveClick,
+    handleMoveCoachClick,
 
     // Utility Functions
     formatEvaluation,
@@ -924,6 +1024,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     handleEngineLineClick,
     handleOpeningMoveClick,
     handleMoveClick,
+    handleMoveCoachClick,
     formatEvaluation,
     formatPrincipalVariation,
     formatLineForLLM,

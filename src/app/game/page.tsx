@@ -80,9 +80,7 @@ function extractGameInfo(pgn: string) {
   return info;
 }
 
-function isLink(link: string): boolean {
-  return link.includes("/") && link.includes(".");
-}
+
 
 // Improved function to extract game ID from Lichess URLs
 function getValidGameId(url: string): string {
@@ -116,6 +114,7 @@ function getValidGameId(url: string): string {
     return "";
   } catch (error) {
     // If URL parsing fails, try simple string manipulation
+    console.log(error)
     const parts = url.split("/");
     if (parts.length >= 4) {
       const gameId = parts[3];

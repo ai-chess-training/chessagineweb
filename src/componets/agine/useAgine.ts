@@ -256,7 +256,7 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
 
       
 
-      let moveClassification = isBest ? "Best" : classifyMove(diff, bestEval, actualEval);
+      const moveClassification = isBest ? "Best" : classifyMove(diff, bestEval, actualEval);
 
       
 

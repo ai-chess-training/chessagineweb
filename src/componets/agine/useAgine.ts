@@ -11,6 +11,7 @@ import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
 import { CandidateMove, getChessDBSpeech, useChessDB} from "../tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
+import { openings } from "./opening";
 
 export default function useAgine(fen: string) {
   // Analysis Results State
@@ -42,6 +43,15 @@ export default function useAgine(fen: string) {
   const [engineDepth, setEngineDepth] = useLocalStorage<number>("engineDepth", 15);
   const [engineLines, setEngineLines] = useLocalStorage<number>("engineLines", 3);
 
+
+  type MoveClassification =
+  | "Best"| "Very Good"
+  | "Good"
+  | "Dubious"
+  | "Mistake"
+  | "Blunder"
+  | "Book";
+
  interface GameReview {
   moveNumber: number;
   moveSan: string;
@@ -49,13 +59,7 @@ export default function useAgine(fen: string) {
   side: "w" | "b";
 }
 
-type MoveClassification =
-  | "Best"
-  | "Very Good"
-  | "Good"
-  | "Dubious"
-  | "Mistake"
-  | "Blunder";
+
 
   const [gameReview, setGameReview] = useState<Array<GameReview>>([]);
   const [gameReviewLoading, setGameReviewLoading] = useState<boolean>(false);
@@ -198,14 +202,13 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
   try {
     const chess = new Chess();
     const gameReviewList: GameReview[] = [];
-    const reviewDepth = engineDepth; // Use current engineDepth
+    const reviewDepth = 19;
 
     for (let i = 0; i < moveList.length; i++) {
       const beforeFen = chess.fen();
-      const sideToMove = chess.turn(); // 'w' or 'b'
+      const sideToMove = chess.turn();
       const moveSan = moveList[i];
       
-      // Get the move object BEFORE making the move
       const moveObj = chess.move(moveSan);
       if (!moveObj) {
         console.error(`Invalid move: ${moveSan} at position ${i}`);
@@ -214,43 +217,51 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
       
       const afterFen = chess.fen();
 
-      // Evaluate the position BEFORE the move to get the best move
+     
+       if (isBookMove(afterFen)) {
+        gameReviewList.push({
+          moveNumber: i,
+          moveSan: moveSan,
+          moveClassification: "Book",
+          side: sideToMove,
+        });
+        continue; // Skip further evaluation for book moves and go to the next move
+      }
+     
+
       const [bestMoveResult, actualMoveResult] = await Promise.all([
         engine.evaluatePositionWithUpdate({ fen: beforeFen, depth: reviewDepth, multiPv: 1 }),
         engine.evaluatePositionWithUpdate({ fen: afterFen, depth: reviewDepth, multiPv: 1 })
       ]);
 
-      // Get evaluations from the perspective of the side to move
-      const bestEval = normalizeEval(bestMoveResult.lines?.[0], sideToMove);
-      const actualEval = normalizeEval(actualMoveResult.lines?.[0], sideToMove);
+      // Get raw evaluations (centipawns/mate) from side to move perspective
+      const bestEval = getRawEval(bestMoveResult.lines?.[0], sideToMove);
+      const actualEval = getRawEval(actualMoveResult.lines?.[0], sideToMove);
       
-      // Calculate the evaluation difference (loss in evaluation)
-      const diff = Math.max(0, +(bestEval - actualEval).toFixed(3));
+      // Calculate evaluation difference
+      const diff = calculateEvalDiff(bestEval, actualEval);
 
       // Check if played move matches engine's best move
       let isBest = false;
       if (bestMoveResult.bestMove) {
         const bestUci = bestMoveResult.bestMove;
-        
-        // Convert the played move to UCI format for comparison
         const playedUci = moveObj.from + moveObj.to + (moveObj.promotion || "");
         isBest = playedUci === bestUci;
         
-        // Also check for alternative UCI formats (e.g., castling)
-        if (!isBest) {
-          if (
-            typeof moveObj.isKingsideCastle === "function" && moveObj.isKingsideCastle() ||
-            typeof moveObj.isQueensideCastle === "function" && moveObj.isQueensideCastle()
-          ) {
-            isBest = playedUci === bestUci;
-          }
+        // Handle castling edge cases
+        if (!isBest && (moveObj.isKingsideCastle() || moveObj.isQueensideCastle())) {
+          isBest = playedUci === bestUci;
         }
       }
 
-      const moveClassification = isBest ? "Best" : classifyMove(diff);
+      
+
+      let moveClassification = isBest ? "Best" : classifyMove(diff, bestEval, actualEval);
+
+      
 
       gameReviewList.push({
-        moveNumber: i, // Move numbers typically start from 1
+        moveNumber: i,
         moveSan: moveSan,
         moveClassification,
         side: sideToMove
@@ -266,48 +277,134 @@ const generateGameReview = useCallback(async (moveList: string[]): Promise<void>
   }
 }, [engine, engineDepth]);
 
-function normalizeEval(line: LineEval | undefined, sideToMove: 'w' | 'b'): number {
-  if (!line) return 0.5;
+function isBookMove(fen: string): boolean {
+  const normalizedFen = fen.split(" ")[0].trim();
+  const op = openings.find((opening) => opening.fen.trim() === normalizedFen);
+  return !!op;
+}
+
+interface EvalResult {
+  type: 'mate' | 'cp';
+  value: number; // For mate: moves to mate, For cp: centipawns
+  isMate: boolean;
+}
+
+function getRawEval(line: LineEval | undefined, sideToMove: 'w' | 'b'): EvalResult {
+  if (!line) return { type: 'cp', value: 0, isMate: false };
 
   // Handle mate scores
   if (line.mate !== undefined) {
     const mateInN = line.mate;
-    if (mateInN === 0) return sideToMove === 'w' ? 1.0 : 0.0;
     
-    // Positive mate means advantage for the side to move
-    // Negative mate means disadvantage for the side to move
-    if (sideToMove === 'w') {
-      return mateInN > 0 ? 1.0 : 0.0;
-    } else {
-      return mateInN > 0 ? 0.0 : 1.0;
-    }
+    // Adjust mate score based on side to move
+    // Stockfish gives mate from white's perspective
+    const adjustedMate = sideToMove === 'w' ? mateInN : -mateInN;
+    
+    return {
+      type: 'mate',
+      value: adjustedMate,
+      isMate: true
+    };
   }
 
   // Handle centipawn scores
   const cp = line.cp ?? 0;
-  const maxEval = 1000; // Cap evaluation at 10.00 pawns
-  const bounded = Math.max(-maxEval, Math.min(cp, maxEval));
+  // Adjust centipawn score based on side to move
+  const adjustedCp = sideToMove === 'w' ? cp : -cp;
   
-  // Convert centipawns to normalized score (0-1)
-  // cp is always from white's perspective
-  let normalized = 0.5 + (bounded / maxEval) * 0.5;
-  
-  // If black to move, flip the evaluation
-  if (sideToMove === 'b') {
-    normalized = 1.0 - normalized;
-  }
-  
-  return +normalized.toFixed(4);
+  return {
+    type: 'cp',
+    value: adjustedCp,
+    isMate: false
+  };
 }
 
-function classifyMove(diff: number): MoveClassification {
-  const absDiff = Math.abs(diff);
+function calculateEvalDiff(bestEval: EvalResult, actualEval: EvalResult): number {
+  // If both are mate scores
+  if (bestEval.isMate && actualEval.isMate) {
+    // If both are winning mates
+    if (bestEval.value > 0 && actualEval.value > 0) {
+      // Slower mate is worse
+      return Math.abs(actualEval.value - bestEval.value) * 100; // Convert to centipawn equivalent
+    }
+    // If best is winning mate but actual is losing mate
+    if (bestEval.value > 0 && actualEval.value < 0) {
+      return 2000; // Massive blunder
+    }
+    // If both are losing mates, faster mate is better
+    if (bestEval.value < 0 && actualEval.value < 0) {
+      return Math.abs(bestEval.value - actualEval.value) * 100;
+    }
+    // If best is losing mate but actual is winning mate (shouldn't happen)
+    return 0;
+  }
   
-  if (absDiff <= 0.01) return "Very Good";
-  if (absDiff <= 0.04) return "Good";
-  if (absDiff <= 0.09) return "Dubious";
-  if (absDiff <= 0.19) return "Mistake";
-  return "Blunder";
+  // If best is mate but actual is not
+  if (bestEval.isMate && !actualEval.isMate) {
+    if (bestEval.value > 0) {
+      // Missed a winning mate
+      return Math.max(500, 1000 - actualEval.value); // At least 5 pawns penalty
+    } else {
+      // Avoided a losing mate - could be good
+      return Math.max(0, -actualEval.value - 500); // Only penalty if position is still bad
+    }
+  }
+  
+  // If actual is mate but best is not
+  if (!bestEval.isMate && actualEval.isMate) {
+    if (actualEval.value > 0) {
+      // Found a winning mate that engine missed at this depth - excellent!
+      return 0;
+    } else {
+      // Walked into mate
+      return Math.max(1000, bestEval.value + 1000);
+    }
+  }
+  
+  // Both are centipawn evaluations
+  return Math.abs(bestEval.value - actualEval.value);
+}
+
+
+
+function classifyMove(diff: number, bestEval: EvalResult, actualEval: EvalResult): MoveClassification {
+  // Special handling for mate situations
+  if (bestEval.isMate || actualEval.isMate) {
+    if (diff >= 1500) return "Blunder";
+    if (diff >= 800) return "Mistake";
+    if (diff >= 300) return "Dubious";
+    if (diff >= 100) return "Good";
+    return "Very Good";
+  }
+  
+  // For endgame positions (low material), be more strict
+  const isEndgame = Math.abs(bestEval.value) < 200 && Math.abs(actualEval.value) < 200;
+  
+  if (isEndgame) {
+    if (diff >= 200) return "Blunder";
+    if (diff >= 100) return "Mistake";
+    if (diff >= 50) return "Dubious";
+    if (diff >= 20) return "Good";
+    return "Very Good";
+  }
+  
+  // For tactical positions (large eval swings), be more lenient
+  const isTactical = Math.abs(bestEval.value) > 300 || Math.abs(actualEval.value) > 300;
+  
+  if (isTactical) {
+    if (diff >= 400) return "Blunder";
+    if (diff >= 200) return "Mistake";
+    if (diff >= 100) return "Dubious";
+    if (diff >= 50) return "Good";
+    return "Very Good";
+  }
+  
+  // Standard middlegame thresholds
+  if (diff >= 300) return "Blunder";
+  if (diff >= 150) return "Mistake";
+  if (diff >= 50) return "Dubious";
+  if (diff >= 25) return "Good";
+  return "Very Good";
 }
 
 

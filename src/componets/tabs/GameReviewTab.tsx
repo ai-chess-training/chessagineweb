@@ -19,11 +19,11 @@ import {
   CheckCircle,
   AlertTriangle,
   XCircle,
-  BarChart3,
   PlayCircle,
   ThumbsUp,
   MessageCircle,
   Bot,
+  BookA,
 } from "lucide-react";
 
 
@@ -40,7 +40,8 @@ export type MoveClassification =
   | "Good"
   | "Dubious"
   | "Mistake"
-  | "Blunder";
+  | "Blunder"
+  | "Book";
 
 export interface MoveStats {
   Best: number;
@@ -49,6 +50,7 @@ export interface MoveStats {
   Dubious: number;
   Mistake: number;
   Blunder: number;
+  Book: number;
 }
 
 export interface ChatMessage {
@@ -107,6 +109,12 @@ const getMoveClassificationStyle = (classification: MoveClassification) => {
         icon: <XCircle size={16} />,
         bgColor: "#E5737320",
       };
+    case "Book":
+      return {
+        color: "#FFD54F", // Chess.com yellow for book moves
+        icon: <BookA size={16} />,
+        bgColor: "#FFD54F20",
+      };
   }
 };
 
@@ -130,6 +138,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
       Dubious: 0,
       Mistake: 0,
       Blunder: 0,
+      Book: 0,
     };
     const blackStats: MoveStats = { ...whiteStats };
 
@@ -144,7 +153,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   const calculateAccuracy = (stats: MoveStats) => {
     const total = Object.values(stats).reduce((a, b) => a + b, 0);
     if (total === 0) return 0;
-    const goodMoves = stats.Best + stats["Very Good"] + stats.Good;
+    const goodMoves = stats.Best + stats["Very Good"] + stats.Good + stats.Book;
     return Math.round((goodMoves / total) * 100);
   };
 
@@ -391,8 +400,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     );
   }
 
-
-
   return (
     <Stack spacing={3}>
       <Box
@@ -409,52 +416,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             </Typography>
           </Stack>
       </Box>
-      
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => generateGameReview(moves)}
-        disabled={gameReviewLoading || moves.length === 0}
-        startIcon={<BarChart3 size={16} />}
-        sx={{
-          px: 2,
-          py: 0.7,
-          bgcolor: "#2563eb10",
-          fontWeight: 500,
-          fontSize: 13,
-          borderRadius: 2,
-          minWidth: 160,
-          boxShadow: 0,
-          mb: 1,
-          alignSelf: "flex-end",
-          color: "wheat",
-          borderColor: "wheat",
-          "&:disabled": {
-            bgcolor: grey[800],
-            color: grey[500],
-            borderColor: grey[800],
-          },
-        }}
-      >
-        {gameReviewLoading ? (
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <LinearProgress
-              sx={{
-                width: 40,
-                height: 6,
-                borderRadius: 5,
-                bgcolor: grey[800],
-                "& .MuiLinearProgress-bar": { bgcolor: "#2563eb" },
-              }}
-            />
-            <Typography variant="body2" sx={{ color: grey[200], fontSize: 12 }}>
-              Recalculating...
-            </Typography>
-          </Stack>
-        ) : (
-          "Recalculate with Current Engine Depth"
-        )}
-      </Button>
       
       {getStatistics() && (
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>

@@ -25,23 +25,10 @@ import {
   Bot,
   BookA,
 } from "lucide-react";
+import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";
 
 
-export interface GameReview {
-  moveNumber: number;
-  moveSan: string;
-  moveClassification: MoveClassification;
-  side: "w" | "b";
-}
 
-export type MoveClassification =
-  | "Best"
-  | "Very Good"
-  | "Good"
-  | "Dubious"
-  | "Mistake"
-  | "Blunder"
-  | "Book";
 
 export interface MoveStats {
   Best: number;
@@ -61,17 +48,17 @@ export interface ChatMessage {
 }
 
 interface GameReviewTabProps {
-  gameReview: GameReview[] | null;
+  gameReview: MoveAnalysis[] | null;
   generateGameReview: (moves: string[]) => Promise<void>;
   moves: string[];
   gameReviewLoading: boolean;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
-  handleMoveCoachClick: (gameReview: GameReview) => void;
+  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   chatLoading: boolean;
 }
 
-const getMoveClassificationStyle = (classification: MoveClassification) => {
+const getMoveClassificationStyle = (classification: MoveQuality) => {
   switch (classification) {
     case "Best":
       return {
@@ -143,8 +130,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     const blackStats: MoveStats = { ...whiteStats };
 
     gameReview.forEach((review) => {
-      const stats = review.side === "w" ? whiteStats : blackStats;
-      stats[review.moveClassification]++;
+      const stats = review.player === "w" ? whiteStats : blackStats;
+      stats[review.quality]++;
     });
 
     return { whiteStats, blackStats };
@@ -207,7 +194,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           <Grid container spacing={1}>
             {Object.entries(stats).map(([classification, count]) => {
               const style = getMoveClassificationStyle(
-                classification as MoveClassification
+                classification as MoveQuality
               );
               return (
                 <Stack key={classification}>
@@ -448,10 +435,10 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {gameReview.map((review, index) => {
-            const style = getMoveClassificationStyle(review.moveClassification);
-            const moveNumber = Math.floor(review.moveNumber / 2) + 1;
-            const isWhiteMove = review.moveNumber % 2 === 0;
-            const isCurrentMove = review.moveNumber === currentMoveIndex - 1;
+            const style = getMoveClassificationStyle(review.quality);
+            const moveNumber = Math.floor(review.plyNumber / 2) + 1;
+            const isWhiteMove = review.plyNumber % 2 === 0;
+            const isCurrentMove = review.plyNumber === currentMoveIndex - 1;
 
             return (
               <Box
@@ -471,7 +458,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     bgcolor: grey[800],
                   },
                 }}
-                onClick={() => goToMove(review.moveNumber + 1)}
+                onClick={() => goToMove(review.plyNumber + 1)}
               >
                 <Typography
                   variant="body2"
@@ -488,7 +475,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     fontFamily: "monospace",
                   }}
                 >
-                  {review.moveSan}
+                  {review.notation}
                 </Typography>
 
                 <Box
@@ -504,7 +491,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     variant="body2"
                     sx={{ color: style.color, fontWeight: "medium" }}
                   >
-                    {review.moveClassification}
+                    {review.notation}
                   </Typography>
                 </Box>
 

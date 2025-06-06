@@ -29,7 +29,8 @@ import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
-import GameReviewTab, {GameReview} from "@/componets/tabs/GameReviewTab";
+import GameReviewTab from "@/componets/tabs/GameReviewTab";
+import { MoveAnalysis } from "@/componets/agine/useGameReview";
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -167,9 +168,9 @@ function GameInfoTab({
   comment: string;
   generateGameReview: (moves: string[]) => void;
   gameReviewLoading: boolean;
-  gameReview: GameReview[];
+  gameReview: MoveAnalysis[];
   gameInfo: Record<string, string>;
-  handleMoveCoachClick: (gameReview: GameReview) => void;
+  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   chatLoading: boolean;
 }) {
   const formatTimeControl = (timeControl: string) => {

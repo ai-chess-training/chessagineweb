@@ -2,7 +2,6 @@ import React from "react";
 
 import { grey } from "@mui/material/colors";
 import { Message, Send } from "@mui/icons-material";
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from "react-markdown";
 import {
   Stack,

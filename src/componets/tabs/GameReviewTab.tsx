@@ -22,7 +22,6 @@ import {
   PlayCircle,
   ThumbsUp,
   MessageCircle,
-  Bot,
   BookA,
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";

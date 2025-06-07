@@ -153,7 +153,7 @@ export function ChessDBDisplay({
 
   if (!data || data === null) {
     return (
-      <Paper sx={{ backgroundColor: grey[800] }}>
+      <Paper sx={{ backgroundColor: "#242121" }}>
         <Card elevation={0} sx={{ backgroundColor: "transparent" }}>
           <CardContent>
             <Typography variant="body2" sx={{ color: textWheat }}>
@@ -167,7 +167,7 @@ export function ChessDBDisplay({
 
   if (data.length === 0) {
     return (
-      <Paper sx={{ backgroundColor: grey[800] }}>
+      <Paper sx={{ backgroundColor: "#242121" }}>
         <Card elevation={0} sx={{ backgroundColor: "transparent" }}>
           <CardContent>
             <Alert
@@ -189,7 +189,7 @@ export function ChessDBDisplay({
   return (
     <Paper
       sx={{
-        backgroundColor: grey[800],
+        backgroundColor: "#242121",
         p: 2,
         border: `1px solid ${wheatDark}`,
       }}
@@ -218,7 +218,7 @@ export function ChessDBDisplay({
                   onClick={() => analyzeMove(move)}
                   sx={{
                     p: 2,
-                    backgroundColor: grey[800],
+                    backgroundColor: "#242121",
                     border: "1px solid",
                     borderColor: index === 0 ? wheatDark : borderGrey,
                     cursor: "pointer",

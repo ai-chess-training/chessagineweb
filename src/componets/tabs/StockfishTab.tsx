@@ -133,7 +133,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                     sx={{
                         p: 2,
                         width: "100%",
-                        backgroundColor: grey[800],
+                        backgroundColor: "#242121",
                     }}
                 >
                     <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
@@ -207,7 +207,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                         onClick={() => handleEngineLineClick(line, index)}
                         sx={{
                             p: 2,
-                            backgroundColor: grey[700],
+                            backgroundColor: "#242121", // Changed from grey[700] to grey[800] for a darker initial state
                             borderLeft: `3px solid ${index === 0 ? "#4caf50" : "#2196f3"}`,
                             opacity: stockfishLoading && line.depth < engineDepth ? 0.8 : 1,
                             transition: "opacity 0.3s ease, transform 0.2s ease",
@@ -219,7 +219,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                             },
                             cursor: llmLoading ? "not-allowed" : "pointer",
                             "&:hover": {
-                                backgroundColor: llmLoading ? grey[700] : grey[600],
+                                backgroundColor: llmLoading ? grey[800] : grey[600],
                                 transform: llmLoading ? "none" : "translateY(-2px)",
                                 boxShadow: llmLoading ? "none" : "0 4px 8px rgba(0,0,0,0.3)",
                             },

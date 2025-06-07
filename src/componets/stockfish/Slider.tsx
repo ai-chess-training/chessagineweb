@@ -34,7 +34,7 @@ export default function Slider({ min, max, label, value, setValue, valueLabel, d
                 value={value}
                 onChange={(_, value) => setValue(value)}
                 aria-labelledby={`input-${label}`}
-                sx={{ flexGrow: 1, mr: 2.5 }}
+                sx={{ flexGrow: 1, mr: 2.5, color: "wheat" }}
             />
 
             <Typography sx={{ textWrap: 'nowrap' }}>

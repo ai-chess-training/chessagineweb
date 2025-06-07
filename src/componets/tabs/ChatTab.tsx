@@ -2,6 +2,7 @@ import React from "react";
 
 import { grey } from "@mui/material/colors";
 import { Message, Send } from "@mui/icons-material";
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from "react-markdown";
 import {
   Stack,
@@ -13,6 +14,7 @@ import {
   TextField,
   CircularProgress,
   Chip,
+  Avatar,
 } from "@mui/material";
 
 interface ChatMessage {
@@ -202,14 +204,31 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   display: "flex",
                   justifyContent:
                     message.role === "user" ? "flex-end" : "flex-start",
+                  alignItems: "flex-start",
                 }}
               >
+                {/* Avatar for assistant messages */}
+                {message.role === "assistant" && (
+                  <Avatar
+                  src="/static/images/agineowl.png"
+                    sx={{
+                      
+                      width: 32,
+                      height: 32,
+                      mr: 1,
+                      mt: 0.5,
+                    }}
+                  >
+                    
+                  </Avatar>
+                )}
+                
                 <Paper
                   sx={{
                     p: 2,
                     maxWidth: "80%",
                     backgroundColor:
-                      message.role === "user" ? "#1976d2" : grey[700],
+                      message.role === "user" ? "#1976d2" : "#5a2d80",
                     color: "white",
                   }}
                 >
@@ -232,11 +251,23 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               </Box>
             ))}
             {chatLoading && (
-              <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+              <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start" }}>
+                <Avatar
+                src="/static/images/agineowl.png"
+                  sx={{
+                   
+                    width: 32,
+                    height: 32,
+                    mr: 1,
+                    mt: 0.5,
+                  }}
+                >
+                  
+                </Avatar>
                 <Paper
                   sx={{
                     p: 2,
-                    backgroundColor: grey[700],
+                    backgroundColor: "#5a2d80",
                     display: "flex",
                     alignItems: "center",
                     gap: 1,

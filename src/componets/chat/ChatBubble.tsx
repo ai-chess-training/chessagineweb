@@ -1,4 +1,3 @@
-// src/components/chat/ChatBubble.tsx
 import { Box, Paper } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 
@@ -14,7 +13,7 @@ export default function ChatBubble({ message, isUser = false }: ChatBubbleProps)
         sx={{
           p: 2,
           maxWidth: "75%",
-          bgcolor: isUser ? "wheat" : "#f5f5dc", // user = darker wheat, agent = light beige
+          bgcolor: isUser ? "purple" : "#f5f5dc", // user = darker wheat, agent = light beige
           color: "black",
           borderRadius: 3,
           fontFamily: "monospace",

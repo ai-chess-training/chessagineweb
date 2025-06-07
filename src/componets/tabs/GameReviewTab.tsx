@@ -181,7 +181,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               sx={{
                 bgcolor:
                   accuracy >= 90
-                    ? "#81C784"
+                    ? "#135415"
                     : accuracy >= 80
                     ? "#FFB74D"
                     : "#E57373",
@@ -288,10 +288,23 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               "Generate Agine Review"
             )}
           </Button>
+          {!gameReviewLoading && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: grey[500],
+                fontStyle: "italic",
+                mt: 1,
+                letterSpacing: 0.2,
+              }}
+            >
+              Click on Generate Agine Review to get a detailed analysis of the game and chat with Agine.
+            </Typography>
+          )}
           {gameReviewLoading && (
             <LinearProgress
               sx={{
-                width: 220,
+                width: 550,
                 height: 6,
                 borderRadius: 5,
                 bgcolor: grey[800],
@@ -397,7 +410,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         }}
       >
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Bot size={20} color="#4FC3F7" />
+            <MessageCircle size={20} color="#4FC3F7" />
             <Typography variant="body2" sx={{ color: grey[300] }}>
               Click on any move to get Agine insights
             </Typography>
@@ -497,28 +510,30 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
 
                 <Stack direction="row" spacing={1}>
                   
-                    <Tooltip title="Ask agine about this move">
-                      <IconButton 
-                        size="small" 
-                        sx={{ 
-                          color: "#4FC3F7",
-                          "&:hover": { bgcolor: "#4FC3F720" }
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveCoachClick(review);
-                        }}
-                        disabled={chatLoading}
-                      >
-                        {chatLoading ? (
-                          <Badge badgeContent=" " color="primary" variant="dot">
+                    {currentMoveIndex === review.plyNumber + 1 && (
+                      <Tooltip title="Ask agine about this move">
+                        <IconButton 
+                          size="small" 
+                          sx={{ 
+                            color: "#4FC3F7",
+                            "&:hover": { bgcolor: "#4FC3F720" }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveCoachClick(review);
+                          }}
+                          disabled={chatLoading}
+                        >
+                          {chatLoading ? (
+                            <Badge badgeContent=" " color="primary" variant="dot">
+                              <MessageCircle size={16} />
+                            </Badge>
+                          ) : (
                             <MessageCircle size={16} />
-                          </Badge>
-                        ) : (
-                          <MessageCircle size={16} />
-                        )}
-                      </IconButton>
-                    </Tooltip>
+                          )}
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   
                   
                   <Tooltip title="Jump to this move">

@@ -736,6 +736,52 @@ Discuss the strategic and tactical implications of this move. Provide both theor
         const candiateMoves = getChessDBSpeech(chessdbdata);
         query += `${candiateMoves}`;
       }
+
+      if (stockfishAnalysisResult) {
+        const formattedEngineLines = stockfishAnalysisResult.lines
+          .map((line, index) => {
+            const evaluation = formatEvaluation(line);
+            const moves = formatPrincipalVariation(line.pv, line.fen);
+            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+            if (line.resultPercentages) {
+              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+            }
+
+            return formattedLine;
+          })
+          .join("\n");
+
+        query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+      }else{
+        if (engine) {
+          const engineResult = await engine.evaluatePositionWithUpdate({
+            fen: currentFen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+
+          if (engineResult) {
+            const formattedEngineLines = engineResult.lines
+              .map((line, index) => {
+                const evaluation = formatEvaluation(line);
+                const moves = formatPrincipalVariation(line.pv, line.fen);
+                let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+                if (line.resultPercentages) {
+                  formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+                }
+
+                return formattedLine;
+              })
+              .join("\n");
+
+            query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+          }
+        }
+      }
+
       query += `\n\nAnalyze this move from different points of view.`;
 
       setAnalysisTab(1);
@@ -828,9 +874,55 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
       if (chessdbdata) {
         const candiateMoves = getChessDBSpeech(chessdbdata);
-        query += `${candiateMoves}`;
+        query += `Candidate Moves:\n ${candiateMoves}`;
       }
 
+      if (stockfishAnalysisResult) {
+        const formattedEngineLines = stockfishAnalysisResult.lines
+          .map((line, index) => {
+            const evaluation = formatEvaluation(line);
+            const moves = formatPrincipalVariation(line.pv, line.fen);
+            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+            if (line.resultPercentages) {
+              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+            }
+
+            return formattedLine;
+          })
+          .join("\n");
+
+        query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+      }else{
+        if (engine) {
+          const engineResult = await engine.evaluatePositionWithUpdate({
+            fen: currentFen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+
+          if (engineResult) {
+            const formattedEngineLines = engineResult.lines
+              .map((line, index) => {
+          const evaluation = formatEvaluation(line);
+          const moves = formatPrincipalVariation(line.pv, line.fen);
+          let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+          if (line.resultPercentages) {
+            formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+          }
+
+          return formattedLine;
+              })
+              .join("\n");
+
+            query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+          }
+        }
+      }
+
+      
       // Switch to analysis tab (assuming tab 1 is for chat)
       setAnalysisTab(1);
 

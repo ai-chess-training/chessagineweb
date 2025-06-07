@@ -78,7 +78,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
             )}
 
             {/* Overall Statistics */}
-            <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
+            <Paper sx={{ p: 2, backgroundColor: "#242121" }}>
                 <Typography variant="subtitle2" sx={{ color: "white", mb: 2 }}>
                     Master Games: {totalGames.toLocaleString()}
                 </Typography>
@@ -145,7 +145,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
                                     onClick={() => handleOpeningMoveClick(move)}
                                     sx={{
                                         p: 2,
-                                        backgroundColor: grey[600],
+                                        backgroundColor: "#242121",
                                         cursor: llmLoading ? "not-allowed" : "pointer",
                                         "&:hover": {
                                             backgroundColor: llmLoading ? grey[600] : grey[500],
@@ -207,7 +207,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
                         {openingData.topGames.slice(0, 3).map((game, index) => (
                             <Paper
                                 key={`${game.id}-${index}`}
-                                sx={{ p: 2, backgroundColor: grey[700] }}
+                                sx={{ p: 2, backgroundColor: "#242121" }}
                             >
                                 <Stack
                                     direction="row"

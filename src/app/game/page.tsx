@@ -31,6 +31,9 @@ import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/componets/agine/useGameReview";
+import UserLichessGames from "@/componets/lichess/UserLichessGames";
+import UserGameSelect from "@/componets/lichess/UserGameSelect";
+import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -442,6 +445,33 @@ export default function PGNUploaderPage() {
     }
   };
 
+  const loadUserPGN = (pgn: string) => {
+    try {
+      const tempGame = new Chess();
+      tempGame.loadPgn(pgn);
+      const moveList = tempGame.history();
+      const parsed = extractMovesWithComments(pgn);
+      const info = extractGameInfo(pgn);
+
+      setMoves(moveList);
+      setParsedMovesWithComments(parsed);
+      setGameInfo(info);
+      setCurrentMoveIndex(0);
+      setPgnText(pgn);
+
+      const resetGame = new Chess();
+      setGame(resetGame);
+      setFen(resetGame.fen());
+      setLlmAnalysisResult(null);
+      setComment("");
+      setGameReview([]);
+      setInputsVisible(false);
+    } catch (err) {
+      console.log(err);
+      alert("Invalid PGN input");
+    }
+  };
+
   const goToMove = (index: number) => {
     const tempGame = new Chess();
     for (let i = 0; i < index; i++) {
@@ -521,11 +551,10 @@ export default function PGNUploaderPage() {
       {inputsVisible && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" gutterBottom>
-            Analyze Your Chess Game with Agine
+            Analyze Your Chess Game With Agine
           </Typography>
           <Typography variant="subtitle1" sx={{ color: "wheat", mb: 1 }}>
-            Paste a Lichess Study URL, Lichess Game URL, or PGN to load your game and get instant
-            move-by-move AI analysis and comments.
+            Get detailed Agine insights on your game! Paste your PGN, Lichess game URL, or study URL to begin analysis. You can search your recent Lichess games!
           </Typography>
         </Box>
       )}
@@ -613,7 +642,15 @@ export default function PGNUploaderPage() {
           >
             Load PGN
           </Button>
+          <Typography variant="subtitle1" sx={{ color: "wheat"}}> 
+            Select a game for the given Lichess username
+          </Typography>
+          <Divider/>
+          <UserGameSelect loadPGN={loadUserPGN}/>
+          <Divider/>
+          <UserPGNUploader loadPGN={loadUserPGN}/>
         </Stack>
+        
       )}
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={4}>

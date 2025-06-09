@@ -31,7 +31,6 @@ import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/componets/agine/useGameReview";
-import UserLichessGames from "@/componets/lichess/UserLichessGames";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
 import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
 

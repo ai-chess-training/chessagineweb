@@ -18,6 +18,7 @@ export interface MoveAnalysis {
   plyNumber: number;
   notation: string;
   quality: MoveQuality;
+  fen: string;
   player: "w" | "b";
 }
 
@@ -138,6 +139,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
 
       interface GameState {
         evaluation: PositionEval;
+        preMovefen: string; // FEN before the move
+        postMovefen: string;
         activePlayer: Color;
         moveNotation: string;
         plyIndex: number;
@@ -148,18 +151,17 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         const moveEvaluations: MoveAnalysis[] = [];
         const analysisDepth = searchDepth;
         const gameStates: GameState[] = [];
-        const positionHistory: string[] = [];
         const moveHistory: string[] = [];
 
         // Phase 1: Collect all positions and their evaluations
         for (let ply = 0; ply < gameNotation.length; ply++) {
-          const currentFen = gameBoard.fen();
+          const preMovefen = gameBoard.fen(); // Capture FEN before making the move
           const activePlayer = gameBoard.turn();
           const moveNotation = gameNotation[ply];
 
-          positionHistory.push(currentFen);
-
           const moveObject = gameBoard.move(moveNotation);
+
+          const postMovefen = gameBoard.fen();
           if (!moveObject) {
             console.error(`Illegal move detected: ${moveNotation} at ply ${ply}`);
             continue;
@@ -168,9 +170,9 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           const uciNotation = moveObject.from + moveObject.to + (moveObject.promotion || "");
           moveHistory.push(uciNotation);
 
-          // Analyze position before move execution
+          // Analyze position before move execution (using preMovefen)
           const positionAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
-            fen: currentFen,
+            fen: preMovefen,
             depth: analysisDepth,
             multiPv: 3,
           });
@@ -178,21 +180,20 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           gameStates.push({
             evaluation: positionAnalysis,
             activePlayer: activePlayer,
+            preMovefen: preMovefen, // This is the FEN before the move
+            postMovefen: postMovefen,
             moveNotation: moveNotation,
             plyIndex: ply,
           });
         }
 
-        // Store final position
-        positionHistory.push(gameBoard.fen());
-
         // Phase 2: Classify each move with complete context
         for (let ply = 0; ply < gameStates.length; ply++) {
           const currentState = gameStates[ply];
-          const { activePlayer, moveNotation, plyIndex, evaluation } = currentState;
+          const { activePlayer, moveNotation, plyIndex, evaluation, preMovefen, postMovefen } = currentState;
 
           // Check opening book
-          const boardPosition = positionHistory[ply].split(" ")[0];
+          const boardPosition = postMovefen.split(" ")[0];
           const openingMatch = openings.find(
             (entry) => entry.fen.trim() === boardPosition.trim()
           );
@@ -200,6 +201,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           if (openingMatch) {
             moveEvaluations.push({
               plyNumber: plyIndex,
+              fen: preMovefen, // FEN before the move
               notation: moveNotation,
               quality: "Book",
               player: activePlayer,
@@ -229,6 +231,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             moveEvaluations.push({
               plyNumber: plyIndex,
               notation: moveNotation,
+              fen: preMovefen, // FEN before the move
               quality: "Very Good",
               player: activePlayer,
             });
@@ -240,6 +243,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             moveEvaluations.push({
               plyNumber: plyIndex,
               notation: moveNotation,
+              fen: preMovefen, // FEN before the move
               quality: "Best",
               player: activePlayer,
             });
@@ -253,6 +257,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             plyNumber: plyIndex,
             notation: moveNotation,
             quality: qualityRating,
+            fen: preMovefen, // FEN before the move
             player: activePlayer,
           });
         }

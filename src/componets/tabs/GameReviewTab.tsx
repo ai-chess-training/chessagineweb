@@ -26,9 +26,6 @@ import {
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";
 
-
-
-
 export interface MoveStats {
   Best: number;
   "Very Good": number;

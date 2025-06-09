@@ -845,6 +845,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       if (chatLoading) return;
 
       const currentFen = currentFenRef.current;
+      const pastFen = review.fen;
       const sideToMove = review.player === "w" ? "White" : "Black";
 
       const moveNumber = Math.floor(review.plyNumber / 2) + 1;
@@ -856,7 +857,8 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   Move: ${moveNotation} ${review.notation}
   Classification: ${review.quality}
   Side: ${sideToMove}
-  Position FEN: ${currentFen}
+  Position FEN: ${pastFen}
+  Current FEN: ${currentFen}
   
   Please provide coaching insights about this move:
   1. Why was this move classified as "${review.quality}"?
@@ -867,36 +869,19 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   Provide practical advice that would help improve understanding of similar positions.`;
 
       // Add opening data
-      if (openingData) {
-        const openingSpeech = getOpeningStatSpeech(openingData);
-        query += `\n\nOpening Information:\n${openingSpeech}`;
-      }
+      // if (openingData) {
+      //   const openingSpeech = getOpeningStatSpeech(openingData);
+      //   query += `\n\nOpening Information:\n${openingSpeech}`;
+      // }
 
-      if (chessdbdata) {
-        const candiateMoves = getChessDBSpeech(chessdbdata);
-        query += `Candidate Moves:\n ${candiateMoves}`;
-      }
+      // if (chessdbdata) {
+      //   const candiateMoves = getChessDBSpeech(chessdbdata);
+      //   query += `Candidate Moves:\n ${candiateMoves}`;
+      // }
 
-      if (stockfishAnalysisResult) {
-        const formattedEngineLines = stockfishAnalysisResult.lines
-          .map((line, index) => {
-            const evaluation = formatEvaluation(line);
-            const moves = formatPrincipalVariation(line.pv, line.fen);
-            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-            if (line.resultPercentages) {
-              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-            }
-
-            return formattedLine;
-          })
-          .join("\n");
-
-        query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
-      }else{
         if (engine) {
           const engineResult = await engine.evaluatePositionWithUpdate({
-            fen: currentFen,
+            fen: pastFen,
             depth: engineDepth,
             multiPv: engineLines,
             setPartialEval: () => {},
@@ -920,7 +905,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
             query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
           }
         }
-      }
+      
 
       
       // Switch to analysis tab (assuming tab 1 is for chat)
@@ -938,8 +923,10 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
       setChatLoading(true);
 
+      console.log(query);
+
       try {
-        const result = await makeApiRequest(currentFen, query);
+        const result = await makeApiRequest(pastFen, query);
 
         // Add assistant response to chat
         const assistantMessage = {

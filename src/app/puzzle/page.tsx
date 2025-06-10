@@ -12,7 +12,6 @@ import {
   Button,
   Card,
   CardContent,
-  Divider,
   Alert,
   Chip,
 } from "@mui/material";
@@ -26,8 +25,7 @@ import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/componets/agine/useAgine";
 import { useSession } from "@clerk/nextjs";
-import { Chessboard } from "react-chessboard";
-import { Divide, Lightbulb, Star, TrendingUp, Eye, SkipForwardIcon as SkipNextIcon, SkipBackIcon } from "lucide-react";
+import { Lightbulb, Star, Eye, SkipForwardIcon as SkipNextIcon, SkipBackIcon } from "lucide-react";
 import { Refresh, SkipNext } from "@mui/icons-material";
 
 interface PuzzleData {
@@ -635,7 +633,7 @@ export default function PuzzlePage() {
                         )}
                         {puzzleFailed && !showingSolution && (
                           <Alert severity="error">
-                            ❌ Wrong move! Use the "Show Solution" button to see the correct moves.
+                            ❌ Wrong move! Use the Show Solution button to see the correct moves.
                           </Alert>
                         )}
                         {showHint && (

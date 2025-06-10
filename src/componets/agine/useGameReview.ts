@@ -19,6 +19,7 @@ export interface MoveAnalysis {
   notation: string;
   quality: MoveQuality;
   fen: string;
+  currenFen: string;
   player: "w" | "b";
 }
 
@@ -203,6 +204,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               plyNumber: plyIndex,
               fen: preMovefen, // FEN before the move
               notation: moveNotation,
+              currenFen: postMovefen,
               quality: "Book",
               player: activePlayer,
             });
@@ -232,6 +234,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               plyNumber: plyIndex,
               notation: moveNotation,
               fen: preMovefen, // FEN before the move
+              currenFen: postMovefen,
               quality: "Very Good",
               player: activePlayer,
             });
@@ -245,6 +248,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               notation: moveNotation,
               fen: preMovefen, // FEN before the move
               quality: "Best",
+              currenFen: postMovefen,
               player: activePlayer,
             });
             continue;
@@ -258,6 +262,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             notation: moveNotation,
             quality: qualityRating,
             fen: preMovefen, // FEN before the move
+            currenFen: postMovefen,
             player: activePlayer,
           });
         }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { CSSProperties } from "react";
 import {
   Stack,
   Button,
@@ -9,22 +9,23 @@ import {
   Slider,
   Typography,
   Box,
+  Divider,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 import { FaRegArrowAltCircleUp } from "react-icons/fa";
 import { BsArrowsMove } from "react-icons/bs";
-import {
-  MdNavigateBefore,
-  MdNavigateNext,
-} from "react-icons/md";
+import { MdNavigateBefore, MdNavigateNext } from "react-icons/md";
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../opening/helper";
-import { Arrow } from "react-chessboard/dist/chessboard/types";
+import {
+  Arrow,
+  BoardOrientation,
+} from "react-chessboard/dist/chessboard/types";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -41,7 +42,14 @@ interface AiChessboardPanelProps {
   setLlmAnalysisResult: (result: string | null) => void;
   setStockfishAnalysisResult: (result: PositionEval | null) => void;
   setOpeningData: (result: MasterGames | null) => void;
+  puzzleMode?: boolean;
+  onDropPuzzle?: (source: string, target: string) => boolean;
+  handleSquarePuzzleClick?: (square: string) => void;
+  puzzleCustomSquareStyle?: {
+    [square: string]: CSSProperties;
+  };
   game: Chess;
+  side?: BoardOrientation;
   moves?: string[];
   stockfishAnalysisResult?: PositionEval | null;
   setMoveSquares: (square: { [square: string]: string }) => void;
@@ -58,7 +66,12 @@ export default function AiChessboardPanel({
   game,
   moves,
   stockfishAnalysisResult,
+  puzzleMode,
+  onDropPuzzle,
+  handleSquarePuzzleClick,
   setMoveSquares,
+  puzzleCustomSquareStyle,
+  side,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
   const [isFlipped, setIsFlipped] = useState(false);
@@ -66,8 +79,8 @@ export default function AiChessboardPanel({
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [showArrows, setShowArrows] = useState(true);
-  const [boardSize, setBoardSize] = useState(500);
+  const [showArrows, setShowArrows] = useState(puzzleMode ? false : true);
+  const [boardSize, setBoardSize] = useState(550);
 
   // Memoize the initial game setup to avoid recalculation
   const gameHistory = useMemo(() => {
@@ -93,7 +106,7 @@ export default function AiChessboardPanel({
   // Effect to update game state when moves change
   useEffect(() => {
     const startGame = new Chess(gameHistory[0]);
-    
+
     setGame(startGame);
     setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
@@ -101,22 +114,28 @@ export default function AiChessboardPanel({
   }, [gameHistory, setGame, setFen]);
 
   // Memoized function to safely mutate game state
-  const safeGameMutate = useCallback((modify: (game: Chess) => void) => {
-    const baseFen = moveHistory[currentMoveIndex];
-    if (!baseFen) return;
-    
-    const newGame = new Chess(baseFen);
-    modify(newGame);
+  const safeGameMutate = useCallback(
+    (modify: (game: Chess) => void) => {
+      const baseFen = moveHistory[currentMoveIndex];
+      if (!baseFen) return;
 
-    const newFen = newGame.fen();
-    const newHistory = [...moveHistory.slice(0, currentMoveIndex + 1), newFen];
-    
-    setGame(newGame);
-    setFen(newFen);
-    setMoveHistory(newHistory);
-    setCurrentMoveIndex(newHistory.length - 1);
-    setOpeningData(null);
-  }, [moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]);
+      const newGame = new Chess(baseFen);
+      modify(newGame);
+
+      const newFen = newGame.fen();
+      const newHistory = [
+        ...moveHistory.slice(0, currentMoveIndex + 1),
+        newFen,
+      ];
+
+      setGame(newGame);
+      setFen(newFen);
+      setMoveHistory(newHistory);
+      setCurrentMoveIndex(newHistory.length - 1);
+      setOpeningData(null);
+    },
+    [moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]
+  );
 
   // Memoized clear analysis callback
   const clearAnalysis = useCallback(() => {
@@ -126,18 +145,21 @@ export default function AiChessboardPanel({
   }, [setLlmAnalysisResult, setStockfishAnalysisResult, setOpeningData]);
 
   // Optimized onDrop handler
-  const onDrop = useCallback((source: string, target: string) => {
-    let moveMade = false;
-    safeGameMutate((game) => {
-      const move = game.move({ from: source, to: target, promotion: "q" });
-      if (move) {
-        moveMade = true;
-        clearAnalysis();
-      }
-    });
-    setMoveSquares({});
-    return moveMade;
-  }, [safeGameMutate, clearAnalysis, setMoveSquares]);
+  const onDrop = useCallback(
+    (source: string, target: string) => {
+      let moveMade = false;
+      safeGameMutate((game) => {
+        const move = game.move({ from: source, to: target, promotion: "q" });
+        if (move) {
+          moveMade = true;
+          clearAnalysis();
+        }
+      });
+      setMoveSquares({});
+      return moveMade;
+    },
+    [safeGameMutate, clearAnalysis, setMoveSquares]
+  );
 
   // Memoized arrows calculation
   const customArrows = useMemo((): Arrow[] => {
@@ -161,52 +183,55 @@ export default function AiChessboardPanel({
   }, [showArrows, stockfishAnalysisResult]);
 
   // Optimized square click handler
-  const handleSquareClick = useCallback((square: string) => {
-    // If clicking on the same square, deselect
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
+  const handleSquareClick = useCallback(
+    (square: string) => {
+      // If clicking on the same square, deselect
+      if (selectedSquare === square) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
 
-    // If a square is already selected and clicking on a legal move target
-    if (selectedSquare && legalMoves.includes(square)) {
-      safeGameMutate((newGame) => {
-        try {
-          const move = newGame.move({
-            from: selectedSquare,
-            to: square,
-            promotion: "q",
-          });
+      // If a square is already selected and clicking on a legal move target
+      if (selectedSquare && legalMoves.includes(square)) {
+        safeGameMutate((newGame) => {
+          try {
+            const move = newGame.move({
+              from: selectedSquare,
+              to: square,
+              promotion: "q",
+            });
 
-          if (move) {
-            clearAnalysis();
+            if (move) {
+              clearAnalysis();
+            }
+          } catch (error) {
+            console.log("Invalid move:", error);
           }
-        } catch (error) {
-          console.log("Invalid move:", error);
-        }
-      });
+        });
 
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
 
-    // Check if the clicked square has a piece
-    const piece = game.get(square as Square);
-    if (!piece || piece.color !== game.turn()) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
+      // Check if the clicked square has a piece
+      const piece = game.get(square as Square);
+      if (!piece || piece.color !== game.turn()) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
 
-    // Get legal moves for this piece
-    const moves = game.moves({ square: square as Square, verbose: true });
-    const targetSquares = moves.map((move) => move.to);
+      // Get legal moves for this piece
+      const moves = game.moves({ square: square as Square, verbose: true });
+      const targetSquares = moves.map((move) => move.to);
 
-    setSelectedSquare(square);
-    setLegalMoves(targetSquares);
-  }, [selectedSquare, legalMoves, game, safeGameMutate, clearAnalysis]);
+      setSelectedSquare(square);
+      setLegalMoves(targetSquares);
+    },
+    [selectedSquare, legalMoves, game, safeGameMutate, clearAnalysis]
+  );
 
   // Memoized custom square styles
   const customSquareStyles = useMemo(() => {
@@ -231,7 +256,7 @@ export default function AiChessboardPanel({
       const background = piece
         ? "radial-gradient(circle, rgba(255,0,0,0.8) 85%, transparent 85%)"
         : "radial-gradient(circle, rgba(0,0,0,0.3) 25%, transparent 25%)";
-      
+
       styles[square] = {
         background,
         ...styles[square],
@@ -247,7 +272,7 @@ export default function AiChessboardPanel({
       const newIndex = currentMoveIndex - 1;
       const newFen = moveHistory[newIndex];
       const newGame = new Chess(newFen);
-      
+
       setGame(newGame);
       setFen(newFen);
       setCurrentMoveIndex(newIndex);
@@ -261,7 +286,7 @@ export default function AiChessboardPanel({
       const newIndex = currentMoveIndex + 1;
       const newFen = moveHistory[newIndex];
       const newGame = new Chess(newFen);
-      
+
       setGame(newGame);
       setFen(newFen);
       setCurrentMoveIndex(newIndex);
@@ -289,9 +314,12 @@ export default function AiChessboardPanel({
   }, [isFlipped]);
 
   // Board size change callback
-  const handleBoardSizeChange = useCallback((_: Event, newValue: number | number[]) => {
-    setBoardSize(newValue as number);
-  }, []);
+  const handleBoardSizeChange = useCallback(
+    (_: Event, newValue: number | number[]) => {
+      setBoardSize(newValue as number);
+    },
+    []
+  );
 
   // Arrow toggle callback
   const toggleArrows = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,13 +334,15 @@ export default function AiChessboardPanel({
     <Stack spacing={2} alignItems="center">
       <Chessboard
         position={fen}
-        onPieceDrop={onDrop}
-        onSquareClick={handleSquareClick}
+        onPieceDrop={puzzleMode ? onDropPuzzle : onDrop}
+        onSquareClick={puzzleMode ? handleSquarePuzzleClick : handleSquareClick}
         allowDragOutsideBoard={false}
-        customSquareStyles={customSquareStyles}
+        customSquareStyles={
+          puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
+        }
         customArrows={customArrows}
         boardWidth={boardSize}
-        boardOrientation={isFlipped ? "black" : "white"}
+        boardOrientation={puzzleMode ? side : isFlipped ? "black" : "white"}
       />
 
       {/* Board Size Control */}
@@ -383,63 +413,67 @@ export default function AiChessboardPanel({
         </Button>
       </Stack>
 
-      <TextField
-        label="Paste FEN"
-        variant="outlined"
-        value={customFen}
-        onChange={(e) => setCustomFen(e.target.value)}
-        size="small"
-        sx={{
-          width: "100%",
-          backgroundColor: grey[900],
-          borderRadius: 1,
-        }}
-        placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-        slotProps={{
-          input: {
-            sx: {
+      {!puzzleMode ? (
+        <>
+          <TextField
+            label="Paste FEN"
+            variant="outlined"
+            value={customFen}
+            onChange={(e) => setCustomFen(e.target.value)}
+            size="small"
+            sx={{
+              width: "100%",
+              backgroundColor: grey[900],
+              borderRadius: 1,
+            }}
+            placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+            slotProps={{
+              input: {
+                sx: {
+                  color: "wheat",
+                },
+              },
+              inputLabel: {
+                sx: {
+                  color: "wheat",
+                },
+              },
+            }}
+          />
+          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+            <Button
+              variant="outlined"
+              onClick={loadCustomFen}
+              startIcon={<FaRegArrowAltCircleUp />}
+              fullWidth
+            >
+              Load FEN
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={flipBoard}
+              startIcon={<FaArrowRotateLeft />}
+              sx={{ width: "100%" }}
+            >
+              Flip Board
+            </Button>
+          </Stack>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 1,
+              width: "100%",
               color: "wheat",
-            },
-          },
-          inputLabel: {
-            sx: {
-              color: "wheat",
-            },
-          },
-        }}
-      />
-
-      <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-        <Button
-          variant="outlined"
-          onClick={loadCustomFen}
-          startIcon={<FaRegArrowAltCircleUp />}
-          fullWidth
-        >
-          Load FEN
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={flipBoard}
-          startIcon={<FaArrowRotateLeft />}
-          sx={{ width: "100%" }}
-        >
-          Flip Board
-        </Button>
-      </Stack>
-
-      <Paper
-        elevation={1}
-        sx={{
-          p: 1,
-          width: "100%",
-          color: "wheat",
-          backgroundColor: grey[800],
-          fontFamily: "monospace",
-        }}
-      >
-        {fen}
-      </Paper>
+              backgroundColor: grey[800],
+              fontFamily: "monospace",
+            }}
+          >
+            {fen}
+          </Paper>{" "}
+        </>
+      ) : (
+        <Divider />
+      )}
     </Stack>
   );
 }

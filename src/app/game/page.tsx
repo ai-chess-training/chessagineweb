@@ -794,6 +794,7 @@ export default function PGNUploaderPage() {
                 <ChatTab
                   chatMessages={chatMessages}
                   chatInput={chatInput}
+                  puzzleMode={false}
                   setChatInput={setChatInput}
                   gameInfo={pgnText}
                   currentMove={moves[currentMoveIndex]}

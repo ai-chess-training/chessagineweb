@@ -176,6 +176,7 @@ export default function PositionPage() {
                 setChatInput={setChatInput}
                 sendChatMessage={sendChatMessage}
                 chatLoading={chatLoading}
+                puzzleMode={false}
                 handleChatKeyPress={handleChatKeyPress}
                 clearChatHistory={clearChatHistory}
                 sessionMode={sessionMode}

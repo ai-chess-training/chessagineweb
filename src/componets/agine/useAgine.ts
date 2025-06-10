@@ -416,7 +416,7 @@ ${formattedEngineLines}`;
   // ==================== OPTIMIZED CHAT FUNCTIONS ====================
 
   const sendChatMessage = useCallback(
-    async (gameInfo?: string, currentMove?: string): Promise<void> => {
+    async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean): Promise<void> => {
       if (!chatInput.trim()) return;
 
       const userMessage = {
@@ -437,6 +437,10 @@ ${formattedEngineLines}`;
         const chessInstance = new Chess(currentFen);
         const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
         let query = `USER PROMPT: ${currentInput}\n\nCurrent Position: ${currentFen}\nSide to Move: ${sideToMove}`;
+
+        if(puzzleMode === true){
+          query += `\n\n Puzzle Mode: Active`
+        }
 
         if (gameInfo) {
           query += `\n\n Game PGN \n ${gameInfo}`;

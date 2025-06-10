@@ -652,8 +652,7 @@ export default function PuzzlePage() {
                   </Card>
                 )}
 
-                
-               
+
               </Stack>
             </TabPanel>
 
@@ -692,6 +691,7 @@ export default function PuzzlePage() {
                 setChatInput={setChatInput}
                 sendChatMessage={sendChatMessage}
                 chatLoading={chatLoading}
+                puzzleMode={true}
                 handleChatKeyPress={handleChatKeyPress}
                 clearChatHistory={clearChatHistory}
                 sessionMode={sessionMode}

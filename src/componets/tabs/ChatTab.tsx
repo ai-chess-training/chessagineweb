@@ -32,9 +32,10 @@ interface ChatTabProps {
   gameInfo?: string;
   currentMove?: string;
   chatInput: string;
+  puzzleMode: boolean;
   setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  sendChatMessage: (gameInfo?: string, currentMove?: string) => void;
+  sendChatMessage: (gameInfo?: string, currentMove?: string, puzzleMode?: boolean) => void;
 }
 
 const sessionPrompts = [
@@ -47,6 +48,13 @@ const sessionPrompts = [
   "Show me tactical opportunities",
   "Evaluate the pawn structure"
 ];
+
+
+const PuzzlePrompts = [
+  "Can you give me a hint",
+  "How to solve this puzzle",
+  "Analyze this position for me"
+]
 
 const chatPrompts = [
   "Explain chess fundamentals",
@@ -70,13 +78,18 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   handleChatKeyPress,
   sendChatMessage,
   gameInfo,
-  currentMove
+  currentMove,
+  puzzleMode
 }) => {
   const handlePromptClick = (prompt: string) => {
     setChatInput(prompt);
   };
 
-  const currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
+  let currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
+
+  if(puzzleMode){
+    currentPrompts = PuzzlePrompts;
+  }
 
   return (
     <Stack
@@ -95,6 +108,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         }}
       >
         <Typography variant="h6">AI Chat</Typography>
+        {!puzzleMode ?
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="caption" sx={{ color: "wheat" }}>
             Session Mode
@@ -104,25 +118,29 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             onChange={(e) => setSessionMode(e.target.checked)}
             size="small"
           />
+          
+        </Stack>
+        : <div>
           <Button
             variant="outlined"
             size="small"
+            sx={{"color": "wheat"}}
             onClick={clearChatHistory}
             disabled={chatMessages.length === 0}
           >
             Clear
-          </Button>
-        </Stack>
+          </Button></div>} 
       </Box>
 
-      {/* Mode Description */}
+      {!puzzleMode ? 
+      
       <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
         <Typography variant="caption" sx={{ color: "wheat" }}>
           {sessionMode
             ? "🔗 Session Mode: AI will analyze your questions with current position, engine data, and opening theory"
             : "💬 Chat Mode: General conversation without position context"}
         </Typography>
-      </Paper>
+      </Paper> : <div></div>}
 
       {/* Chat Messages */}
       <Box
@@ -308,7 +326,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         />
         <Button
           variant="contained"
-          onClick={() => sendChatMessage(gameInfo, currentMove)}
+          onClick={() => sendChatMessage(gameInfo, currentMove, puzzleMode)}
           disabled={chatLoading || !chatInput.trim()}
         >
           <Send />

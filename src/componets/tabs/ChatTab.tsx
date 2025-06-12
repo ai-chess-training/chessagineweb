@@ -1,7 +1,7 @@
 import React from "react";
 
 import { grey } from "@mui/material/colors";
-import { Message, Send } from "@mui/icons-material";
+import { Send } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
 import {
   Stack,

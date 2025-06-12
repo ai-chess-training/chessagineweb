@@ -809,15 +809,8 @@ export default function PGNUploaderPage() {
 
               <TabPanel value={analysisTab} index={2}>
                 <Typography variant="h6" gutterBottom>
-                  Stockfish Analysis
+                  Stockfish 17 NNUE LITE Analysis
                 </Typography>
-
-                {!stockfishLoading && !stockfishAnalysisResult ? (
-                  <Typography sx={{ color: "wheat" }}>
-                    Make some moves or paste a FEN and click Stockfish to see
-                    engine evaluation with real-time updates.
-                  </Typography>
-                ) : (
                   <StockfishAnalysisTab
                     stockfishAnalysisResult={stockfishAnalysisResult}
                     stockfishLoading={stockfishLoading}
@@ -832,7 +825,6 @@ export default function PGNUploaderPage() {
                     setEngineDepth={setEngineDepth}
                     setEngineLines={setEngineLines}
                   />
-                )}
               </TabPanel>
 
               <TabPanel value={analysisTab} index={3}>

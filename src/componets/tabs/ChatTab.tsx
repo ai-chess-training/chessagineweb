@@ -107,7 +107,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           alignItems: "center",
         }}
       >
-        <Typography variant="h6">AI Chat</Typography>
+        <Typography variant="h6">AgineAI Chat</Typography>
         {!puzzleMode ?
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="caption" sx={{ color: "wheat" }}>
@@ -137,7 +137,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
         <Typography variant="caption" sx={{ color: "wheat" }}>
           {sessionMode
-            ? "🔗 Session Mode: AI will analyze your questions with current position, engine data, and opening theory"
+            ? "🔗 Session Mode: Agine  will analyze your questions with current position, engine data, and opening theory"
             : "💬 Chat Mode: General conversation without position context"}
         </Typography>
       </Paper> : <div></div>}
@@ -292,7 +292,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 >
                   <CircularProgress size={16} />
                   <Typography variant="body2" sx={{ color: "wheat" }}>
-                    AI is thinking...
+                    Agine is thinking...
                   </Typography>
                 </Paper>
               </Box>

@@ -28,101 +28,64 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     setEngineDepth,
     engineLines,
     setEngineLines,
-    engine,
     handleEngineLineClick,
     llmLoading,
     formatEvaluation,
     formatPrincipalVariation,
 }) => {
   
-    if (!stockfishAnalysisResult) {
+    if (!stockfishAnalysisResult || stockfishLoading) {
         return (
             <Stack spacing={2}>
-                
-
-                {/* Loading state when no engine data */}
                 <Paper
                     sx={{
-                        p: 4,
-                        backgroundColor: grey[800],
-                        textAlign: "center",
-                        borderLeft: "3px solid #ffa726",
+                        p: 2,
+                        width: "100%",
+                        backgroundColor: "#242121",
                     }}
                 >
-                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                        <CircularProgress 
-                            size={40} 
-                            sx={{ 
-                                color: "wheat",
-                                animation: "pulse 2s infinite",
-                                "@keyframes pulse": {
-                                    "0%": { opacity: 0.6 },
-                                    "50%": { opacity: 1 },
-                                    "100%": { opacity: 0.6 },
-                                },
-                            }} 
-                        />
-                        <Typography variant="h6" sx={{ color: "wheat", fontWeight: "bold" }}>
-                            Initializing Stockfish Engine
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: "wheat", opacity: 0.8 }}>
-                            Preparing chess analysis engine...
-                        </Typography>
-                        {!engine && (
-                            <Typography variant="caption" sx={{ color: "#ffa726", fontStyle: "italic" }}>
-                                Engine not ready. Please wait or try starting the analysis.
+                    <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
+                        Stockfish Settings (Used by AI Analysis)
+                    </Typography>
+
+                    <Stack spacing={2}>
+                        <Box>
+                            <Typography variant="caption" sx={{ color: "wheat" }}>
+                                Depth: {engineDepth}
                             </Typography>
-                        )}
-                    </Box>
+                            <Slider
+                                value={engineDepth}
+                                setValue={setEngineDepth}
+                                min={10}
+                                max={25}
+                                disable={stockfishLoading}
+                                
+                            />
+                        </Box>
+
+                        <Box>
+                            <Typography variant="caption" sx={{ color: "wheat" }}>
+                                Lines: {engineLines} (AI will analyze all {engineLines} line
+                                {engineLines > 1 ? "s" : ""})
+                            </Typography>
+                            <Slider
+                                value={engineLines}
+                                setValue={setEngineLines}
+                                min={1}
+                                max={4}
+                                disable={stockfishLoading}
+                            />
+                        </Box>
+                    </Stack>
                 </Paper>
 
-                {/* Skeleton loading for analysis lines */}
-                <Stack spacing={1}>
-                    {Array.from({ length: engineLines }).map((_, index) => (
-                        <Paper
-                            key={`skeleton-${index}`}
-                            sx={{
-                                p: 2,
-                                backgroundColor: grey[700],
-                                borderLeft: `3px solid ${index === 0 ? "#4caf50" : "#2196f3"}`,
-                                opacity: 0.3,
-                                animation: "shimmer 1.5s infinite",
-                                "@keyframes shimmer": {
-                                    "0%": { opacity: 0.3 },
-                                    "50%": { opacity: 0.5 },
-                                    "100%": { opacity: 0.3 },
-                                },
-                            }}
-                        >
-                            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
-                                <Box
-                                    sx={{
-                                        width: "60px",
-                                        height: "16px",
-                                        backgroundColor: grey[600],
-                                        borderRadius: "4px",
-                                    }}
-                                />
-                                <Box
-                                    sx={{
-                                        width: "80px",
-                                        height: "12px",
-                                        backgroundColor: grey[600],
-                                        borderRadius: "4px",
-                                    }}
-                                />
-                            </Stack>
-                            <Box
-                                sx={{
-                                    width: "100%",
-                                    height: "16px",
-                                    backgroundColor: grey[600],
-                                    borderRadius: "4px",
-                                }}
-                            />
-                        </Paper>
-                    ))}
-                </Stack>
+                {/* Simple loading state */}
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <CircularProgress 
+                        size={40} 
+                        sx={{ color: "wheat" }} 
+                    />
+                </Box>
             </Stack>
         );
     }
@@ -173,7 +136,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
 
             {stockfishLoading && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={16} />
+                    <CircularProgress size={16} sx={{ color: "wheat" }} />
                     <Typography variant="caption" sx={{ color: "wheat" }}>
                         Analyzing... (Depth: {engineDepth}, Lines: {engineLines}) - data
                         updates in real-time

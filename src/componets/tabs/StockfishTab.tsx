@@ -34,7 +34,8 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     formatPrincipalVariation,
 }) => {
   
-    if (!stockfishAnalysisResult || stockfishLoading) {
+    // Enhanced condition to check for valid analysis result with lines
+    if (!stockfishAnalysisResult || stockfishLoading || !stockfishAnalysisResult.lines || stockfishAnalysisResult.lines.length === 0) {
         return (
             <Stack spacing={2}>
                 <Paper
@@ -144,7 +145,12 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                 </Box>
             )}
 
-            {stockfishAnalysisResult.bestMove && (
+            {/* Enhanced safety check for bestMove display */}
+            {stockfishAnalysisResult.bestMove && 
+             stockfishAnalysisResult.lines && 
+             stockfishAnalysisResult.lines.length > 0 && 
+             stockfishAnalysisResult.lines[0].pv && 
+             stockfishAnalysisResult.lines[0].pv.length > 0 && (
                 <Box>
                     <Typography
                         variant="subtitle2"

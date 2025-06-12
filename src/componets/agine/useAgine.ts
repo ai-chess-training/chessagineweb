@@ -272,151 +272,137 @@ export default function useAgine(fen: string) {
 
   // ==================== OPTIMIZED ANALYSIS FUNCTION ====================
 
-  const analyzePosition = useCallback(
-    async (customQuery?: string): Promise<void> => {
-      setLlmLoading(true);
-      setLlmAnalysisResult(null);
+const analyzePosition = useCallback(
+  async (customQuery?: string): Promise<string> => {
+    setLlmLoading(true);
+    setLlmAnalysisResult(null);
 
-      const currentFen = currentFenRef.current;
-      let query = customQuery;
+    const currentFen = currentFenRef.current;
 
-      try {
-        // If no custom query, build comprehensive analysis query
-        if (!customQuery) {
-          if (!engine) {
-            setLlmAnalysisResult(
-              "Stockfish engine not ready. Please wait for initialization."
-            );
-            return;
-          }
+    try {
+      // Always ensure engine is ready
+      if (!engine) {
+        const errorMessage = "Stockfish engine not ready. Please wait for initialization.";
+        setLlmAnalysisResult(errorMessage);
+        throw new Error(errorMessage);
+      }
 
-          // Get fresh Stockfish analysis
-          const stockfishResult = await engine.evaluatePositionWithUpdate({
-            fen: currentFen,
-            depth: engineDepth,
-            multiPv: engineLines,
-            setPartialEval: (partialEval: PositionEval) => {
-              if (currentFenRef.current === currentFen) {
-                setStockfishAnalysisResult(partialEval);
-              }
-            },
-          });
-
+      // Always get fresh Stockfish analysis
+      const stockfishResult = await engine.evaluatePositionWithUpdate({
+        fen: currentFen,
+        depth: engineDepth,
+        multiPv: engineLines,
+        setPartialEval: (partialEval: PositionEval) => {
           if (currentFenRef.current === currentFen) {
-            setStockfishAnalysisResult(stockfishResult);
+            setStockfishAnalysisResult(partialEval);
+          }
+        },
+      });
+
+      if (currentFenRef.current === currentFen) {
+        setStockfishAnalysisResult(stockfishResult);
+      }
+
+      // Always get opening data if not available
+      let currentOpeningData = openingData;
+      if (!currentOpeningData) {
+        try {
+          currentOpeningData = await getOpeningStats(currentFen);
+          if (currentFenRef.current === currentFen) {
+            setOpeningData(currentOpeningData);
+          }
+        } catch (error) {
+          console.error("Error fetching opening data for annotation:", error);
+        }
+      }
+
+      // Always format engine analysis for LLM
+      const formattedEngineLines = stockfishResult.lines
+        .map((line, index) => {
+          const evaluation = formatEvaluation(line);
+          const moves = formatPrincipalVariation(line.pv, line.fen);
+          let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+          if (line.resultPercentages) {
+            formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
           }
 
-          // Get opening data if not available
-          let currentOpeningData = openingData;
-          if (!currentOpeningData) {
-            try {
-              currentOpeningData = await getOpeningStats(currentFen);
-              if (currentFenRef.current === currentFen) {
-                setOpeningData(currentOpeningData);
-              }
-            } catch (error) {
-              console.error("Error fetching opening data for analysis:", error);
-            }
-          }
+          formattedLine += ` [Depth: ${line.depth}]`;
+          return formattedLine;
+        })
+        .join("\n");
 
-          // Format engine analysis for LLM
-          const formattedEngineLines = stockfishResult.lines
-            .map((line, index) => {
-              const evaluation = formatEvaluation(line);
-              const moves = formatPrincipalVariation(line.pv, line.fen);
-              let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-              if (line.resultPercentages) {
-                formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-              }
-
-              formattedLine += ` [Depth: ${line.depth}]`;
-              return formattedLine;
-            })
-            .join("\n");
-
-          // Build comprehensive query
-          query = `Analyze this chess position in detail using the Stockfish engine analysis and opening database information provided:
+      // Build base query with engine and opening data
+      let baseQuery = `Annotate this chess position using the Stockfish engine analysis and opening database information provided:
 
 Position FEN: ${currentFen}
 Best Move: ${stockfishResult.bestMove || "Not available"}
 
 Engine Analysis (Depth ${engineDepth}, ${engineLines} line${
-            engineLines > 1 ? "s" : ""
-          }):
+        engineLines > 1 ? "s" : ""
+      }):
 ${formattedEngineLines}`;
 
-          // Add opening data if available
-          if (currentOpeningData) {
-            const openingSpeech = getOpeningStatSpeech(currentOpeningData);
-            query += `\n\nOpening Database Information:\n${openingSpeech}`;
-          }
-
-          query += `\n\n1. Describe the key features of the position in terms of Silman's imbalances from the book "Reassess Your Chess" below:
-
-- Superior minor piece
-- Pawn structure
-- Space
-- Material
-- Control of a key file
-- Control of a hole/weak square
-- Lead in development
-- Initiative (and Tempo)
-- King safety
-- Statics vs. Dynamics
-
-2. To this list add a summary of piece activity and coordination, and weaknesses for both sides
-
-3. Answer the following "ChessMood 7Q" seven questions:
-   a. What problems does the opponent have?
-   b. What problems do I have?
-   c. Where am I strong?
-   d. Which of my pieces can be happier?
-   e. Which pieces do I want to trade?
-   f. What is the opponent's next move or plan?
-   g. How can I advance (if none of the other six questions have compelling answers)
-
-4. Based on the features and the seven questions summarize the goals for both sides
-5. Using the engine analysis in the PGN, please explain the candidate moves. Assess the candidate moves in terms of the features, seven questions, and goals. How do the candidates further our goals or stop the opponent goals. Which candidate is more practical and which entails the most risk. Recommend a strategy or alternative strategies explaining which are more tactical and which are more positional. Use games from the master or lichess database as model games when relevant.
-6. Consider Fine's 30 chess principles below and supplementary additional principles identified below. In your explanation of the candidate moves, include reference and quote any of the principles which are clearly relevant and how that makes the candidate move a "principled move" because it follows one or more principles below:`;
-        }
-
-        const result = await makeApiRequest(currentFen, query!);
-
-        // Only update if we're still analyzing the same position
-        if (currentFenRef.current === currentFen) {
-          setLlmAnalysisResult(result);
-        }
-      } catch (error) {
-        console.error("Error analyzing position:", error);
-        if (currentFenRef.current === currentFen) {
-          if (error instanceof Error && error.message === "Request cancelled") {
-            // Don't show error for cancelled requests
-            return;
-          }
-          setLlmAnalysisResult("Error analyzing position. Please try again.");
-        }
-      } finally {
-        if (currentFenRef.current === currentFen) {
-          setLlmLoading(false);
-        }
+      // Add opening data if available
+      if (currentOpeningData) {
+        const openingSpeech = getOpeningStatSpeech(currentOpeningData);
+        baseQuery += `\n\nOpening Database Information:\n${openingSpeech}`;
       }
-    },
-    [
-      engine,
-      engineDepth,
-      engineLines,
-      openingData,
-      formatEvaluation,
-      formatPrincipalVariation,
-      makeApiRequest,
-    ]
-  );
+
+      // Build final query
+      let finalQuery: string;
+      if (customQuery) {
+        // Include custom query with all the engine data
+        finalQuery = `${baseQuery}\n\nSpecific Request: ${customQuery}\n\nGenerate a concise annotation for this position based on the above analysis and the specific request.`;
+      } else {
+        // Default annotation query
+        finalQuery = `${baseQuery}\n\nGenerate a short annotation for this position.`;
+      }
+
+      const result = await makeApiRequest(currentFen, finalQuery);
+
+      // Only update if we're still analyzing the same position
+      if (currentFenRef.current === currentFen) {
+        setLlmAnalysisResult(result);
+      }
+
+      // Return the result for the component to use
+      return result;
+    } catch (error) {
+      console.error("Error analyzing position:", error);
+      let errorMessage = "Error analyzing position. Please try again.";
+      
+      if (currentFenRef.current === currentFen) {
+        if (error instanceof Error && error.message === "Request cancelled") {
+          // Don't show error for cancelled requests, but still throw
+          throw error;
+        }
+        setLlmAnalysisResult(errorMessage);
+      }
+      
+      // Throw the error so the component can handle it
+      throw new Error(errorMessage);
+    } finally {
+      if (currentFenRef.current === currentFen) {
+        setLlmLoading(false);
+      }
+    }
+  },
+  [
+    engine,
+    engineDepth,
+    engineLines,
+    openingData,
+    formatEvaluation,
+    formatPrincipalVariation,
+    makeApiRequest,
+  ]
+);
 
   // ==================== OPTIMIZED CHAT FUNCTIONS ====================
 
   const sendChatMessage = useCallback(
-    async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean): Promise<void> => {
+    async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean, puzzleQuery?: string): Promise<void> => {
       if (!chatInput.trim()) return;
 
       const userMessage = {

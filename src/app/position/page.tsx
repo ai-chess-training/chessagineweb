@@ -20,6 +20,7 @@ import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/componets/agine/useAgine";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
+import AnnotationTab from "@/componets/tabs/AnnontateTab";
 
 export default function PositionPage() {
   
@@ -103,7 +104,6 @@ export default function PositionPage() {
             setOpeningData={setOpeningData}
             setStockfishAnalysisResult={setStockfishAnalysisResult}
             fetchOpeningData={fetchOpeningData}
-            analyzePosition={analyzePosition}
             analyzeWithStockfish={analyzeWithStockfish}
             llmLoading={llmLoading}
             stockfishLoading={stockfishLoading}
@@ -134,6 +134,7 @@ export default function PositionPage() {
               >
                 <Tab label="Stockfish Analysis" />
                 <Tab label="AI Chat" />
+                <Tab label="AI Annontation"/>
                 <Tab label="Opening Explorer" />
                 <Tab label="Chess DB" />
               </Tabs>
@@ -178,6 +179,13 @@ export default function PositionPage() {
             </TabPanel>
 
             <TabPanel value={analysisTab} index={2}>
+              <AnnotationTab 
+               analyzePosition={analyzePosition}
+               disabled={false}
+              />
+            </TabPanel>
+
+            <TabPanel value={analysisTab} index={3}>
               <Typography variant="h6" gutterBottom>
                 Opening Explorer
               </Typography>
@@ -189,7 +197,7 @@ export default function PositionPage() {
               />
             </TabPanel>
 
-            <TabPanel value={analysisTab} index={3}>
+            <TabPanel value={analysisTab} index={4}>
               <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
             </TabPanel>
           </Paper>

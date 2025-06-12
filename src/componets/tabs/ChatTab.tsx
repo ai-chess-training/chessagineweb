@@ -33,9 +33,15 @@ interface ChatTabProps {
   currentMove?: string;
   chatInput: string;
   puzzleMode: boolean;
+  puzzleQuery?: string;
   setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  sendChatMessage: (gameInfo?: string, currentMove?: string, puzzleMode?: boolean) => void;
+  sendChatMessage: (
+    gameInfo?: string,
+    currentMove?: string,
+    puzzleMode?: boolean,
+    puzzleQuery?: string
+  ) => void;
 }
 
 const sessionPrompts = [
@@ -46,15 +52,14 @@ const sessionPrompts = [
   "Is this position winning or losing?",
   "What opening is this?",
   "Show me tactical opportunities",
-  "Evaluate the pawn structure"
+  "Evaluate the pawn structure",
 ];
-
 
 const PuzzlePrompts = [
   "Can you give me a hint",
   "How to solve this puzzle",
-  "Analyze this position for me"
-]
+  "Analyze this position for me",
+];
 
 const chatPrompts = [
   "Explain chess fundamentals",
@@ -64,7 +69,7 @@ const chatPrompts = [
   "How do I study chess openings?",
   "What's the importance of endgames?",
   "Explain chess strategy vs tactics",
-  "How do grandmasters think?"
+  "How do grandmasters think?",
 ];
 
 export const ChatTab: React.FC<ChatTabProps> = ({
@@ -79,7 +84,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   sendChatMessage,
   gameInfo,
   currentMove,
-  puzzleMode
+  puzzleMode,
+  puzzleQuery,
 }) => {
   const handlePromptClick = (prompt: string) => {
     setChatInput(prompt);
@@ -87,7 +93,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
   let currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
 
-  if(puzzleMode){
+  if (puzzleMode) {
     currentPrompts = PuzzlePrompts;
   }
 
@@ -108,39 +114,43 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         }}
       >
         <Typography variant="h6">AgineAI Chat</Typography>
-        {!puzzleMode ?
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="caption" sx={{ color: "wheat" }}>
-            Session Mode
-          </Typography>
-          <Switch
-            checked={sessionMode}
-            onChange={(e) => setSessionMode(e.target.checked)}
-            size="small"
-          />
-          
-        </Stack>
-        : <div>
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{"color": "wheat"}}
-            onClick={clearChatHistory}
-            disabled={chatMessages.length === 0}
-          >
-            Clear
-          </Button></div>} 
+        {!puzzleMode ? (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="caption" sx={{ color: "wheat" }}>
+              Session Mode
+            </Typography>
+            <Switch
+              checked={sessionMode}
+              onChange={(e) => setSessionMode(e.target.checked)}
+              size="small"
+            />
+          </Stack>
+        ) : (
+          <div>
+            <Button
+              variant="outlined"
+              size="small"
+              sx={{ color: "wheat" }}
+              onClick={clearChatHistory}
+              disabled={chatMessages.length === 0}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
       </Box>
 
-      {!puzzleMode ? 
-      
-      <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
-        <Typography variant="caption" sx={{ color: "wheat" }}>
-          {sessionMode
-            ? "🔗 Session Mode: Agine  will analyze your questions with current position, engine data, and opening theory"
-            : "💬 Chat Mode: General conversation without position context"}
-        </Typography>
-      </Paper> : <div></div>}
+      {!puzzleMode ? (
+        <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
+          <Typography variant="caption" sx={{ color: "wheat" }}>
+            {sessionMode
+              ? "🔗 Session Mode: Agine  will analyze your questions with current position, engine data, and opening theory"
+              : "💬 Chat Mode: General conversation without position context"}
+          </Typography>
+        </Paper>
+      ) : (
+        <div></div>
+      )}
 
       {/* Chat Messages */}
       <Box
@@ -165,23 +175,28 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               p: 2,
             }}
           >
-            <Message sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+            <Avatar
+              src="/static/images/agineowl.png"
+              sx={{
+                width: 55,
+                height: 55,
+                mr: 1,
+                mt: 0.5,
+              }}
+            ></Avatar>
             <Typography variant="body1" sx={{ mb: 2, textAlign: "center" }}>
-              Start a conversation with the AI
-              {sessionMode && (
-                <>
-                  <br />
-                  <Typography variant="caption" sx={{ fontStyle: "italic" }}>
-                    Your messages will include current position analysis
-                  </Typography>
-                </>
-              )}
+              Hey friend, lets talk about chess positions!
             </Typography>
-            
+
             {/* Pre-defined Prompts */}
             <Box sx={{ width: "100%", maxWidth: 500 }}>
-              <Typography variant="caption" sx={{ mb: 1, display: "block", opacity: 0.8 }}>
-                {sessionMode ? "Try asking about the position:" : "Popular topics:"}
+              <Typography
+                variant="caption"
+                sx={{ mb: 1, display: "block", opacity: 0.8, textAlign: "center" }}
+              >
+                {sessionMode
+                  ? "Try asking about the position:"
+                  : "Popular topics:"}
               </Typography>
               <Box
                 sx={{
@@ -227,19 +242,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 {/* Avatar for assistant messages */}
                 {message.role === "assistant" && (
                   <Avatar
-                  src="/static/images/agineowl.png"
+                    src="/static/images/agineowl.png"
                     sx={{
-                      
                       width: 32,
                       height: 32,
                       mr: 1,
                       mt: 0.5,
                     }}
-                  >
-                    
-                  </Avatar>
+                  ></Avatar>
                 )}
-                
+
                 <Paper
                   sx={{
                     p: 2,
@@ -250,13 +262,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   }}
                 >
                   {message.role === "assistant" ? (
-                    <ReactMarkdown>
-                      {message.content}
-                    </ReactMarkdown>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
                   ) : (
-                    <Typography variant="body2">
-                      {message.content}
-                    </Typography>
+                    <Typography variant="body2">{message.content}</Typography>
                   )}
                   <Typography
                     variant="caption"
@@ -268,19 +276,22 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               </Box>
             ))}
             {chatLoading && (
-              <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-start",
+                  alignItems: "flex-start",
+                }}
+              >
                 <Avatar
-                src="/static/images/agineowl.png"
+                  src="/static/images/agineowl.png"
                   sx={{
-                   
                     width: 32,
                     height: 32,
                     mr: 1,
                     mt: 0.5,
                   }}
-                >
-                  
-                </Avatar>
+                ></Avatar>
                 <Paper
                   sx={{
                     p: 2,
@@ -326,7 +337,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         />
         <Button
           variant="contained"
-          onClick={() => sendChatMessage(gameInfo, currentMove, puzzleMode)}
+          onClick={() =>
+            sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery)
+          }
           disabled={chatLoading || !chatInput.trim()}
         >
           <Send />

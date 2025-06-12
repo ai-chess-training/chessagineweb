@@ -35,13 +35,25 @@ interface PuzzleData {
   moves: string;
   preMove: string;
   rating: number;
+  themes: string[];
   gameURL: string;
+}
+
+interface PuzzleQuery {
+  themes: string[];
+  solution: string[];
+}
+
+interface PuzzleQueryString {
+  queryString: string;
 }
 
 export default function PuzzlePage() {
   const session = useSession();
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
+  const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
+  const [puzzleQueryString, setPuzzleQueryString] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +75,43 @@ export default function PuzzlePage() {
   const [showingSolution, setShowingSolution] = useState(false);
   const [solutionViewIndex, setSolutionViewIndex] = useState(0);
   const [solutionGameState, setSolutionGameState] = useState<Chess | null>(null);
+
+  // Helper function to convert PuzzleQuery to prompt string
+  const createPuzzlePrompt = useCallback((query: PuzzleQuery): string => {
+    const themesText = query.themes.length > 0 
+      ? `This puzzle focuses on: ${query.themes.join(", ")}. themes` 
+      : "";
+    
+    const solutionText = query.solution.length > 0 
+      ? `The solution is: ${query.solution.join(" ")}.` 
+      : "";
+    
+    return `Current chess puzzle context: ${themesText} ${solutionText}.`.trim();
+  }, []);
+
+  // Helper function to convert algebraic notation moves to SAN format
+  const convertMovesToSAN = useCallback((moves: string[], startingFEN: string): string[] => {
+    const tempGame = new Chess(startingFEN);
+    const sanMoves: string[] = [];
+
+    moves.forEach((move) => {
+      try {
+        const moveObj = tempGame.move({
+          from: move.substring(0, 2),
+          to: move.substring(2, 4),
+          promotion: move.substring(4) || undefined,
+        });
+        
+        if (moveObj) {
+          sanMoves.push(moveObj.san);
+        }
+      } catch (error) {
+        console.error("Error converting move to SAN:", move, error);
+      }
+    });
+
+    return sanMoves;
+  }, []);
 
   const fetchPuzzle = useCallback(async () => {
     setLoading(true);
@@ -87,6 +136,20 @@ export default function PuzzlePage() {
       setSolutionMoves(moves);
       setCurrentSolutionIndex(0);
 
+      // Convert moves to SAN format for puzzle query
+      const sanMoves = convertMovesToSAN(moves, data.FEN);
+      
+      // Create puzzle query object
+      const newPuzzleQuery: PuzzleQuery = {
+        themes: data.themes,
+        solution: sanMoves,
+      };
+      setPuzzleQuery(newPuzzleQuery);
+      
+      // Create puzzle query string for ChatTab
+      const queryString = createPuzzlePrompt(newPuzzleQuery);
+      setPuzzleQueryString(queryString);
+
       // Reset puzzle state
       setPuzzleComplete(false);
       setPuzzleFailed(false);
@@ -104,7 +167,7 @@ export default function PuzzlePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [convertMovesToSAN, createPuzzlePrompt]);
 
   // Initialize with first puzzle
   useEffect(() => {
@@ -135,7 +198,6 @@ export default function PuzzlePage() {
     setEngineLines,
     engine,
     fetchOpeningData,
-    analyzePosition,
     sendChatMessage,
     handleChatKeyPress,
     clearChatHistory,
@@ -461,7 +523,6 @@ export default function PuzzlePage() {
             setOpeningData={setOpeningData}
             setStockfishAnalysisResult={setStockfishAnalysisResult}
             fetchOpeningData={fetchOpeningData}
-            analyzePosition={analyzePosition}
             analyzeWithStockfish={analyzeWithStockfish}
             puzzleCustomSquareStyle={customSquareStyles}
             llmLoading={llmLoading}
@@ -595,27 +656,29 @@ export default function PuzzlePage() {
                   </CardContent>
                 </Card>
 
-                {/* Rating & Move Info Card - Enlarged */}
+                {/* Rating & Themes Card */}
                 <Card sx={{ backgroundColor: grey[900] }}>
                   <CardContent>
-                    <Stack
-                      direction="row"
-                      spacing={4}
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <Chip
-                        icon={<Star />}
-                        label={`Rating: ${puzzleData?.rating || "N/A"}`}
-                        color="primary"
-                        variant="outlined"
-                        sx={{
-                          fontSize: "1.2rem",
-                          px: 2,
-                          py: 1.5,
-                          height: "auto",
-                        }}
-                      />
+                    <Stack spacing={2}>
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <Chip
+                          icon={<Star />}
+                          label={`Rating: ${puzzleData?.rating || "N/A"}`}
+                          color="primary"
+                          variant="outlined"
+                          sx={{
+                            fontSize: "1.2rem",
+                            px: 2,
+                            py: 1.5,
+                            height: "auto",
+                          }}
+                        />
+                      </Stack>
                     </Stack>
                   </CardContent>
                 </Card>
@@ -651,8 +714,6 @@ export default function PuzzlePage() {
                     </CardContent>
                   </Card>
                 )}
-
-
               </Stack>
             </TabPanel>
 
@@ -684,6 +745,7 @@ export default function PuzzlePage() {
                 sendChatMessage={sendChatMessage}
                 chatLoading={chatLoading}
                 puzzleMode={true}
+                puzzleQuery={puzzleQueryString}
                 handleChatKeyPress={handleChatKeyPress}
                 clearChatHistory={clearChatHistory}
                 sessionMode={sessionMode}

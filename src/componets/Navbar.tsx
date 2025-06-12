@@ -38,12 +38,11 @@ export default function NavBar() {
             <Button color="inherit" startIcon={<FaChessBoard />} href="/position">
               Analyze Position
             </Button>
+            
             <Button color="inherit" startIcon={<FaChessPawn />} href="/game">
               Analyze Game
             </Button>
-            <Button color="inherit" startIcon={<TfiWrite/>} href="/annonate">
-              Analyze annotations
-            </Button>
+
             <Button color="inherit" startIcon={<FaPuzzlePiece/>} href="/puzzle">
               Puzzles
             </Button>

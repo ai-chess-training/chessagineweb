@@ -20,6 +20,7 @@ import ViewBoardIcon from '@mui/icons-material/Bolt';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { TfiWrite } from 'react-icons/tfi';
+import { FaPuzzlePiece } from 'react-icons/fa6';
 
 export default function HomePage() {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -34,7 +35,6 @@ export default function HomePage() {
           <Container maxWidth="md">
             <Stack spacing={3} alignItems="center">
               <Avatar sx={{ bgcolor: '#f5deb3', color: '#7c3aed', width: 72, height: 72 }} src='/static/images/agineowl.png'> 
-               W
               </Avatar>
               <Typography variant="h4" fontWeight="bold" textAlign="center">
                 Welcome back, {user?.firstName || 'Chess Player'}!
@@ -70,11 +70,11 @@ export default function HomePage() {
                   onClick: () => router.push('/game'),
                 },
                 {
-                  icon: <TfiWrite style={{ fontSize: 48 }} />,
-                  title: 'Annotation Analysis',
+                  icon: <FaPuzzlePiece style={{ fontSize: 48 }} />,
+                  title: 'Interactive Puzzles',
                   description:
-                    'Paste Game PGNs for Agine to analyze/comment on moves, make your annotations smarter and fun.',
-                  onClick: () => router.push('/annonate'),
+                    'Do Random Lichess puzzles interactivly with Agine',
+                  onClick: () => router.push('/puzzle'),
                 },
               ].map((card) => (
                 <Card

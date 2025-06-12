@@ -32,7 +32,6 @@ interface AiChessboardPanelProps {
   moveSquares: { [square: string]: string };
   llmLoading: boolean;
   engine: UciEngine | undefined;
-  analyzePosition: () => void;
   analyzeWithStockfish: () => void;
   stockfishLoading: boolean;
   fetchOpeningData: () => void;

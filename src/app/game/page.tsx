@@ -33,6 +33,7 @@ import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/componets/agine/useGameReview";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
 import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
+import AnnotationTab from "@/componets/tabs/AnnontateTab";
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -668,7 +669,6 @@ export default function PGNUploaderPage() {
               setStockfishAnalysisResult={setStockfishAnalysisResult}
               stockfishAnalysisResult={stockfishAnalysisResult}
               fetchOpeningData={fetchOpeningData}
-              analyzePosition={analyzePosition}
               analyzeWithStockfish={analyzeWithStockfish}
               llmLoading={llmLoading}
               stockfishLoading={stockfishLoading}
@@ -769,6 +769,7 @@ export default function PGNUploaderPage() {
                 >
                   <Tab label="Game Info" />
                   <Tab label="AI Chat" />
+                  <Tab label="AI Annontation"/>
                   <Tab label="Stockfish Analysis" />
                   <Tab label="Opening Explorer" />
                   <Tab label="Chess DB" />
@@ -808,6 +809,15 @@ export default function PGNUploaderPage() {
               </TabPanel>
 
               <TabPanel value={analysisTab} index={2}>
+              <AnnotationTab 
+               analyzePosition={analyzePosition}
+               disabled={false}
+               pretext={comment}
+              />
+            </TabPanel>
+
+
+              <TabPanel value={analysisTab} index={3}>
                 <Typography variant="h6" gutterBottom>
                   Stockfish 17 NNUE LITE Analysis
                 </Typography>
@@ -827,7 +837,7 @@ export default function PGNUploaderPage() {
                   />
               </TabPanel>
 
-              <TabPanel value={analysisTab} index={3}>
+              <TabPanel value={analysisTab} index={4}>
                 <Typography variant="h6" gutterBottom>
                   Opening Explorer
                 </Typography>

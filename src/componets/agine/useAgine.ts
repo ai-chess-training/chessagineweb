@@ -370,7 +370,7 @@ ${formattedEngineLines}`;
       return result;
     } catch (error) {
       console.error("Error analyzing position:", error);
-      let errorMessage = "Error analyzing position. Please try again.";
+      const errorMessage = "Error analyzing position. Please try again.";
       
       if (currentFenRef.current === currentFen) {
         if (error instanceof Error && error.message === "Request cancelled") {
@@ -426,6 +426,10 @@ ${formattedEngineLines}`;
 
         if(puzzleMode === true){
           query += `\n\n Puzzle Mode: Active`
+        }
+
+        if(puzzleQuery){
+          query += `\n\n Puzzle Info: ${puzzleQuery}`
         }
 
         if (gameInfo) {

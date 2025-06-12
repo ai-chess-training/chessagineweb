@@ -16,7 +16,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { TfiWrite } from "react-icons/tfi";
+
 
 export default function NavBar() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function NavBar() {
             <Button color="inherit" startIcon={<FaChessBoard />} href="/position">
               Analyze Position
             </Button>
-            
+
             <Button color="inherit" startIcon={<FaChessPawn />} href="/game">
               Analyze Game
             </Button>

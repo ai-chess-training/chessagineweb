@@ -44,10 +44,6 @@ interface PuzzleQuery {
   solution: string[];
 }
 
-interface PuzzleQueryString {
-  queryString: string;
-}
-
 export default function PuzzlePage() {
   const session = useSession();
 
@@ -144,6 +140,7 @@ export default function PuzzlePage() {
         themes: data.themes,
         solution: sanMoves,
       };
+      console.log(puzzleQuery);
       setPuzzleQuery(newPuzzleQuery);
       
       // Create puzzle query string for ChatTab

@@ -19,7 +19,6 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ViewBoardIcon from '@mui/icons-material/Bolt';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { TfiWrite } from 'react-icons/tfi';
 import { FaPuzzlePiece } from 'react-icons/fa6';
 
 export default function HomePage() {

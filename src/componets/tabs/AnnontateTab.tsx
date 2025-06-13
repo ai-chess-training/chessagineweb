@@ -8,11 +8,16 @@ import {
   Divider,
   CircularProgress,
   Paper,
+  IconButton,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   SmartToy,
   Person as PersonIcon,
   AutoAwesome as GenerateIcon,
+  ContentCopy as CopyIcon,
 } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
 
@@ -30,6 +35,7 @@ const AnnotationTab: React.FC<ChessAnnotationProps> = ({
   const [userThoughts, setUserThoughts] = useState<string>("");
   const [aiAnnotation, setAiAnnotation] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Set pretext when it becomes available
   useEffect(() => {
@@ -56,6 +62,34 @@ const AnnotationTab: React.FC<ChessAnnotationProps> = ({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleCopyAnnotation = async () => {
+    if (!aiAnnotation) return;
+    
+    try {
+      await navigator.clipboard.writeText(aiAnnotation);
+      setCopySuccess(true);
+    } catch (error) {
+      console.error("Failed to copy annotation:", error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = aiAnnotation;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopySuccess(true);
+      } catch (fallbackError) {
+        console.error("Fallback copy failed:", fallbackError);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const handleCloseCopySnackbar = () => {
+    setCopySuccess(false);
   };
 
   const handleClearThoughts = () => {
@@ -102,11 +136,30 @@ const AnnotationTab: React.FC<ChessAnnotationProps> = ({
             flexDirection: "column",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-            <SmartToy color="primary" />
-            <Typography variant="subtitle1" fontWeight="medium">
-              AgineAI Annotation
-            </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <SmartToy color="primary" />
+              <Typography variant="subtitle1" fontWeight="medium">
+                AgineAI Annotation
+              </Typography>
+            </Box>
+            
+            {aiAnnotation && !isGenerating && (
+              <Tooltip title="Copy annotation">
+                <IconButton
+                  onClick={handleCopyAnnotation}
+                  size="small"
+                  sx={{
+                    color: "wheat",
+                    "&:hover": {
+                      backgroundColor: grey[800],
+                    },
+                  }}
+                >
+                  <CopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
 
           {/* Scrollable Content Area */}
@@ -249,6 +302,23 @@ const AnnotationTab: React.FC<ChessAnnotationProps> = ({
           </Button>
         </Box>
       </Box>
+
+      {/* Copy Success Snackbar */}
+      <Snackbar
+        open={copySuccess}
+        autoHideDuration={3000}
+        onClose={handleCloseCopySnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseCopySnackbar} 
+          severity="success" 
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          Annotation copied to clipboard!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

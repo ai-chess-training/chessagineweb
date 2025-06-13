@@ -849,7 +849,7 @@ export default function PGNUploaderPage() {
                 />
               </TabPanel>
 
-              <TabPanel value={analysisTab} index={4}>
+              <TabPanel value={analysisTab} index={5}>
                 <ChessDBDisplay
                   data={chessdbdata}
                   analyzeMove={handleMoveClick}

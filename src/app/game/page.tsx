@@ -769,7 +769,7 @@ export default function PGNUploaderPage() {
                 >
                   <Tab label="Game Info" />
                   <Tab label="AI Chat" />
-                  <Tab label="AI Annontation"/>
+                  <Tab label="AI Annotation"/>
                   <Tab label="Stockfish Analysis" />
                   <Tab label="Opening Explorer" />
                   <Tab label="Chess DB" />

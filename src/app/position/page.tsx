@@ -134,7 +134,7 @@ export default function PositionPage() {
               >
                 <Tab label="Stockfish Analysis" />
                 <Tab label="AI Chat" />
-                <Tab label="AI Annontation"/>
+                <Tab label="AI Annotation"/>
                 <Tab label="Opening Explorer" />
                 <Tab label="Chess DB" />
               </Tabs>

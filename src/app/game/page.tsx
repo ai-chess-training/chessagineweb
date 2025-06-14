@@ -14,12 +14,7 @@ import {
   Divider,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import {
-  User,
-  Clock,
-  Calendar,
-  Trophy,
-} from "lucide-react";
+import { User, Clock, Calendar, Trophy } from "lucide-react";
 import { Chess } from "chess.js";
 import useAgine from "@/componets/agine/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -84,41 +79,39 @@ function extractGameInfo(pgn: string) {
   return info;
 }
 
-
-
 // Improved function to extract game ID from Lichess URLs
 function getValidGameId(url: string): string {
   if (!url) return "";
-  
+
   try {
     // Handle various Lichess URL formats
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-    
+
     // Extract game ID from different URL patterns:
     // https://lichess.org/abcdefgh
     // https://lichess.org/abcdefgh/white
     // https://lichess.org/abcdefgh/black
     // https://lichess.org/abcdefgh1234
     const gameIdMatch = pathname.match(/^\/([a-zA-Z0-9]{8,12})(?:\/|$)/);
-    
+
     if (gameIdMatch) {
       let gameId = gameIdMatch[1];
-      
+
       // If the ID is longer than 8 characters, it might have extra characters
       // Lichess game IDs are typically 8 characters, but can be longer
       if (gameId.length > 8) {
         // Try to extract the base game ID (first 8 characters)
         gameId = gameId.substring(0, 8);
       }
-      
+
       return gameId;
     }
-    
+
     return "";
   } catch (error) {
     // If URL parsing fails, try simple string manipulation
-    console.log(error)
+    console.log(error);
     const parts = url.split("/");
     if (parts.length >= 4) {
       const gameId = parts[3];
@@ -126,7 +119,7 @@ function getValidGameId(url: string): string {
       const cleanGameId = gameId.split(/[?#]/)[0];
       return cleanGameId.substring(0, 8);
     }
-    
+
     return "";
   }
 }
@@ -135,20 +128,22 @@ function getValidGameId(url: string): string {
 async function fetchLichessGame(gameId: string): Promise<string> {
   const response = await fetch(`https://lichess.org/game/export/${gameId}`, {
     headers: {
-      'Accept': 'application/x-chess-pgn'
-    }
+      Accept: "application/x-chess-pgn",
+    },
   });
-  
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch game: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch game: ${response.status} ${response.statusText}`
+    );
   }
-  
+
   const pgnText = await response.text();
-  
-  if (!pgnText || pgnText.trim() === '') {
-    throw new Error('Empty PGN received from Lichess');
+
+  if (!pgnText || pgnText.trim() === "") {
+    throw new Error("Empty PGN received from Lichess");
   }
-  
+
   return pgnText;
 }
 
@@ -163,7 +158,12 @@ function GameInfoTab({
   gameReviewLoading,
   gameReview,
   handleMoveCoachClick,
-  chatLoading
+  analyzePosition,
+  chatLoading,
+  aiAnnotation,
+  isGenerating,
+  setAiAnnotation,
+  setIsGenerating
 }: {
   moves: string[];
   currentMoveIndex: number;
@@ -173,7 +173,12 @@ function GameInfoTab({
   gameReviewLoading: boolean;
   gameReview: MoveAnalysis[];
   gameInfo: Record<string, string>;
+  analyzePosition: (customQuery?: string) => Promise<string>;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
+  aiAnnotation: string | null;
+  setAiAnnotation: (annon: string) => void;
+  setIsGenerating: (gen: boolean) => void;
+  isGenerating: boolean;
   chatLoading: boolean;
 }) {
   const formatTimeControl = (timeControl: string) => {
@@ -291,21 +296,15 @@ function GameInfoTab({
 
       <Divider sx={{ bgcolor: grey[600] }} />
 
-      {/* Comments */}
-      <Paper
-        sx={{
-          p: 2,
-          bgcolor: grey[800],
-          color: "white",
-          borderRadius: 2,
-          minHeight: 80,
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Comments
-        </Typography>
-        <Typography>{comment || "Select a move to see comments."}</Typography>
-      </Paper>
+      <AnnotationTab
+        analyzePosition={async () => analyzePosition()}
+        disabled={false}
+        aiAnnotation={aiAnnotation}
+        setAiAnnotation={setAiAnnotation}
+        setIsGenerating={setIsGenerating}
+        isGenerating={isGenerating}
+        pretext={comment}
+      />
 
       {/* Game Review Tab */}
       <GameReviewTab
@@ -373,6 +372,8 @@ export default function PGNUploaderPage() {
     fetchOpeningData,
     analyzePosition,
     sendChatMessage,
+    setLlmLoading,
+    llmAnalysisResult,
     handleChatKeyPress,
     setMoveSquares,
     clearChatHistory,
@@ -492,7 +493,9 @@ export default function PGNUploaderPage() {
 
     const gameId = getValidGameId(gameUrl);
     if (!gameId) {
-      alert("Invalid Lichess game URL. Please use a URL like: https://lichess.org/abcdefgh");
+      alert(
+        "Invalid Lichess game URL. Please use a URL like: https://lichess.org/abcdefgh"
+      );
       return;
     }
 
@@ -500,7 +503,7 @@ export default function PGNUploaderPage() {
     try {
       const fetchedPgn = await fetchLichessGame(gameId);
       console.log("Fetched PGN:", fetchedPgn); // Debug log
-      
+
       // Process the PGN immediately instead of relying on state update
       try {
         const tempGame = new Chess();
@@ -522,25 +525,27 @@ export default function PGNUploaderPage() {
         setLlmAnalysisResult(null);
         setComment("");
         setGameReview([]);
-        
+
         // Hide input section
         setInputsVisible(false);
-        
-        console.log("Game loaded successfully:", { 
-          moves: moveList.length, 
+
+        console.log("Game loaded successfully:", {
+          moves: moveList.length,
           gameInfo: info,
           white: info.White,
-          black: info.Black 
+          black: info.Black,
         });
-        
       } catch (pgnError) {
         console.error("Error parsing PGN:", pgnError);
         alert("Invalid PGN data received from Lichess");
       }
-      
     } catch (error) {
       console.error("Error loading Lichess game:", error);
-      alert(`Could not load game from Lichess: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(
+        `Could not load game from Lichess: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setLoadingGame(false);
     }
@@ -554,7 +559,9 @@ export default function PGNUploaderPage() {
             Analyze Your Chess Game With Agine
           </Typography>
           <Typography variant="subtitle1" sx={{ color: "wheat", mb: 1 }}>
-            Get detailed Agine insights on your game! Paste your PGN, Lichess game URL, or study URL to begin analysis. You can search your recent Lichess games!
+            Get detailed Agine insights on your game! Paste your PGN, Lichess
+            game URL, or study URL to begin analysis. You can search your recent
+            Lichess games!
           </Typography>
         </Box>
       )}
@@ -642,15 +649,14 @@ export default function PGNUploaderPage() {
           >
             Load PGN
           </Button>
-          <Typography variant="subtitle1" sx={{ color: "wheat"}}> 
+          <Typography variant="subtitle1" sx={{ color: "wheat" }}>
             Select a game for the given Lichess username
           </Typography>
-          <Divider/>
-          <UserGameSelect loadPGN={loadUserPGN}/>
-          <Divider/>
-          <UserPGNUploader loadPGN={loadUserPGN}/>
+          <Divider />
+          <UserGameSelect loadPGN={loadUserPGN} />
+          <Divider />
+          <UserPGNUploader loadPGN={loadUserPGN} />
         </Stack>
-        
       )}
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
@@ -769,7 +775,6 @@ export default function PGNUploaderPage() {
                 >
                   <Tab label="Game Info" />
                   <Tab label="AI Chat" />
-                  <Tab label="AI Annotation"/>
                   <Tab label="Stockfish Analysis" />
                   <Tab label="Opening Explorer" />
                   <Tab label="Chess DB" />
@@ -785,7 +790,12 @@ export default function PGNUploaderPage() {
                   gameInfo={gameInfo}
                   generateGameReview={generateGameReview}
                   gameReviewLoading={gameReviewLoading}
+                  analyzePosition={analyzePosition}
                   handleMoveCoachClick={handleMoveCoachClick}
+                  isGenerating={llmLoading}
+                  setIsGenerating={setLlmLoading}
+                  setAiAnnotation={setLlmAnalysisResult}
+                  aiAnnotation={llmAnalysisResult}
                   chatLoading={chatLoading}
                   gameReview={gameReview}
                 />
@@ -809,35 +819,26 @@ export default function PGNUploaderPage() {
               </TabPanel>
 
               <TabPanel value={analysisTab} index={2}>
-              <AnnotationTab 
-               analyzePosition={analyzePosition}
-               disabled={false}
-               pretext={comment}
-              />
-            </TabPanel>
-
-
-              <TabPanel value={analysisTab} index={3}>
                 <Typography variant="h6" gutterBottom>
                   Stockfish 17 NNUE LITE Analysis
                 </Typography>
-                  <StockfishAnalysisTab
-                    stockfishAnalysisResult={stockfishAnalysisResult}
-                    stockfishLoading={stockfishLoading}
-                    handleEngineLineClick={handleEngineLineClick}
-                    engineDepth={engineDepth}
-                    engineLines={engineLines}
-                    engine={engine}
-                    llmLoading={llmLoading}
-                    analyzeWithStockfish={analyzeWithStockfish}
-                    formatEvaluation={formatEvaluation}
-                    formatPrincipalVariation={formatPrincipalVariation}
-                    setEngineDepth={setEngineDepth}
-                    setEngineLines={setEngineLines}
-                  />
+                <StockfishAnalysisTab
+                  stockfishAnalysisResult={stockfishAnalysisResult}
+                  stockfishLoading={stockfishLoading}
+                  handleEngineLineClick={handleEngineLineClick}
+                  engineDepth={engineDepth}
+                  engineLines={engineLines}
+                  engine={engine}
+                  llmLoading={llmLoading}
+                  analyzeWithStockfish={analyzeWithStockfish}
+                  formatEvaluation={formatEvaluation}
+                  formatPrincipalVariation={formatPrincipalVariation}
+                  setEngineDepth={setEngineDepth}
+                  setEngineLines={setEngineLines}
+                />
               </TabPanel>
 
-              <TabPanel value={analysisTab} index={4}>
+              <TabPanel value={analysisTab} index={3}>
                 <Typography variant="h6" gutterBottom>
                   Opening Explorer
                 </Typography>
@@ -849,7 +850,7 @@ export default function PGNUploaderPage() {
                 />
               </TabPanel>
 
-              <TabPanel value={analysisTab} index={5}>
+              <TabPanel value={analysisTab} index={4}>
                 <ChessDBDisplay
                   data={chessdbdata}
                   analyzeMove={handleMoveClick}

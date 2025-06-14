@@ -134,7 +134,6 @@ export default function PositionPage() {
               >
                 <Tab label="Stockfish Analysis" />
                 <Tab label="AI Chat" />
-                <Tab label="AI Annotation"/>
                 <Tab label="Opening Explorer" />
                 <Tab label="Chess DB" />
               </Tabs>
@@ -178,14 +177,8 @@ export default function PositionPage() {
               />
             </TabPanel>
 
-            <TabPanel value={analysisTab} index={2}>
-              <AnnotationTab 
-               analyzePosition={analyzePosition}
-               disabled={false}
-              />
-            </TabPanel>
 
-            <TabPanel value={analysisTab} index={3}>
+            <TabPanel value={analysisTab} index={2}>
               <Typography variant="h6" gutterBottom>
                 Opening Explorer
               </Typography>
@@ -197,7 +190,7 @@ export default function PositionPage() {
               />
             </TabPanel>
 
-            <TabPanel value={analysisTab} index={4}>
+            <TabPanel value={analysisTab} index={3}>
               <ChessDBDisplay data={chessdbdata} analyzeMove={handleMoveClick}/>
             </TabPanel>
           </Paper>

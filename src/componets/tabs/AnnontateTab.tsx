@@ -25,25 +25,29 @@ interface ChessAnnotationProps {
   analyzePosition: (customQuery?: string) => Promise<string>;
   disabled?: boolean;
   pretext?: string;
+  aiAnnotation: string | null;
+  setAiAnnotation: (annon: string) => void;
+  setIsGenerating: (gen: boolean) => void;
+  isGenerating: boolean;
 }
 
 const AnnotationTab: React.FC<ChessAnnotationProps> = ({
   analyzePosition,
   disabled = false,
   pretext,
+  aiAnnotation,
+  setAiAnnotation,
+  setIsGenerating,
+  isGenerating,
 }) => {
   const [userThoughts, setUserThoughts] = useState<string>("");
-  const [aiAnnotation, setAiAnnotation] = useState<string>("");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Set pretext when it becomes available
-  useEffect(() => {
-    if (pretext && !userThoughts) {
-      setUserThoughts(pretext);
-    }
-  }, [pretext, userThoughts]);
+   useEffect(() => {
+    setUserThoughts(pretext || "");
+  }, [pretext]);
 
+  
   const handleGenerateAnnotation = async () => {
     try {
       setIsGenerating(true);

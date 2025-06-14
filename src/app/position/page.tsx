@@ -20,7 +20,6 @@ import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/componets/agine/useAgine";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
-import AnnotationTab from "@/componets/tabs/AnnontateTab";
 
 export default function PositionPage() {
   
@@ -55,7 +54,6 @@ export default function PositionPage() {
     setEngineLines,
     engine,
     fetchOpeningData,
-    analyzePosition,
     sendChatMessage,
     handleChatKeyPress,
     clearChatHistory,

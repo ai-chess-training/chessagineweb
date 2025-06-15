@@ -12,9 +12,11 @@ import {
   TextField,
   Typography,
   Divider,
+  IconButton,
+  LinearProgress,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { User, Clock, Calendar, Trophy } from "lucide-react";
+import { User, Clock, Calendar, Trophy, Navigation, SkipBack, ChevronLeft, ChevronRight, SkipForward } from "lucide-react";
 import { Chess } from "chess.js";
 import useAgine from "@/componets/agine/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -158,12 +160,8 @@ function GameInfoTab({
   gameReviewLoading,
   gameReview,
   handleMoveCoachClick,
-  analyzePosition,
+  handleMoveAnnontateClick,
   chatLoading,
-  aiAnnotation,
-  isGenerating,
-  setAiAnnotation,
-  setIsGenerating
 }: {
   moves: string[];
   currentMoveIndex: number;
@@ -173,13 +171,10 @@ function GameInfoTab({
   gameReviewLoading: boolean;
   gameReview: MoveAnalysis[];
   gameInfo: Record<string, string>;
-  analyzePosition: (customQuery?: string) => Promise<string>;
-  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
-  aiAnnotation: string | null;
-  setAiAnnotation: (annon: string) => void;
-  setIsGenerating: (gen: boolean) => void;
-  isGenerating: boolean;
   chatLoading: boolean;
+  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
+  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
+
 }) {
   const formatTimeControl = (timeControl: string) => {
     const tc = timeControl.split("+");
@@ -189,6 +184,27 @@ function GameInfoTab({
 
     return `${Math.round(numberTime / 60)}+${inc}`;
   };
+
+  const handlePreviousMove = () => {
+    if (currentMoveIndex > 0) {
+      goToMove(currentMoveIndex - 1);
+    }
+  };
+
+  const handleNextMove = () => {
+    if (currentMoveIndex < moves.length - 1) {
+      goToMove(currentMoveIndex + 1);
+    }
+  };
+
+  const handleFirstMove = () => {
+    goToMove(0);
+  };
+
+  const handleLastMove = () => {
+    goToMove(moves.length - 1);
+  };
+
   return (
     <Stack spacing={3}>
       {/* Game Information Section */}
@@ -294,17 +310,108 @@ function GameInfoTab({
         </Stack>
       </Paper>
 
-      <Divider sx={{ bgcolor: grey[600] }} />
+      {/* Move Navigation Section */}
+      <Paper
+        sx={{
+          p: 2,
+          bgcolor: grey[900],
+          color: "white",
+          borderRadius: 2,
+        }}
+      >
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <Navigation size={20} />
+          Move Navigation
+        </Typography>
 
-      <AnnotationTab
-        analyzePosition={async () => analyzePosition()}
-        disabled={false}
-        aiAnnotation={aiAnnotation}
-        setAiAnnotation={setAiAnnotation}
-        setIsGenerating={setIsGenerating}
-        isGenerating={isGenerating}
-        pretext={comment}
-      />
+        <Stack spacing={2}>
+          {/* Navigation Controls */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>
+            <IconButton
+              onClick={handleFirstMove}
+              disabled={currentMoveIndex === 0}
+              sx={{ 
+                color: "white",
+                "&:disabled": { color: grey[600] }
+              }}
+              size="small"
+            >
+              <SkipBack size={20} />
+            </IconButton>
+            <IconButton
+              onClick={handlePreviousMove}
+              disabled={currentMoveIndex === 0}
+              sx={{ 
+                color: "white",
+                "&:disabled": { color: grey[600] }
+              }}
+              size="small"
+            >
+              <ChevronLeft size={20} />
+            </IconButton>
+            <Typography variant="body2" sx={{ mx: 2, minWidth: "120px", textAlign: "center" }}>
+              Move {currentMoveIndex + 1} of {moves.length}
+            </Typography>
+            <IconButton
+              onClick={handleNextMove}
+              disabled={currentMoveIndex === moves.length - 1}
+              sx={{ 
+                color: "white",
+                "&:disabled": { color: grey[600] }
+              }}
+              size="small"
+            >
+              <ChevronRight size={20} />
+            </IconButton>
+            <IconButton
+              onClick={handleLastMove}
+              disabled={currentMoveIndex === moves.length - 1}
+              sx={{ 
+                color: "white",
+                "&:disabled": { color: grey[600] }
+              }}
+              size="small"
+            >
+              <SkipForward size={20} />
+            </IconButton>
+          </Box>
+
+          {/* Current Move Display */}
+          {moves[currentMoveIndex] && (
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="subtitle2" sx={{ color: "wheat", mb: 0.5 }}>
+                Current Move
+              </Typography>
+              <Typography variant="h6" sx={{ fontFamily: "monospace" }}>
+                {moves[currentMoveIndex]}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Move Progress Bar */}
+          <Box sx={{ width: "100%", px: 1 }}>
+            <LinearProgress
+              variant="determinate"
+              value={moves.length > 0 ? ((currentMoveIndex + 1) / moves.length) * 100 : 0}
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                bgcolor: grey[700],
+                "& .MuiLinearProgress-bar": {
+                  bgcolor: "wheat",
+                  borderRadius: 3,
+                }
+              }}
+            />
+          </Box>
+        </Stack>
+      </Paper>
+
+      <Divider sx={{ bgcolor: grey[600] }} />
 
       {/* Game Review Tab */}
       <GameReviewTab
@@ -313,6 +420,8 @@ function GameInfoTab({
         moves={moves}
         handleMoveCoachClick={handleMoveCoachClick}
         chatLoading={chatLoading}
+        comment={comment}
+        handleMoveAnnontateClick={handleMoveAnnontateClick}
         gameReviewLoading={gameReviewLoading}
         goToMove={goToMove}
         currentMoveIndex={currentMoveIndex}
@@ -370,10 +479,8 @@ export default function PGNUploaderPage() {
     generateGameReview,
     gameReviewLoading,
     fetchOpeningData,
-    analyzePosition,
     sendChatMessage,
-    setLlmLoading,
-    llmAnalysisResult,
+    handleMoveAnnontateClick,
     handleChatKeyPress,
     setMoveSquares,
     clearChatHistory,
@@ -790,12 +897,8 @@ export default function PGNUploaderPage() {
                   gameInfo={gameInfo}
                   generateGameReview={generateGameReview}
                   gameReviewLoading={gameReviewLoading}
-                  analyzePosition={analyzePosition}
+                  handleMoveAnnontateClick={handleMoveAnnontateClick}
                   handleMoveCoachClick={handleMoveCoachClick}
-                  isGenerating={llmLoading}
-                  setIsGenerating={setLlmLoading}
-                  setAiAnnotation={setLlmAnalysisResult}
-                  aiAnnotation={llmAnalysisResult}
                   chatLoading={chatLoading}
                   gameReview={gameReview}
                 />

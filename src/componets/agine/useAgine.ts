@@ -917,7 +917,129 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
       setChatLoading(true);
 
-      console.log(query);
+      try {
+        const result = await makeApiRequest(pastFen, query);
+
+        // Add assistant response to chat
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant" as const,
+          content: result,
+          timestamp: new Date(),
+        };
+        setChatMessages((prev) => [...prev, assistantMessage]);
+      } catch (error) {
+        console.error("Error getting coach analysis:", error);
+        if (
+          !(error instanceof Error && error.message === "Request cancelled")
+        ) {
+          const errorMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant" as const,
+            content:
+              "Sorry, I couldn't analyze that move right now. Please try again.",
+            timestamp: new Date(),
+          };
+          setChatMessages((prev) => [...prev, errorMessage]);
+        }
+      } finally {
+        setChatLoading(false);
+      }
+    },
+    [
+      chatLoading,
+      setChatMessages,
+      setChatLoading,
+      setAnalysisTab,
+      makeApiRequest,
+      currentFenRef,
+      openingData,
+    ]
+  );
+
+   const handleMoveAnnontateClick = useCallback(
+    async (review: MoveAnalysis, customQuery?: string): Promise<void> => {
+      if (
+        !setChatMessages ||
+        !setChatLoading ||
+        !setAnalysisTab ||
+        !makeApiRequest ||
+        !currentFenRef
+      ) {
+        console.warn("Chat functionality not properly configured");
+        return;
+      }
+
+      if (chatLoading) return;
+
+      const currentFen = currentFenRef.current;
+      const pastFen = review.fen;
+      const sideToMove = review.player === "w" ? "White" : "Black";
+
+      let query = `As a chess buddy, annontate this move from the game review:
+  
+  Move: ${review.notation}
+  Classification: ${review.quality}
+  Side: ${sideToMove}
+  Position FEN: ${pastFen}
+  Current FEN: ${currentFen}
+  
+  Please provide annontation about this move:
+  1. Talk about how/why the move is ${review.quality}
+  2. Talk about candidates in this position
+  3. How the move can impact the game
+
+  Start the response with Agine Annotation:
+  
+  `;
+
+  if(customQuery){
+    query += `\n Consider user thoughts/comments ${customQuery}`
+  }
+
+        if (engine) {
+          const engineResult = await engine.evaluatePositionWithUpdate({
+            fen: pastFen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+
+          if (engineResult) {
+            const formattedEngineLines = engineResult.lines
+              .map((line, index) => {
+          const evaluation = formatEvaluation(line);
+          const moves = formatPrincipalVariation(line.pv, line.fen);
+          let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+          if (line.resultPercentages) {
+            formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+          }
+
+          return formattedLine;
+              })
+              .join("\n");
+
+            query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+          }
+        }
+      
+
+      
+      // Switch to analysis tab (assuming tab 1 is for chat)
+      setAnalysisTab(1);
+
+      // Add user message to chat
+      const userMessage = {
+        id: Date.now().toString(),
+        role: "user" as const,
+        content: `Agine, analyze move: ${review.notation} (${review.quality})`,
+        timestamp: new Date(),
+      };
+
+      setChatMessages((prev) => [...prev, userMessage]);
+
+      setChatLoading(true);
 
       try {
         const result = await makeApiRequest(pastFen, query);
@@ -1030,6 +1152,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       handleOpeningMoveClick,
       handleMoveClick,
       handleMoveCoachClick,
+      handleMoveAnnontateClick,
 
       // Utility Functions
       formatEvaluation,

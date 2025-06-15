@@ -1,4 +1,4 @@
-import React, { JSX } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -10,6 +10,7 @@ import {
   IconButton,
   Tooltip,
   Badge,
+  TextField,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import { grey } from "@mui/material/colors";
@@ -23,8 +24,10 @@ import {
   ThumbsUp,
   MessageCircle,
   BookA,
+  Pen,
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";
+import { Create, Person } from "@mui/icons-material";
 
 export interface MoveStats {
   Best: number;
@@ -51,7 +54,9 @@ interface GameReviewTabProps {
   goToMove: (index: number) => void;
   currentMoveIndex: number;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
+  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
   chatLoading: boolean;
+  comment: string;
 }
 
 const getMoveClassificationStyle = (classification: MoveQuality) => {
@@ -109,8 +114,18 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   goToMove,
   currentMoveIndex,
   handleMoveCoachClick,
-  chatLoading
+  handleMoveAnnontateClick,
+  chatLoading,
+  comment
+  
 }) => {
+
+  const [userThoughts, setUserThoughts] = useState<string>("");
+
+  useEffect(() => {
+      setUserThoughts(comment || "");
+    }, [comment]);
+  
   const getStatistics = () => {
     if (!gameReview) return null;
 
@@ -139,7 +154,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     const goodMoves = stats.Best + stats["Very Good"] + stats.Good + stats.Book;
     return Math.round((goodMoves / total) * 100);
   };
-
 
   const StatCard = ({
     title,
@@ -294,7 +308,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                 letterSpacing: 0.2,
               }}
             >
-              Click on Generate Agine Review to get a detailed analysis of the game and chat with Agine.
+              Click on Generate Agine Review to get a detailed analysis of the
+              game and chat with Agine.
             </Typography>
           )}
           {gameReviewLoading && (
@@ -323,97 +338,103 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {moves.reduce((rows: JSX.Element[][], move, index) => {
-              const moveNumber = Math.floor(index / 2) + 1;
-              const isWhiteMove = index % 2 === 0;
-              const isCurrentMove = index === currentMoveIndex - 1;
+            {moves
+              .reduce((rows: JSX.Element[][], move, index) => {
+                const moveNumber = Math.floor(index / 2) + 1;
+                const isWhiteMove = index % 2 === 0;
+                const isCurrentMove = index === currentMoveIndex - 1;
 
-              if (isWhiteMove) {
-          rows.push([
-            <Typography
-              key={`move-number-${moveNumber}`}
-              variant="body2"
-              sx={{ color: grey[400], minWidth: 30, textAlign: "right" }}
-            >
-              {`${moveNumber}.`}
-            </Typography>,
-            <Box
-              key={`white-move-${index}`}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                p: 1,
-                borderRadius: 1,
-                bgcolor: isCurrentMove ? grey[800] : "transparent",
-                border: `1px solid ${grey[800]}`,
-                cursor: "pointer",
-                "&:hover": {
-            bgcolor: grey[800],
-                },
-                transition: "background 0.2s",
-                flex: 1,
-              }}
-              onClick={() => goToMove(index + 1)}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-            color: grey[100],
-            fontFamily: "monospace",
-                }}
-              >
-                {move}
-              </Typography>
-            </Box>,
-          ]);
-              } else {
-          rows[rows.length - 1].push(
-            <Box
-              key={`black-move-${index}`}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                p: 1,
-                borderRadius: 1,
-                bgcolor: isCurrentMove ? grey[800] : "transparent",
-                border: `1px solid ${grey[800]}`,
-                cursor: "pointer",
-                "&:hover": {
-            bgcolor: grey[800],
-                },
-                transition: "background 0.2s",
-                flex: 1,
-              }}
-              onClick={() => goToMove(index + 1)}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-            color: grey[100],
-            fontFamily: "monospace",
-                }}
-              >
-                {move}
-              </Typography>
-            </Box>
-          );
-              }
+                if (isWhiteMove) {
+                  rows.push([
+                    <Typography
+                      key={`move-number-${moveNumber}`}
+                      variant="body2"
+                      sx={{
+                        color: grey[400],
+                        minWidth: 30,
+                        textAlign: "right",
+                      }}
+                    >
+                      {`${moveNumber}.`}
+                    </Typography>,
+                    <Box
+                      key={`white-move-${index}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        p: 1,
+                        borderRadius: 1,
+                        bgcolor: isCurrentMove ? grey[800] : "transparent",
+                        border: `1px solid ${grey[800]}`,
+                        cursor: "pointer",
+                        "&:hover": {
+                          bgcolor: grey[800],
+                        },
+                        transition: "background 0.2s",
+                        flex: 1,
+                      }}
+                      onClick={() => goToMove(index + 1)}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: grey[100],
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {move}
+                      </Typography>
+                    </Box>,
+                  ]);
+                } else {
+                  rows[rows.length - 1].push(
+                    <Box
+                      key={`black-move-${index}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        p: 1,
+                        borderRadius: 1,
+                        bgcolor: isCurrentMove ? grey[800] : "transparent",
+                        border: `1px solid ${grey[800]}`,
+                        cursor: "pointer",
+                        "&:hover": {
+                          bgcolor: grey[800],
+                        },
+                        transition: "background 0.2s",
+                        flex: 1,
+                      }}
+                      onClick={() => goToMove(index + 1)}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: grey[100],
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {move}
+                      </Typography>
+                    </Box>
+                  );
+                }
 
-              return rows;
-            }, []).map((row, index) => (
-              <Box
-          key={`row-${index}`}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-              >
-          {row}
-              </Box>
-            ))}
+                return rows;
+              }, [])
+              .map((row, index) => (
+                <Box
+                  key={`row-${index}`}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  {row}
+                </Box>
+              ))}
           </Box>
         </Paper>
 
@@ -443,14 +464,57 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           justifyContent: "space-between",
         }}
       >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <MessageCircle size={20} color="#4FC3F7" />
-            <Typography variant="body2" sx={{ color: grey[300] }}>
-              Click on any move to get Agine insights
-            </Typography>
-          </Stack>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <MessageCircle size={20} color="#4FC3F7" />
+          <Typography variant="body2" sx={{ color: grey[300] }}>
+            Click on any move to get Agine insights
+          </Typography>
+          <Pen size={20} color="#4FC3F7"/>
+          <Typography variant="body2" sx={{ color: grey[300] }}>
+            Click on any move to get Agine annotations
+          </Typography>
+        </Stack>
       </Box>
-      
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <Person color="secondary" />
+          <Typography variant="subtitle1" fontWeight="medium">
+            Your Thoughts
+          </Typography>
+        </Box>
+
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
+          variant="outlined"
+          placeholder="Share your thoughts about the position, specific moves you're considering..."
+          value={userThoughts}
+          onChange={(e) => setUserThoughts(e.target.value)}
+          disabled={chatLoading}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: grey[900],
+              borderRadius: 2,
+              color: "wheat",
+              fontSize: "1.1rem",
+              "& input": {
+                fontSize: "1.1rem",
+              },
+              "& textarea": {
+                fontSize: "1.1rem",
+              },
+            },
+            "& .MuiInputBase-input::placeholder": {
+              color: "wheat",
+              opacity: 0.7,
+              fontSize: "1.1rem",
+            },
+          }}
+        />
+      </Box>
+
       {getStatistics() && (
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           <StatCard
@@ -477,202 +541,261 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {gameReview.reduce((rows: JSX.Element[][], review, index) => {
-            const style = getMoveClassificationStyle(review.quality);
-            const moveNumber = Math.floor(review.plyNumber / 2) + 1;
-            const isWhiteMove = review.plyNumber % 2 === 0;
-            const isCurrentMove = review.plyNumber === currentMoveIndex - 1;
+          {gameReview
+            .reduce((rows: JSX.Element[][], review, index) => {
+              const style = getMoveClassificationStyle(review.quality);
+              const moveNumber = Math.floor(review.plyNumber / 2) + 1;
+              const isWhiteMove = review.plyNumber % 2 === 0;
+              const isCurrentMove = review.plyNumber === currentMoveIndex - 1;
 
-            if (isWhiteMove) {
-              rows.push([
-          <Typography
-            key={`move-number-${moveNumber}`}
-            variant="body2"
-            sx={{ color: grey[400], minWidth: 40, textAlign: "right" }}
-          >
-            {`${moveNumber}.`}
-          </Typography>,
-          <Box
-            key={`white-move-${index}`}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              p: 1.5,
-              borderRadius: 1,
-              bgcolor: isCurrentMove ? grey[800] : "transparent",
-              border: isCurrentMove
-                ? `1px solid ${style.color}`
-                : `1px solid ${grey[800]}`,
-              cursor: "pointer",
-              "&:hover": {
-                bgcolor: grey[800],
-              },
-              flex: 1,
-            }}
-            onClick={() => goToMove(review.plyNumber + 1)}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                color: grey[100],
-                fontFamily: "monospace",
-              }}
-            >
-              {review.notation}
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                flex: 1,
-              }}
-            >
-              <Box sx={{ color: style.color }}>{style.icon}</Box>
-              <Typography
-                variant="body2"
-                sx={{ color: style.color, fontWeight: "medium" }}
-              >
-                {review.quality}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1}>
-              {currentMoveIndex === review.plyNumber + 1 && (
-                <Tooltip title="Ask agine about this move">
-            <IconButton
-              size="small"
-              sx={{
-                color: "#4FC3F7",
-                "&:hover": { bgcolor: "#4FC3F720" },
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMoveCoachClick(review);
-              }}
-              disabled={chatLoading}
-            >
-              {chatLoading ? (
-                <Badge
-                  badgeContent=" "
-                  color="primary"
-                  variant="dot"
-                >
-                  <MessageCircle size={16} />
-                </Badge>
-              ) : (
-                <MessageCircle size={16} />
-              )}
-            </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Jump to this move">
-                <IconButton size="small" sx={{ color: grey[400] }}>
-            <PlayCircle size={16} />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Box>,
-              ]);
-            } else {
-              rows[rows.length - 1].push(
-          <Box
-            key={`black-move-${index}`}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              p: 1.5,
-              borderRadius: 1,
-              bgcolor: isCurrentMove ? grey[800] : "transparent",
-              border: isCurrentMove
-                ? `1px solid ${style.color}`
-                : `1px solid ${grey[800]}`,
-              cursor: "pointer",
-              "&:hover": {
-                bgcolor: grey[800],
-              },
-              flex: 1,
-            }}
-            onClick={() => goToMove(review.plyNumber + 1)}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                color: grey[100],
-                fontFamily: "monospace",
-              }}
-            >
-              {review.notation}
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                flex: 1,
-              }}
-            >
-              <Box sx={{ color: style.color }}>{style.icon}</Box>
-              <Typography
-                variant="body2"
-                sx={{ color: style.color, fontWeight: "medium" }}
-              >
-                {review.quality}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1}>
-              {currentMoveIndex === review.plyNumber + 1 && (
-                <Tooltip title="Ask agine about this move">
-            <IconButton
-              size="small"
-              sx={{
-                color: "#4FC3F7",
-                "&:hover": { bgcolor: "#4FC3F720" },
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMoveCoachClick(review);
-              }}
-              disabled={chatLoading}
-            >
-              {chatLoading ? (
-                <Badge
-                  badgeContent=" "
-                  color="primary"
-                  variant="dot"
-                >
-                  <MessageCircle size={16} />
-                </Badge>
-              ) : (
-                <MessageCircle size={16} />
-              )}
-            </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Jump to this move">
-                <IconButton size="small" sx={{ color: grey[400] }}>
-            <PlayCircle size={16} />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Box>
-              );
-            }
+              if (isWhiteMove) {
+                rows.push([
+                  <Typography
+                    key={`move-number-${moveNumber}`}
+                    variant="body2"
+                    sx={{ color: grey[400], minWidth: 40, textAlign: "right" }}
+                  >
+                    {`${moveNumber}.`}
+                  </Typography>,
+                  <Box
+                    key={`white-move-${index}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      p: 1.5,
+                      borderRadius: 1,
+                      bgcolor: isCurrentMove ? grey[800] : "transparent",
+                      border: isCurrentMove
+                        ? `1px solid ${style.color}`
+                        : `1px solid ${grey[800]}`,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: grey[800],
+                      },
+                      flex: 1,
+                    }}
+                    onClick={() => goToMove(review.plyNumber + 1)}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: grey[100],
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {review.notation}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flex: 1,
+                      }}
+                    >
+                      <Box sx={{ color: style.color }}>{style.icon}</Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: style.color, fontWeight: "medium" }}
+                      >
+                        {review.quality}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1}>
+                      {currentMoveIndex === review.plyNumber + 1 && (
+                        <Tooltip title="Ask agine about this move">
+                          <IconButton
+                            size="small"
+                            sx={{
+                              color: "#4FC3F7",
+                              "&:hover": { bgcolor: "#4FC3F720" },
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveCoachClick(review);
+                            }}
+                            disabled={chatLoading}
+                          >
+                            {chatLoading ? (
+                              <Badge
+                                badgeContent=" "
+                                color="primary"
+                                variant="dot"
+                              >
+                                <MessageCircle size={16} />
+                              </Badge>
+                            ) : (
+                              <MessageCircle size={16} />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                        
+                      )}
+                      {currentMoveIndex === review.plyNumber + 1 && (
+                        <Tooltip title="Annotate this move with Agine">
+                          <IconButton
+                            size="small"
+                            sx={{
+                              color: "#4FC3F7",
+                              "&:hover": { bgcolor: "#4FC3F720" },
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveAnnontateClick(review, userThoughts);
+                            }}
+                            disabled={chatLoading}
+                          >
+                            {chatLoading ? (
+                              <Badge
+                                badgeContent=" "
+                                color="primary"
+                                variant="dot"
+                              >
+                                <Pen size={16} />
+                              </Badge>
+                            ) : (
+                              <Pen size={16} />
+                            )}
+                          </IconButton>
+                        </Tooltip>   
+                      )}
+                      <Tooltip title="Jump to this move">
+                        <IconButton size="small" sx={{ color: grey[400] }}>
+                          <PlayCircle size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Box>,
+                ]);
+              } else {
+                rows[rows.length - 1].push(
+                  <Box
+                    key={`black-move-${index}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      p: 1.5,
+                      borderRadius: 1,
+                      bgcolor: isCurrentMove ? grey[800] : "transparent",
+                      border: isCurrentMove
+                        ? `1px solid ${style.color}`
+                        : `1px solid ${grey[800]}`,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: grey[800],
+                      },
+                      flex: 1,
+                    }}
+                    onClick={() => goToMove(review.plyNumber + 1)}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: grey[100],
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {review.notation}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flex: 1,
+                      }}
+                    >
+                      <Box sx={{ color: style.color }}>{style.icon}</Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: style.color, fontWeight: "medium" }}
+                      >
+                        {review.quality}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1}>
+                      {currentMoveIndex === review.plyNumber + 1 && (
+                        <Tooltip title="Ask agine about this move">
+                          <IconButton
+                            size="small"
+                            sx={{
+                              color: "#4FC3F7",
+                              "&:hover": { bgcolor: "#4FC3F720" },
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveCoachClick(review);
+                            }}
+                            disabled={chatLoading}
+                          >
+                            {chatLoading ? (
+                              <Badge
+                                badgeContent=" "
+                                color="primary"
+                                variant="dot"
+                              >
+                                <MessageCircle size={16} />
+                              </Badge>
+                            ) : (
+                              <MessageCircle size={16} />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                       {currentMoveIndex === review.plyNumber + 1 && (
+                        <Tooltip title="Annotate this move with Agine">
+                          <IconButton
+                            size="small"
+                            sx={{
+                              color: "#4FC3F7",
+                              "&:hover": { bgcolor: "#4FC3F720" },
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveAnnontateClick(review, userThoughts);
+                            }}
+                            disabled={chatLoading}
+                          >
+                            {chatLoading ? (
+                              <Badge
+                                badgeContent=" "
+                                color="primary"
+                                variant="dot"
+                              >
+                                <Pen size={16} />
+                              </Badge>
+                            ) : (
+                              <Pen size={16} />
+                            )}
+                          </IconButton>
+                        </Tooltip>   
+                      )}
+                      <Tooltip title="Jump to this move">
+                        <IconButton size="small" sx={{ color: grey[400] }}>
+                          <PlayCircle size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Box>
+                );
+              }
 
-            return rows;
-          }, []).map((row, index) => (
-            <Box
-              key={`row-${index}`}
-              sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-              }}
-            >
-              {row}
-            </Box>
-          ))}
+              return rows;
+            }, [])
+            .map((row, index) => (
+              <Box
+                key={`row-${index}`}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                {row}
+              </Box>
+            ))}
         </Box>
       </Paper>
     </Stack>

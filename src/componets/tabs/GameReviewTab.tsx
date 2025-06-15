@@ -480,7 +480,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
           <Person color="secondary" />
           <Typography variant="subtitle1" fontWeight="medium">
-            Your Thoughts
+            Your Thoughts 
           </Typography>
         </Box>
 
@@ -489,7 +489,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           multiline
           rows={4}
           variant="outlined"
-          placeholder="Share your thoughts about the position, specific moves you're considering..."
+          placeholder="Share your thoughts about the position, specific moves you're considering, Agine will consider them in her annotations"
           value={userThoughts}
           onChange={(e) => setUserThoughts(e.target.value)}
           disabled={chatLoading}

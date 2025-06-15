@@ -1033,7 +1033,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       const userMessage = {
         id: Date.now().toString(),
         role: "user" as const,
-        content: `Agine, analyze move: ${review.notation} (${review.quality})`,
+        content: `Agine, annotate this move: ${review.notation} (${review.quality})`,
         timestamp: new Date(),
       };
 
@@ -1061,7 +1061,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
             id: (Date.now() + 1).toString(),
             role: "assistant" as const,
             content:
-              "Sorry, I couldn't analyze that move right now. Please try again.",
+              "Sorry, I couldn't annotate that move right now. Please try again later.",
             timestamp: new Date(),
           };
           setChatMessages((prev) => [...prev, errorMessage]);

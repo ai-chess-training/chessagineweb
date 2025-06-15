@@ -27,7 +27,7 @@ import {
   Pen,
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";
-import { Create, Person } from "@mui/icons-material";
+import { Person } from "@mui/icons-material";
 
 export interface MoveStats {
   Best: number;

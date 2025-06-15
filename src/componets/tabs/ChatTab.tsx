@@ -16,7 +16,6 @@ import {
   Avatar,
   Drawer,
   IconButton,
-  Divider,
   List,
   ListItem,
   ListItemText,
@@ -130,11 +129,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     }
   }, [chatMessages, chatLoading]);
 
-  const handlePromptClick = (prompt: string) => {
-    setChatInput(prompt);
-    setDrawerOpen(false);
-  };
-
+ 
   const handlePromptSelect = (prompt: string) => {
     setChatInput(prompt);
     setDrawerOpen(false);
@@ -362,7 +357,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }}
             />
             <Typography variant="body1" sx={{ mb: 3, textAlign: "center" }}>
-              Hey friend, let's talk about chess positions!
+              Hey friend, lets talk about chess positions!
             </Typography>
 
             {/* Quick Start Prompts */}

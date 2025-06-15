@@ -30,7 +30,7 @@ import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/componets/agine/useGameReview";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
 import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
-import AnnotationTab from "@/componets/tabs/AnnontateTab";
+
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);

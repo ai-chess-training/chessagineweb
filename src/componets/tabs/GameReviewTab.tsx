@@ -309,7 +309,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               }}
             >
               Click on Generate Agine Review to get a detailed analysis of the
-              game and chat with Agine.
+              game, for each move you can chat about position and make agine generate annotations.
             </Typography>
           )}
           {gameReviewLoading && (

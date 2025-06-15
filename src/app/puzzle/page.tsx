@@ -78,10 +78,9 @@ const PUZZLE_THEMES: PuzzleTheme[] = [
   { tag: "attraction", description: "Attraction" },
   { tag: "backRankMate", description: "Back Rank Mate" },
   { tag: "bishopEndgame", description: "Bishop Endgame" },
-  { tag: "bodenMate", description: "Boden's Mate" },
+  { tag: "bodenMate", description: "Boden Mate" },
   { tag: "capturingDefender", description: "Capturing Defender" },
   { tag: "castling", description: "Castling" },
-  { tag: "checkFirst", description: "Check First" },
   { tag: "clearance", description: "Clearance" },
   { tag: "crushing", description: "Crushing" },
   { tag: "defensiveMove", description: "Defensive Move" },
@@ -92,23 +91,25 @@ const PUZZLE_THEMES: PuzzleTheme[] = [
   { tag: "dovetailMate", description: "Dovetail Mate" },
   { tag: "endgame", description: "Endgame" },
   { tag: "enPassant", description: "En Passant" },
+  { tag: "equality", description: "Equality" },
   { tag: "exposedKing", description: "Exposed King" },
   { tag: "fork", description: "Fork" },
   { tag: "hangingPiece", description: "Hanging Piece" },
   { tag: "hookMate", description: "Hook Mate" },
   { tag: "interference", description: "Interference" },
   { tag: "intermezzo", description: "Intermezzo" },
+  { tag: "killBoxMate", description: "Kill Box Mate" },
   { tag: "kingsideAttack", description: "Kingside Attack" },
   { tag: "knightEndgame", description: "Knight Endgame" },
   { tag: "long", description: "Long" },
   { tag: "master", description: "Master" },
   { tag: "masterVsMaster", description: "Master vs Master" },
-  { tag: "mate", description: "Checkmate" },
-  { tag: "mateIn1", description: "Mate in 1" },
-  { tag: "mateIn2", description: "Mate in 2" },
-  { tag: "mateIn3", description: "Mate in 3" },
-  { tag: "mateIn4", description: "Mate in 4" },
-  { tag: "mateIn5", description: "Mate in 5" },
+  { tag: "mate", description: "Mate" },
+  { tag: "mateIn1", description: "Mate In 1" },
+  { tag: "mateIn2", description: "Mate In 2" },
+  { tag: "mateIn3", description: "Mate In 3" },
+  { tag: "mateIn4", description: "Mate In 4" },
+  { tag: "mateIn5", description: "Mate In 5" },
   { tag: "middlegame", description: "Middlegame" },
   { tag: "oneMove", description: "One Move" },
   { tag: "opening", description: "Opening" },
@@ -116,7 +117,7 @@ const PUZZLE_THEMES: PuzzleTheme[] = [
   { tag: "pin", description: "Pin" },
   { tag: "promotion", description: "Promotion" },
   { tag: "queenEndgame", description: "Queen Endgame" },
-  { tag: "queenRookEndgame", description: "Queen and Rook Endgame" },
+  { tag: "queenRookEndgame", description: "Queen Rook Endgame" },
   { tag: "queensideAttack", description: "Queenside Attack" },
   { tag: "quietMove", description: "Quiet Move" },
   { tag: "rookEndgame", description: "Rook Endgame" },
@@ -128,9 +129,11 @@ const PUZZLE_THEMES: PuzzleTheme[] = [
   { tag: "trappedPiece", description: "Trapped Piece" },
   { tag: "underPromotion", description: "Under Promotion" },
   { tag: "veryLong", description: "Very Long" },
-  { tag: "xRayAttack", description: "X-Ray Attack" },
+  { tag: "vukovicMate", description: "Vukovic's Mate" },
+  { tag: "xRayAttack", description: "X Ray Attack" },
   { tag: "zugzwang", description: "Zugzwang" },
 ];
+
 
 const DIFFICULTY_THEMES = [
   { value: "mateIn1", label: "Mate in 1", difficulty: "Beginner" },
@@ -1167,7 +1170,7 @@ export default function PuzzlePage() {
             </Box>
 
             {/* Difficulty-based themes */}
-            <Box>
+            {/* <Box>
               <Typography variant="subtitle2" sx={{ mb: 1, color: "wheat" }}>
                 By Difficulty:
               </Typography>
@@ -1194,7 +1197,7 @@ export default function PuzzlePage() {
                   );
                 })}
               </Stack>
-            </Box>
+            </Box> */}
           </Stack>
         </DialogContent>
         <DialogActions>

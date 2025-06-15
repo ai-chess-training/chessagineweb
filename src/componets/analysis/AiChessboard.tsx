@@ -346,9 +346,6 @@ export default function AiChessboardPanel({
 
       {/* Board Size Control */}
       <Box sx={{ width: "100%", px: 2 }}>
-        <Typography variant="body2" sx={{ color: "wheat", mb: 1 }} gutterBottom>
-          Board Size: {boardSize}px
-        </Typography>
         <Slider
           value={boardSize}
           onChange={handleBoardSizeChange}

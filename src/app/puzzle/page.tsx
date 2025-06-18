@@ -221,7 +221,7 @@ export default function PuzzlePage() {
   );
 
   const fetchPuzzle = useCallback(
-    async (themes: string[] = []) => {
+    async (themes: string[] = [], ratingFrom?: number, ratingTo?: number) => {
       setLoading(true);
       setError(null);
       try {
@@ -229,6 +229,10 @@ export default function PuzzlePage() {
         if (themes.length > 0) {
           const themesParam = themes.join(",");
           url += `?themes=${themesParam}`;
+        }
+
+        if(ratingFrom && ratingTo){
+          url += `&ratingFrom=${ratingFrom}&ratingTo=${ratingTo}`;
         }
 
         const response = await fetch(url);
@@ -814,7 +818,7 @@ export default function PuzzlePage() {
                       )}
 
                       {/* Current Puzzle Themes */}
-                      {puzzleData?.themes && puzzleData.themes.length > 0 && (
+                      {showingSolution && puzzleData?.themes && puzzleData.themes.length > 0 && (
                         <Stack
                           direction="row"
                           spacing={1}

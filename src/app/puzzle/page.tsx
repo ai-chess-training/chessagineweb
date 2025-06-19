@@ -364,7 +364,7 @@ export default function PuzzlePage() {
     } else {
       fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
     }
-  }, [selectedThemes, fetchPuzzle]);
+  }, [selectedThemes]);
 
   // Handle quick theme selection
   const handleQuickThemeChange = useCallback(
@@ -377,7 +377,7 @@ export default function PuzzlePage() {
         fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
       }
     },
-    [fetchPuzzle]
+    []
   );
 
   // Show solution
@@ -1241,7 +1241,14 @@ export default function PuzzlePage() {
             Clear All
           </Button>
           <Button
-            onClick={handleThemeSelection}
+            onClick={() => {
+              fetchPuzzle(
+                selectedThemes.length > 0 ? selectedThemes : [],
+                puzzleLevel,
+                puzzleLevel + 500
+              );
+              setThemeDialogOpen(false);
+            }}
             color="primary"
             variant="contained"
           >

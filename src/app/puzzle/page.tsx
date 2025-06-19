@@ -357,25 +357,20 @@ export default function PuzzlePage() {
   } = useAgine(fen);
 
   // Handle theme selection
-  const handleThemeSelection = useCallback(() => {
-    setThemeDialogOpen(false);
-    if (selectedThemes.length > 0) {
-      fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500);
-    } else {
-      fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
-    }
-  }, [selectedThemes]);
+  // const handleThemeSelection = useCallback(() => {
+  //   setThemeDialogOpen(false);
+  //   if (selectedThemes.length > 0) {
+  //     fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500);
+  //   } else {
+  //     fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
+  //   }
+  // }, [selectedThemes]);
 
   // Handle quick theme selection
   const handleQuickThemeChange = useCallback(
     (event: SelectChangeEvent<string>) => {
       const theme = event.target.value;
       setQuickTheme(theme);
-      if (theme) {
-        fetchPuzzle([theme], puzzleLevel, puzzleLevel + 500);
-      } else {
-        fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
-      }
     },
     []
   );

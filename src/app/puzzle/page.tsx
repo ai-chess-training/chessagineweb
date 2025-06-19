@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { Refresh, SkipNext } from "@mui/icons-material";
 import Slider from "@/componets/stockfish/Slider";
+import { useLocalStorage } from "usehooks-ts";
 
 interface PuzzleData {
   lichessId: string;
@@ -148,7 +149,7 @@ export default function PuzzlePage() {
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
-  console.log(puzzleQuery);
+ 
   const [puzzleQueryString, setPuzzleQueryString] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +172,10 @@ export default function PuzzlePage() {
   const [puzzleFailed, setPuzzleFailed] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const [puzzleLevel, setPuzzleLevel] = useState<number>(1500);
+  const [puzzleLevel, setPuzzleLevel] =  useLocalStorage<number>(
+    "puzzleLevel",
+    1500
+  );
 
   // Solution viewing state
   const [showingSolution, setShowingSolution] = useState(false);
@@ -304,6 +308,7 @@ export default function PuzzlePage() {
         setSelectedSquare(null);
         setLegalMoves([]);
       } catch (err) {
+        console.log(puzzleQuery);
         console.error("Error fetching puzzle:", err);
         setError("Failed to load puzzle. Please try again.");
       } finally {

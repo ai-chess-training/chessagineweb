@@ -316,7 +316,7 @@ export default function PuzzlePage() {
   // Initialize with first puzzle
   useEffect(() => {
     fetchPuzzle([], puzzleLevel, puzzleLevel + 500); // Use puzzleLevel as base with 500 point range
-  }, [fetchPuzzle]);
+  }, []);
 
   const {
     setLlmAnalysisResult,

@@ -985,9 +985,10 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   Current FEN: ${currentFen}
   
   Please provide annontation about this move:
-  1. Talk about how/why the move is ${review.quality}
-  2. Talk about candidates in this position
+  1. Talk about how/why the move is ${review.quality} based on the NEXT ply engine anlysis
+  2. Talk about candidates in this position using the CURRENT ply engine analysis
   3. How the move can impact the game
+
 
   Start the response with Agine Annotation:
   
@@ -1020,7 +1021,34 @@ Discuss the strategic and tactical implications of this move. Provide both theor
               })
               .join("\n");
 
-            query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+            query += `\n\nStockfish Analysis For CURRENT Ply:\n${formattedEngineLines}`;
+          }
+        }
+
+        if (engine) {
+          const engineResult = await engine.evaluatePositionWithUpdate({
+            fen: currentFen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+
+          if (engineResult) {
+            const formattedEngineLines = engineResult.lines
+              .map((line, index) => {
+          const evaluation = formatEvaluation(line);
+          const moves = formatPrincipalVariation(line.pv, line.fen);
+          let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+          if (line.resultPercentages) {
+            formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+          }
+
+          return formattedLine;
+              })
+              .join("\n");
+
+            query += `\n\nStockfish Analysis For NEXT Ply:\n${formattedEngineLines}`;
           }
         }
       

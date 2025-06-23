@@ -2,9 +2,9 @@ import { useState, useCallback } from "react";
 import { Chess, validateFen } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { openings } from "./opening";
-import { LineEval, PositionEval } from "@/stockfish/engine/engine";
+import { LineEval} from "@/stockfish/engine/engine";
 import { Color } from "chess.js";
-import { CandidateMove, useChessDB } from "../tabs/Chessdb";
+import { CandidateMove } from "../tabs/Chessdb";
 
 export type MoveQuality =
   | "Best"

@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
-import { Chess } from "chess.js";
+import { Chess, validateFen } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { openings } from "./opening";
 import { LineEval, PositionEval } from "@/stockfish/engine/engine";
 import { Color } from "chess.js";
+import { CandidateMove, useChessDB } from "../tabs/Chessdb";
 
 export type MoveQuality =
   | "Best"
@@ -31,6 +32,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
 
   const [gameReview, setGameReview] = useState<MoveAnalysis[]>([]);
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
+  const [gameReviewProgress, setGameReviewProgress] = useState(0);
 
   // Check if a move deserves special recognition
   const isExceptionalMove = (
@@ -128,9 +130,58 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
     return isBehind || alternativeIsWinning;
   };
 
+  const fetchChessDBData = useCallback(async (fenString: string) => {
+    if (!fenString.trim()) {
+      return [];
+    }
+
+    if (!validateFen(fenString)) {
+      return [];
+    }
+
+    try {
+      const encodedFen = encodeURIComponent(fenString);
+      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&json=1`;
+
+      const response = await fetch(apiUrl);
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const responseData = await response.json();
+
+      if (responseData.status !== "ok") {
+        return [];
+      }
+
+      const moves = responseData.moves;
+      if (!Array.isArray(moves) || moves.length === 0) {
+        return [];
+      }
+
+      const processedMoves = moves.slice(0, 5).map((move: CandidateMove) => {
+        const scoreNum = Number(move.score);
+        const scoreStr = isNaN(scoreNum) ? "N/A" : String(scoreNum);
+        return {
+          uci: move.uci || "N/A",
+          san: move.san || "N/A",
+          score: scoreStr || 0,
+          winrate: move.winrate || "N/A",
+        };
+      });
+
+      return processedMoves;
+    } catch (err) {
+      console.log('error!', err);
+      throw err;
+    }
+  }, []);
+
   const generateGameReview = useCallback(
     async (gameNotation: string[]): Promise<void> => {
       setGameReviewLoading(true);
+      setGameReviewProgress(0);
 
       if (!stockfishEngine) {
         console.warn("Chess engine unavailable");
@@ -139,12 +190,15 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
       }
 
       interface GameState {
-        evaluation: PositionEval;
         preMovefen: string; // FEN before the move
+        preMoveWinRate: number;
+        secondOptionWinRate: number | undefined;
         postMovefen: string;
         activePlayer: Color;
         moveNotation: string;
+        bestMove: string | undefined;
         plyIndex: number;
+        openingMatch: boolean;
       }
 
       try {
@@ -154,6 +208,10 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         const gameStates: GameState[] = [];
         const moveHistory: string[] = [];
 
+        const totalMoves = gameNotation.length;
+        // Phase 1 takes 70% of progress, Phase 2 takes 30%
+        const phase1Weight = 0.95;
+        const phase2Weight = 0.05;
         // Phase 1: Collect all positions and their evaluations
         for (let ply = 0; ply < gameNotation.length; ply++) {
           const preMovefen = gameBoard.fen(); // Capture FEN before making the move
@@ -171,33 +229,75 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           const uciNotation = moveObject.from + moveObject.to + (moveObject.promotion || "");
           moveHistory.push(uciNotation);
 
-          // Analyze position before move execution (using preMovefen)
-          const positionAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
-            fen: preMovefen,
-            depth: analysisDepth,
-            multiPv: 3,
-          });
-
-          gameStates.push({
-            evaluation: positionAnalysis,
-            activePlayer: activePlayer,
-            preMovefen: preMovefen, // This is the FEN before the move
-            postMovefen: postMovefen,
-            moveNotation: moveNotation,
-            plyIndex: ply,
-          });
-        }
-
-        // Phase 2: Classify each move with complete context
-        for (let ply = 0; ply < gameStates.length; ply++) {
-          const currentState = gameStates[ply];
-          const { activePlayer, moveNotation, plyIndex, evaluation, preMovefen, postMovefen } = currentState;
+          let preMoveWinRate = 0;
+          let secondBestWinRate: number | undefined = 0;
+          let bestMove; 
 
           // Check opening book
           const boardPosition = postMovefen.split(" ")[0];
           const openingMatch = openings.find(
             (entry) => entry.fen.trim() === boardPosition.trim()
           );
+
+          if(openingMatch){
+            gameStates.push({
+            activePlayer: activePlayer,
+            preMoveWinRate: preMoveWinRate,
+            secondOptionWinRate: secondBestWinRate,
+            preMovefen: preMovefen, // This is the FEN before the move
+            postMovefen: postMovefen,
+            moveNotation: moveNotation,
+            plyIndex: ply,
+            bestMove: bestMove,
+            openingMatch: true
+          });
+            
+            // Update progress for Phase 1
+            const phase1Progress = ((ply + 1) / totalMoves) * phase1Weight * 100;
+            setGameReviewProgress(Math.round(phase1Progress));
+            continue;
+          }
+
+          const chessDbEvals = await fetchChessDBData(preMovefen)
+
+          if(chessDbEvals.length <= 1){
+            const positionAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
+            fen: preMovefen,
+            depth: analysisDepth,
+            multiPv: 3,
+          });
+
+          preMoveWinRate = evaluationToWinRate(positionAnalysis.lines?.[0]);
+          const secondBestEval = positionAnalysis.lines?.[1];
+          secondBestWinRate = secondBestEval ? evaluationToWinRate(secondBestEval) : undefined;
+          bestMove = positionAnalysis.bestMove;
+          }else{
+            preMoveWinRate = Number(chessDbEvals[0].winrate)
+            secondBestWinRate = chessDbEvals[1].winrate ? Number(chessDbEvals[1].winrate) : undefined;
+            bestMove = chessDbEvals[0].uci;
+          }
+
+          gameStates.push({
+            activePlayer: activePlayer,
+            preMoveWinRate: preMoveWinRate,
+            secondOptionWinRate: secondBestWinRate,
+            preMovefen: preMovefen, // This is the FEN before the move
+            postMovefen: postMovefen,
+            moveNotation: moveNotation,
+            plyIndex: ply,
+            bestMove: bestMove,
+            openingMatch: false
+          });
+
+          // Update progress for Phase 1
+          const phase1Progress = ((ply + 1) / totalMoves) * phase1Weight * 100;
+          setGameReviewProgress(Math.round(phase1Progress));
+        }
+
+        // Phase 2: Classify each move with complete context
+        for (let ply = 0; ply < gameStates.length; ply++) {
+          const currentState = gameStates[ply];
+          const { activePlayer, moveNotation, plyIndex, preMovefen, postMovefen, preMoveWinRate, secondOptionWinRate, bestMove, openingMatch } = currentState;
 
           if (openingMatch) {
             moveEvaluations.push({
@@ -208,23 +308,25 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               quality: "Book",
               player: activePlayer,
             });
+            
+            // Update progress for Phase 2
+            const phase2Progress = phase1Weight * 100 + ((ply + 1) / gameStates.length) * phase2Weight * 100;
+            setGameReviewProgress(Math.round(phase2Progress));
             continue;
           }
 
           // Calculate win probabilities
-          const preMoveWinRate = evaluationToWinRate(evaluation.lines?.[0]);
           const nextState = ply < gameStates.length - 1 ? gameStates[ply + 1] : null;
           const postMoveWinRate = nextState
-            ? evaluationToWinRate(nextState.evaluation.lines?.[0])
+            ? nextState.preMoveWinRate
             : preMoveWinRate;
 
           // Get second-best option evaluation
-          const secondBestEval = evaluation.lines?.[1];
-          const secondBestWinRate = secondBestEval ? evaluationToWinRate(secondBestEval) : undefined;
+          const secondBestWinRate = secondOptionWinRate;
 
           const isWhitePlaying = activePlayer === "w";
           const playedMove = moveHistory[ply];
-          const engineChoice = evaluation.bestMove;
+          const engineChoice = bestMove
 
           // Check for brilliant moves
           if (
@@ -238,6 +340,10 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               quality: "Very Good",
               player: activePlayer,
             });
+            
+            // Update progress for Phase 2
+            const phase2Progress = phase1Weight * 100 + ((ply + 1) / gameStates.length) * phase2Weight * 100;
+            setGameReviewProgress(Math.round(phase2Progress));
             continue;
           }
 
@@ -251,6 +357,10 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               currenFen: postMovefen,
               player: activePlayer,
             });
+            
+            // Update progress for Phase 2
+            const phase2Progress = phase1Weight * 100 + ((ply + 1) / gameStates.length) * phase2Weight * 100;
+            setGameReviewProgress(Math.round(phase2Progress));
             continue;
           }
 
@@ -265,10 +375,15 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             currenFen: postMovefen,
             player: activePlayer,
           });
+
+          // Update progress for Phase 2
+          const phase2Progress = phase1Weight * 100 + ((ply + 1) / gameStates.length) * phase2Weight * 100;
+          setGameReviewProgress(Math.round(phase2Progress));
         }
 
         console.log("Analysis Complete:", moveEvaluations);
         setGameReview(moveEvaluations);
+        setGameReviewProgress(100); // Ensure we reach 100%
       } catch (error) {
         console.error("Analysis failed:", error);
       } finally {
@@ -281,6 +396,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   return { 
     gameReview,
     gameReviewLoading,
+    gameReviewProgress, // Add this to the return
     setGameReview,
     setGameReviewLoading,
     generateGameReview,

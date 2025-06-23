@@ -161,6 +161,7 @@ function GameInfoTab({
   gameReview,
   handleMoveCoachClick,
   handleMoveAnnontateClick,
+  gameReviewProgress,
   chatLoading,
 }: {
   moves: string[];
@@ -170,6 +171,7 @@ function GameInfoTab({
   generateGameReview: (moves: string[]) => void;
   gameReviewLoading: boolean;
   gameReview: MoveAnalysis[];
+  gameReviewProgress: number;
   gameInfo: Record<string, string>;
   chatLoading: boolean;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
@@ -420,6 +422,7 @@ function GameInfoTab({
         moves={moves}
         handleMoveCoachClick={handleMoveCoachClick}
         chatLoading={chatLoading}
+        gameReviewProgress={gameReviewProgress}
         comment={comment}
         handleMoveAnnontateClick={handleMoveAnnontateClick}
         gameReviewLoading={gameReviewLoading}
@@ -475,6 +478,7 @@ export default function PGNUploaderPage() {
     setEngineLines,
     engine,
     gameReview,
+    gameReviewProgress,
     setGameReview,
     generateGameReview,
     gameReviewLoading,
@@ -897,6 +901,7 @@ export default function PGNUploaderPage() {
                   gameInfo={gameInfo}
                   generateGameReview={generateGameReview}
                   gameReviewLoading={gameReviewLoading}
+                  gameReviewProgress={gameReviewProgress}
                   handleMoveAnnontateClick={handleMoveAnnontateClick}
                   handleMoveCoachClick={handleMoveCoachClick}
                   chatLoading={chatLoading}

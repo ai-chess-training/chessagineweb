@@ -193,6 +193,7 @@ export default function useAgine(fen: string) {
     gameReview,
     setGameReview,
     gameReviewLoading,
+    gameReviewProgress,
     setGameReviewLoading,
     generateGameReview,
   } = useGameReview(engine, engineDepth);
@@ -1165,6 +1166,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       // Game Review
 
       gameReview,
+      gameReviewProgress,
       setGameReview,
       gameReviewLoading,
       setGameReviewLoading,
@@ -1206,6 +1208,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       engine,
       gameReview,
       gameReviewLoading,
+      gameReviewProgress,
       setEngineDepth,
       setEngineLines,
       generateGameReview,

@@ -51,6 +51,7 @@ interface GameReviewTabProps {
   generateGameReview: (moves: string[]) => Promise<void>;
   moves: string[];
   gameReviewLoading: boolean;
+  gameReviewProgress: number;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
@@ -116,7 +117,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   handleMoveCoachClick,
   handleMoveAnnontateClick,
   chatLoading,
-  comment
+  comment,
+  gameReviewProgress
   
 }) => {
 
@@ -312,17 +314,33 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               game, for each move you can chat about position and make agine generate annotations.
             </Typography>
           )}
-          {gameReviewLoading && (
-            <LinearProgress
+            {gameReviewLoading && (
+            <Box sx={{ width: 550 }}>
+              <LinearProgress
+              variant="determinate"
+              value={gameReviewProgress}
               sx={{
-                width: 550,
                 height: 6,
                 borderRadius: 5,
                 bgcolor: grey[800],
                 "& .MuiLinearProgress-bar": { bgcolor: "#2563eb" },
               }}
-            />
-          )}
+              />
+              <Typography
+              variant="caption"
+              sx={{
+                color: grey[400],
+                mt: 0.5,
+                display: "block",
+                textAlign: "right",
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+              >
+              {`${Math.round(gameReviewProgress)}%`}
+              </Typography>
+            </Box>
+            )}
         </Stack>
         <Paper
           sx={{

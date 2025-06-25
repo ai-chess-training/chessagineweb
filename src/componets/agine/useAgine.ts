@@ -363,7 +363,7 @@ export default function useAgine(fen: string) {
           }
         }
 
-        const result = await makeApiRequest(currentFen, query, puzzleMode ? "puzzle" : "position");
+        const result = await makeApiRequest(currentFen, query, puzzleMode === true || puzzleQuery ? "puzzle" : "position");
 
         const assistantMessage = {
           id: (Date.now() + 1).toString(),

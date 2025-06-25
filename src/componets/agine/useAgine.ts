@@ -199,7 +199,7 @@ export default function useAgine(fen: string) {
   } = useGameReview(engine, engineDepth);
 
   const makeApiRequest = useCallback(
-    async (fen: string, query: string): Promise<string> => {
+    async (fen: string, query: string, mode: string): Promise<string> => {
       // Cancel previous request if still pending
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -216,7 +216,7 @@ export default function useAgine(fen: string) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ fen, query }),
+          body: JSON.stringify({ fen, query, mode }),
           signal: controller.signal,
         });
 
@@ -273,132 +273,6 @@ export default function useAgine(fen: string) {
 
   // ==================== OPTIMIZED ANALYSIS FUNCTION ====================
 
-const analyzePosition = useCallback(
-  async (customQuery?: string): Promise<string> => {
-    setLlmLoading(true);
-    setLlmAnalysisResult(null);
-
-    const currentFen = currentFenRef.current;
-
-    try {
-      // Always ensure engine is ready
-      if (!engine) {
-        const errorMessage = "Stockfish engine not ready. Please wait for initialization.";
-        setLlmAnalysisResult(errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      // Always get fresh Stockfish analysis
-      const stockfishResult = await engine.evaluatePositionWithUpdate({
-        fen: currentFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: (partialEval: PositionEval) => {
-          if (currentFenRef.current === currentFen) {
-            setStockfishAnalysisResult(partialEval);
-          }
-        },
-      });
-
-      if (currentFenRef.current === currentFen) {
-        setStockfishAnalysisResult(stockfishResult);
-      }
-
-      // Always get opening data if not available
-      let currentOpeningData = openingData;
-      if (!currentOpeningData) {
-        try {
-          currentOpeningData = await getOpeningStats(currentFen);
-          if (currentFenRef.current === currentFen) {
-            setOpeningData(currentOpeningData);
-          }
-        } catch (error) {
-          console.error("Error fetching opening data for annotation:", error);
-        }
-      }
-
-      // Always format engine analysis for LLM
-      const formattedEngineLines = stockfishResult.lines
-        .map((line, index) => {
-          const evaluation = formatEvaluation(line);
-          const moves = formatPrincipalVariation(line.pv, line.fen);
-          let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-          if (line.resultPercentages) {
-            formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-          }
-
-          formattedLine += ` [Depth: ${line.depth}]`;
-          return formattedLine;
-        })
-        .join("\n");
-
-      // Build base query with engine and opening data
-      let baseQuery = `Annotate this chess position using the Stockfish engine analysis and opening database information provided:
-
-Position FEN: ${currentFen}
-Best Move: ${stockfishResult.bestMove || "Not available"}
-
-Engine Analysis (Depth ${engineDepth}, ${engineLines} line${
-        engineLines > 1 ? "s" : ""
-      }):
-${formattedEngineLines}`;
-
-      // Add opening data if available
-      if (currentOpeningData) {
-        const openingSpeech = getOpeningStatSpeech(currentOpeningData);
-        baseQuery += `\n\nOpening Database Information:\n${openingSpeech}`;
-      }
-
-      // Build final query
-      let finalQuery: string;
-      if (customQuery) {
-        // Include custom query with all the engine data
-        finalQuery = `${baseQuery}\n\nSpecific Request: ${customQuery}\n\nGenerate a concise annotation for this position based on the above analysis and the specific request.`;
-      } else {
-        // Default annotation query
-        finalQuery = `${baseQuery}\n\nGenerate a short annotation for this position.`;
-      }
-
-      const result = await makeApiRequest(currentFen, finalQuery);
-
-      // Only update if we're still analyzing the same position
-      if (currentFenRef.current === currentFen) {
-        setLlmAnalysisResult(result);
-      }
-
-      // Return the result for the component to use
-      return result;
-    } catch (error) {
-      console.error("Error analyzing position:", error);
-      const errorMessage = "Error analyzing position. Please try again.";
-      
-      if (currentFenRef.current === currentFen) {
-        if (error instanceof Error && error.message === "Request cancelled") {
-          // Don't show error for cancelled requests, but still throw
-          throw error;
-        }
-        setLlmAnalysisResult(errorMessage);
-      }
-      
-      // Throw the error so the component can handle it
-      throw new Error(errorMessage);
-    } finally {
-      if (currentFenRef.current === currentFen) {
-        setLlmLoading(false);
-      }
-    }
-  },
-  [
-    engine,
-    engineDepth,
-    engineLines,
-    openingData,
-    formatEvaluation,
-    formatPrincipalVariation,
-    makeApiRequest,
-  ]
-);
 
   // ==================== OPTIMIZED CHAT FUNCTIONS ====================
 
@@ -489,7 +363,7 @@ ${formattedEngineLines}`;
           }
         }
 
-        const result = await makeApiRequest(currentFen, query);
+        const result = await makeApiRequest(currentFen, query, puzzleMode ? "puzzle" : "position");
 
         const assistantMessage = {
           id: (Date.now() + 1).toString(),
@@ -591,7 +465,7 @@ Side To Move ${sideToMove}
       setChatLoading(true);
 
       try {
-        const result = await makeApiRequest(currentFen, query);
+        const result = await makeApiRequest(currentFen, query, "position");
 
         // Add assistant response to chat
         const assistantMessage = {
@@ -670,7 +544,7 @@ Provide both theoretical background and practical advice.`;
       setChatLoading(true);
 
       try {
-        const result = await makeApiRequest(currentFen, query);
+        const result = await makeApiRequest(currentFen, query, "position");
 
         // Add assistant response to chat
         const assistantMessage = {
@@ -793,7 +667,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       setChatLoading(true);
 
       try {
-        const result = await makeApiRequest(currentFen, query);
+        const result = await makeApiRequest(currentFen, query, "position");
 
         // Add assistant response to chat
         const assistantMessage = {
@@ -919,7 +793,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       setChatLoading(true);
 
       try {
-        const result = await makeApiRequest(pastFen, query);
+        const result = await makeApiRequest(pastFen, query, "position");
 
         // Add assistant response to chat
         const assistantMessage = {
@@ -1071,7 +945,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       setChatLoading(true);
 
       try {
-        const result = await makeApiRequest(pastFen, query);
+        const result = await makeApiRequest(pastFen, query, "annotation");
 
         // Add assistant response to chat
         const assistantMessage = {
@@ -1172,7 +1046,6 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       setGameReviewLoading,
       // Functions
       fetchOpeningData,
-      analyzePosition,
       analyzeWithStockfish,
       generateGameReview,
       sendChatMessage,
@@ -1213,7 +1086,6 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       setEngineLines,
       generateGameReview,
       fetchOpeningData,
-      analyzePosition,
       analyzeWithStockfish,
       sendChatMessage,
       handleChatKeyPress,

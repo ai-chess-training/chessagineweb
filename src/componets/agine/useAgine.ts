@@ -833,7 +833,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   );
 
   const handleGameReviewSummaryClick = useCallback(
-  async (review: MoveAnalysis[]): Promise<void> => {
+  async (review: MoveAnalysis[], gameInfo: string): Promise<void> => {
     if (
       !setChatMessages ||
       !setChatLoading ||
@@ -854,11 +854,16 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       );
     };
 
-    // Find specific moves for the report
+    const whiteBook = findMovesByQuality('Book', 'w')[0];
+    const whiteGood = findMovesByQuality('Good', 'w')[0];
+    const whiteVeryGood = findMovesByQuality('Very Good', 'w')[0];
     const whiteDubious = findMovesByQuality('Dubious', 'w')[0];
     const whiteMistake = findMovesByQuality('Mistake', 'w')[0];
     const whiteBlunder = findMovesByQuality('Blunder', 'w')[0];
     
+    const blackBook = findMovesByQuality('Book', 'b')[0];
+    const blackGood = findMovesByQuality('Good', 'b')[0];
+    const blackVeryGood = findMovesByQuality('Very Good', 'b')[0];
     const blackDubious = findMovesByQuality('Dubious', 'b')[0];
     const blackMistake = findMovesByQuality('Mistake', 'b')[0];
     const blackBlunder = findMovesByQuality('Blunder', 'b')[0];
@@ -873,6 +878,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       
       return {
         notation: `${moveNotation} ${move.notation}`,
+        bestSanNotation: move.sanNotation,
         fen: move.fen,
         quality: move.quality,
         player: move.player === "w" ? "White" : "Black"
@@ -882,109 +888,74 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     // Format the found moves
     const keyMoves = {
       white: {
+        book: formatMove(whiteBook),
+        good: formatMove(whiteGood),
+        very: formatMove(whiteVeryGood),
         dubious: formatMove(whiteDubious),
         mistake: formatMove(whiteMistake),
         blunder: formatMove(whiteBlunder)
       },
       black: {
+        book: formatMove(blackBook),
+        good: formatMove(blackGood),
+        very: formatMove(blackVeryGood),
         dubious: formatMove(blackDubious),
         mistake: formatMove(blackMistake),
         blunder: formatMove(blackBlunder)
       }
     };
 
-    // Add Stockfish analysis for each key move
-    const engineAnalyses: { [key: string]: string } = {};
     
-    if (engine) {
-      const movesToAnalyze = [
-        { key: 'whiteDubious', move: keyMoves.white.dubious },
-        { key: 'whiteMistake', move: keyMoves.white.mistake },
-        { key: 'whiteBlunder', move: keyMoves.white.blunder },
-        { key: 'blackDubious', move: keyMoves.black.dubious },
-        { key: 'blackMistake', move: keyMoves.black.mistake },
-        { key: 'blackBlunder', move: keyMoves.black.blunder },
-      ];
-
-      for (const { key, move } of movesToAnalyze) {
-        if (move) {
-          try {
-            const engineResult = await engine.evaluatePositionWithUpdate({
-              fen: move.fen,
-              depth: engineDepth,
-              multiPv: engineLines,
-              setPartialEval: () => {},
-            });
-
-            if (engineResult) {
-              const formattedEngineLines = engineResult.lines
-                .map((line, index) => {
-                  const evaluation = formatEvaluation(line);
-                  const moves = formatPrincipalVariation(line.pv, line.fen);
-                  let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-                  if (line.resultPercentages) {
-                    formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-                  }
-
-                  return formattedLine;
-                })
-                .join("\n");
-
-              engineAnalyses[key] = formattedEngineLines;
-            }
-          } catch (error) {
-            console.warn(`Engine analysis failed for ${key}:`, error);
-          }
-        }
-      }
-    }
-
-    // Build the comprehensive query
+    
     let query = `As a chess coach, generate a comprehensive game review report based on these key moves from the analysis:
 
 GAME REVIEW SUMMARY:
 
+GAME INFO
+
+${gameInfo}
+
 WHITE'S KEY MOVES:`;
 
+    // WHITE'S KEY MOVES
+    if (keyMoves.white.book) {
+      query += `\n- Book Move: ${keyMoves.white.book.notation} Best Move: ${keyMoves.white.book.bestSanNotation} (Position: ${keyMoves.white.book.fen})`;
+    }
+    if (keyMoves.white.good) {
+      query += `\n- Good Move: ${keyMoves.white.good.notation} Best Move: ${keyMoves.white.good.bestSanNotation} (Position: ${keyMoves.white.good.fen})`;
+    }
+    if (keyMoves.white.very) {
+      query += `\n- Very Good Move: ${keyMoves.white.very.notation} Best Move: ${keyMoves.white.very.bestSanNotation} (Position: ${keyMoves.white.very.fen})`;
+    }
     if (keyMoves.white.dubious) {
-      query += `\n- Dubious Move: ${keyMoves.white.dubious.notation} (Position: ${keyMoves.white.dubious.fen})`;
-      if (engineAnalyses.whiteDubious) {
-        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.whiteDubious}`;
-      }
+      query += `\n- Dubious Move: ${keyMoves.white.dubious.notation} Best Move: ${keyMoves.white.dubious.bestSanNotation} (Position: ${keyMoves.white.dubious.fen})`;
     }
     if (keyMoves.white.mistake) {
-      query += `\n- Mistake: ${keyMoves.white.mistake.notation} (Position: ${keyMoves.white.mistake.fen})`;
-      if (engineAnalyses.whiteMistake) {
-        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.whiteMistake}`;
-      }
+      query += `\n- Mistake: ${keyMoves.white.mistake.notation} Best Move: ${keyMoves.white.mistake.bestSanNotation} (Position: ${keyMoves.white.mistake.fen})`;
     }
     if (keyMoves.white.blunder) {
-      query += `\n- Blunder: ${keyMoves.white.blunder.notation} (Position: ${keyMoves.white.blunder.fen})`;
-      if (engineAnalyses.whiteBlunder) {
-        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.whiteBlunder}`;
-      }
+      query += `\n- Blunder: ${keyMoves.white.blunder.notation} Best Move: ${keyMoves.white.blunder.bestSanNotation} (Position: ${keyMoves.white.blunder.fen})`;
     }
 
     query += `\n\nBLACK'S KEY MOVES:`;
 
+    if (keyMoves.black.book) {
+      query += `\n- Book Move: ${keyMoves.black.book.notation} Best Move: ${keyMoves.black.book.bestSanNotation} (Position: ${keyMoves.black.book.fen})`;
+    }
+    if (keyMoves.black.good) {
+      query += `\n- Good Move: ${keyMoves.black.good.notation} Best Move: ${keyMoves.black.good.bestSanNotation} (Position: ${keyMoves.black.good.fen})`;
+    }
+    if (keyMoves.black.very) {
+      query += `\n- Very Good Move: ${keyMoves.black.very.notation} Best Move: ${keyMoves.black.very.bestSanNotation} (Position: ${keyMoves.black.very.fen})`;
+    }
     if (keyMoves.black.dubious) {
-      query += `\n- Dubious Move: ${keyMoves.black.dubious.notation} (Position: ${keyMoves.black.dubious.fen})`;
-      if (engineAnalyses.blackDubious) {
-        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.blackDubious}`;
-      }
+      query += `\n- Dubious Move: ${keyMoves.black.dubious.notation} Best Move: ${keyMoves.black.dubious.bestSanNotation} (Position: ${keyMoves.black.dubious.fen})`;
     }
     if (keyMoves.black.mistake) {
-      query += `\n- Mistake: ${keyMoves.black.mistake.notation} (Position: ${keyMoves.black.mistake.fen})`;
-      if (engineAnalyses.blackMistake) {
-        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.blackMistake}`;
-      }
+      query += `\n- Mistake: ${keyMoves.black.mistake.notation} Best Move: ${keyMoves.black.mistake.bestSanNotation} (Position: ${keyMoves.black.mistake.fen})`;
     }
     if (keyMoves.black.blunder) {
-      query += `\n- Blunder: ${keyMoves.black.blunder.notation} (Position: ${keyMoves.black.blunder.fen})`;
-      if (engineAnalyses.blackBlunder) {
-        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.blackBlunder}`;
-      }
+      query += `\n- Blunder: ${keyMoves.black.blunder.notation} Best Move: ${keyMoves.black.blunder.bestSanNotation} (Position: ${keyMoves.black.blunder.fen})`;
     }
 
     query += `\n\nPlease provide a detailed game review report covering:

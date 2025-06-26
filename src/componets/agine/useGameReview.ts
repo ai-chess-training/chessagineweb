@@ -18,6 +18,7 @@ export type MoveQuality =
 export interface MoveAnalysis {
   plyNumber: number;
   notation: string;
+  sanNotation: string | undefined;
   quality: MoveQuality;
   fen: string;
   currenFen: string;
@@ -193,6 +194,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         preMovefen: string; // FEN before the move
         preMoveWinRate: number;
         secondOptionWinRate: number | undefined;
+        sanBestMove: string | undefined;
         postMovefen: string;
         activePlayer: Color;
         moveNotation: string;
@@ -227,6 +229,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           }
 
           const uciNotation = moveObject.from + moveObject.to + (moveObject.promotion || "");
+          const sanNotation = moveObject.san;
           moveHistory.push(uciNotation);
 
           let preMoveWinRate = 0;
@@ -249,6 +252,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             moveNotation: moveNotation,
             plyIndex: ply,
             bestMove: bestMove,
+            sanBestMove: sanNotation,
             openingMatch: true
           });
             
@@ -259,6 +263,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           }
 
           const chessDbEvals = await fetchChessDBData(preMovefen)
+          let sanBestMove;
 
           if(chessDbEvals.length <= 1){
             const positionAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
@@ -271,10 +276,14 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           const secondBestEval = positionAnalysis.lines?.[1];
           secondBestWinRate = secondBestEval ? evaluationToWinRate(secondBestEval) : undefined;
           bestMove = positionAnalysis.bestMove;
+          const chess = new Chess(preMovefen);
+          const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
+          sanBestMove = moveObjSan ? moveObjSan.san : undefined;
           }else{
             preMoveWinRate = Number(chessDbEvals[0].winrate)
             secondBestWinRate = chessDbEvals[1].winrate ? Number(chessDbEvals[1].winrate) : undefined;
             bestMove = chessDbEvals[0].uci;
+            sanBestMove = chessDbEvals[0].san;
           }
 
           gameStates.push({
@@ -286,6 +295,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             moveNotation: moveNotation,
             plyIndex: ply,
             bestMove: bestMove,
+            sanBestMove: sanBestMove,
             openingMatch: false
           });
 
@@ -297,13 +307,14 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         // Phase 2: Classify each move with complete context
         for (let ply = 0; ply < gameStates.length; ply++) {
           const currentState = gameStates[ply];
-          const { activePlayer, moveNotation, plyIndex, preMovefen, postMovefen, preMoveWinRate, secondOptionWinRate, bestMove, openingMatch } = currentState;
+          const { activePlayer, moveNotation, plyIndex, preMovefen, postMovefen, preMoveWinRate, secondOptionWinRate, bestMove, openingMatch, sanBestMove } = currentState;
 
           if (openingMatch) {
             moveEvaluations.push({
               plyNumber: plyIndex,
               fen: preMovefen, // FEN before the move
               notation: moveNotation,
+              sanNotation: sanBestMove,
               currenFen: postMovefen,
               quality: "Book",
               player: activePlayer,
@@ -335,6 +346,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             moveEvaluations.push({
               plyNumber: plyIndex,
               notation: moveNotation,
+              sanNotation: sanBestMove,
               fen: preMovefen, // FEN before the move
               currenFen: postMovefen,
               quality: "Very Good",
@@ -352,6 +364,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             moveEvaluations.push({
               plyNumber: plyIndex,
               notation: moveNotation,
+              sanNotation: sanBestMove,
               fen: preMovefen, // FEN before the move
               quality: "Best",
               currenFen: postMovefen,
@@ -370,6 +383,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           moveEvaluations.push({
             plyNumber: plyIndex,
             notation: moveNotation,
+            sanNotation: sanBestMove,
             quality: qualityRating,
             fen: preMovefen, // FEN before the move
             currenFen: postMovefen,

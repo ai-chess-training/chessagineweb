@@ -55,8 +55,11 @@ interface GameReviewTabProps {
   goToMove: (index: number) => void;
   currentMoveIndex: number;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
+  gameInfo: string;
+  whitePlayer: string;
+  blackPlayer: string;
   handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
-  handleGameReviewClick: (review: MoveAnalysis[]) => void;
+  handleGameReviewClick: (review: MoveAnalysis[], gameInfo: string) => void;
   chatLoading: boolean;
   comment: string;
 }
@@ -120,7 +123,10 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   handleGameReviewClick,
   chatLoading,
   comment,
-  gameReviewProgress
+  whitePlayer,
+  blackPlayer,
+  gameReviewProgress,
+  gameInfo
   
 }) => {
 
@@ -548,7 +554,18 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             },
             minWidth: 200,
           }}
-          onClick={() => handleGameReviewClick(gameReview!)}
+          onClick={() => {
+            // Get stats
+            const stats = getStatistics();
+            let newGameInfo = gameInfo;
+            if (stats) {
+              const { whiteStats, blackStats } = stats;
+              const whiteStatsStr = `White Stats: Best: ${whiteStats.Best}, Very Good: ${whiteStats["Very Good"]}, Good: ${whiteStats.Good}, Dubious: ${whiteStats.Dubious}, Mistake: ${whiteStats.Mistake}, Blunder: ${whiteStats.Blunder}, Book: ${whiteStats.Book}, accuracy: ${calculateAccuracy(whiteStats)} `;
+              const blackStatsStr = `Black Stats: Best: ${blackStats.Best}, Very Good: ${blackStats["Very Good"]}, Good: ${blackStats.Good}, Dubious: ${blackStats.Dubious}, Mistake: ${blackStats.Mistake}, Blunder: ${blackStats.Blunder}, Book: ${blackStats.Book}, accuracy: ${calculateAccuracy(blackStats)}`;
+              newGameInfo = `${gameInfo}\n GAME REVIEW DETAILS${whiteStatsStr}\n${blackStatsStr}`;
+            }
+            handleGameReviewClick(gameReview!, newGameInfo);
+          }}
           disabled={!gameReview || gameReview.length === 0 || chatLoading}
         >
           Generate Game Review Report
@@ -558,12 +575,12 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
       {getStatistics() && (
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           <StatCard
-            title="White"
+            title={whitePlayer}
             stats={getStatistics()!.whiteStats}
             side="white"
           />
           <StatCard
-            title="Black"
+            title={blackPlayer}
             stats={getStatistics()!.blackStats}
             side="black"
           />

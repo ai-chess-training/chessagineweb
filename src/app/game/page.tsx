@@ -177,7 +177,7 @@ function GameInfoTab({
   chatLoading: boolean;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
-  handleGameReviewClick: (gameReview: MoveAnalysis[]) => void;
+  handleGameReviewClick: (gameReview: MoveAnalysis[], gameInfo: string) => void;
 
 }) {
   const formatTimeControl = (timeControl: string) => {
@@ -208,6 +208,27 @@ function GameInfoTab({
   const handleLastMove = () => {
     goToMove(moves.length - 1);
   };
+
+
+  function generateGameInfoPrompt(gameInfo: Record<string, string>): string {
+    const lines: string[] = [];
+    if (gameInfo.White || gameInfo.WhiteElo)
+      lines.push(
+        `White: ${gameInfo.White || "Unknown"}${gameInfo.WhiteElo ? ` (${gameInfo.WhiteElo})` : ""}`
+      );
+    if (gameInfo.Black || gameInfo.BlackElo)
+      lines.push(
+        `Black: ${gameInfo.Black || "Unknown"}${gameInfo.BlackElo ? ` (${gameInfo.BlackElo})` : ""}`
+      );
+    if (gameInfo.Date) lines.push(`Date: ${gameInfo.Date}`);
+    if (gameInfo.Event) lines.push(`Event: ${gameInfo.Event}`);
+    if (gameInfo.Site) lines.push(`Site: ${gameInfo.Site}`);
+    if (gameInfo.Result) lines.push(`Result: ${gameInfo.Result}`);
+    if (gameInfo.TimeControl) lines.push(`Time Control: ${formatTimeControl(gameInfo.TimeControl)}`);
+    if (gameInfo.ECO) lines.push(`ECO: ${gameInfo.ECO}`);
+    if (gameInfo.Opening) lines.push(`Opening: ${gameInfo.Opening}`);
+    return lines.join("\n");
+  }
 
   return (
     <Stack spacing={3}>
@@ -426,6 +447,9 @@ function GameInfoTab({
         chatLoading={chatLoading}
         gameReviewProgress={gameReviewProgress}
         comment={comment}
+        whitePlayer={gameInfo.White || "Unknown"}
+        blackPlayer={gameInfo.Black || "Unknown"}
+        gameInfo={generateGameInfoPrompt(gameInfo)}
         handleMoveAnnontateClick={handleMoveAnnontateClick}
         handleGameReviewClick={handleGameReviewClick}
         gameReviewLoading={gameReviewLoading}

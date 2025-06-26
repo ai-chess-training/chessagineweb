@@ -834,6 +834,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
   const handleGameReviewSummaryClick = useCallback(
   async (review: MoveAnalysis[], gameInfo: string): Promise<void> => {
+
     if (
       !setChatMessages ||
       !setChatLoading ||
@@ -846,6 +847,8 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     }
 
     if (chatLoading) return;
+
+     setChatLoading(true);
 
     // Helper function to find moves by quality and player
     const findMovesByQuality = (quality: MoveQuality, player: 'w' | 'b') => {
@@ -993,7 +996,7 @@ Format this as a comprehensive coaching report that would help both players impr
     };
 
     setChatMessages((prev) => [...prev, userMessage]);
-    setChatLoading(true);
+   
 
     try {
       // Use the FEN of the first key move found, or current position as fallback

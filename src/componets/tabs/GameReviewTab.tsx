@@ -568,7 +568,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           }}
           disabled={!gameReview || gameReview.length === 0 || chatLoading}
         >
-          Generate Game Review Report
+          {chatLoading ? "Generating..." : "Generate Game Review Report"}
         </Button>
       </Box>
 

@@ -25,6 +25,8 @@ import {
   Arrow,
   BoardOrientation,
 } from "react-chessboard/dist/chessboard/types";
+import { MoveAnalysis } from "../agine/useGameReview";
+import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -43,6 +45,7 @@ interface AiChessboardPanelProps {
   puzzleMode?: boolean;
   onDropPuzzle?: (source: string, target: string) => boolean;
   handleSquarePuzzleClick?: (square: string) => void;
+  reviewMove?: MoveAnalysis;
   puzzleCustomSquareStyle?: {
     [square: string]: CSSProperties;
   };
@@ -69,6 +72,7 @@ export default function AiChessboardPanel({
   handleSquarePuzzleClick,
   setMoveSquares,
   puzzleCustomSquareStyle,
+  reviewMove,
   side,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
@@ -170,15 +174,23 @@ export default function AiChessboardPanel({
       return [];
     }
 
+    let reviewArrow: Arrow[] = [];
+    if(reviewMove){
+      reviewArrow = [[reviewMove.arrowMove.from, reviewMove.arrowMove.to, getMoveClassificationStyle(reviewMove.quality).color]]
+    }
+
     const move = bestLine[0];
     if (move && move.length >= 4) {
       const from = move.substring(0, 2);
       const to = move.substring(2, 4);
+      if (reviewMove && reviewMove.quality !== "Best") {
+        return [[from as Square, to as Square, "#4caf50"], ...reviewArrow];
+      }
       return [[from as Square, to as Square, "#4caf50"]];
     }
 
     return [];
-  }, [showArrows, stockfishAnalysisResult]);
+  }, [showArrows, stockfishAnalysisResult, reviewMove]);
 
   // Optimized square click handler
   const handleSquareClick = useCallback(

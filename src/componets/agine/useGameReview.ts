@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Chess, validateFen } from "chess.js";
+import { Chess, Move, validateFen } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { openings } from "./opening";
 import { LineEval} from "@/stockfish/engine/engine";
@@ -20,6 +20,7 @@ export interface MoveAnalysis {
   notation: string;
   sanNotation: string | undefined;
   quality: MoveQuality;
+  arrowMove: Move;
   fen: string;
   currenFen: string;
   player: "w" | "b";
@@ -198,6 +199,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         postMovefen: string;
         activePlayer: Color;
         moveNotation: string;
+        arrowMove: Move;
         bestMove: string | undefined;
         plyIndex: number;
         openingMatch: boolean;
@@ -250,6 +252,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             preMovefen: preMovefen, // This is the FEN before the move
             postMovefen: postMovefen,
             moveNotation: moveNotation,
+            arrowMove: moveObject,
             plyIndex: ply,
             bestMove: bestMove,
             sanBestMove: sanNotation,
@@ -294,6 +297,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             postMovefen: postMovefen,
             moveNotation: moveNotation,
             plyIndex: ply,
+            arrowMove: moveObject,
             bestMove: bestMove,
             sanBestMove: sanBestMove,
             openingMatch: false
@@ -307,7 +311,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         // Phase 2: Classify each move with complete context
         for (let ply = 0; ply < gameStates.length; ply++) {
           const currentState = gameStates[ply];
-          const { activePlayer, moveNotation, plyIndex, preMovefen, postMovefen, preMoveWinRate, secondOptionWinRate, bestMove, openingMatch, sanBestMove } = currentState;
+          const {activePlayer, moveNotation, plyIndex, preMovefen, postMovefen, preMoveWinRate, secondOptionWinRate, bestMove, openingMatch, sanBestMove, arrowMove } = currentState;
 
           if (openingMatch) {
             moveEvaluations.push({
@@ -316,6 +320,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               notation: moveNotation,
               sanNotation: sanBestMove,
               currenFen: postMovefen,
+              arrowMove: arrowMove,
               quality: "Book",
               player: activePlayer,
             });
@@ -349,6 +354,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               sanNotation: sanBestMove,
               fen: preMovefen, // FEN before the move
               currenFen: postMovefen,
+              arrowMove: arrowMove,
               quality: "Very Good",
               player: activePlayer,
             });
@@ -367,6 +373,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               sanNotation: sanBestMove,
               fen: preMovefen, // FEN before the move
               quality: "Best",
+              arrowMove: arrowMove,
               currenFen: postMovefen,
               player: activePlayer,
             });
@@ -385,6 +392,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             notation: moveNotation,
             sanNotation: sanBestMove,
             quality: qualityRating,
+            arrowMove: arrowMove,
             fen: preMovefen, // FEN before the move
             currenFen: postMovefen,
             player: activePlayer,

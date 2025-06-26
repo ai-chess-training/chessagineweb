@@ -64,7 +64,7 @@ interface GameReviewTabProps {
   comment: string;
 }
 
-const getMoveClassificationStyle = (classification: MoveQuality) => {
+export const getMoveClassificationStyle = (classification: MoveQuality) => {
   switch (classification) {
     case "Best":
       return {

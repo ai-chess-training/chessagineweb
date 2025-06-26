@@ -421,7 +421,7 @@ function GameInfoTab({
           <Box sx={{ width: "100%", px: 1 }}>
             <LinearProgress
               variant="determinate"
-              value={moves.length > 0 ? ((currentMoveIndex + 1) / Math.floor(moves.length / 2) + 1) * 100 : 0}
+              value={moves.length > 0 ? ((currentMoveIndex + 1) / moves.length) * 100 : 0}
               sx={{
                 height: 6,
                 borderRadius: 3,
@@ -809,6 +809,7 @@ export default function PGNUploaderPage() {
               setMoveSquares={setMoveSquares}
               setFen={setFen}
               setGame={setGame}
+              reviewMove={gameReview[currentMoveIndex]}
               setLlmAnalysisResult={setLlmAnalysisResult}
               setOpeningData={setOpeningData}
               setStockfishAnalysisResult={setStockfishAnalysisResult}

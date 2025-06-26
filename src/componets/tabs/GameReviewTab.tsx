@@ -56,6 +56,7 @@ interface GameReviewTabProps {
   currentMoveIndex: number;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
+  handleGameReviewClick: (review: MoveAnalysis[]) => void;
   chatLoading: boolean;
   comment: string;
 }
@@ -116,6 +117,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   currentMoveIndex,
   handleMoveCoachClick,
   handleMoveAnnontateClick,
+  handleGameReviewClick,
   chatLoading,
   comment,
   gameReviewProgress
@@ -531,6 +533,26 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             },
           }}
         />
+
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{
+            mt: 2,
+            fontWeight: "bold",
+            borderRadius: 2,
+            bgcolor: "#2563eb",
+            color: "white",
+            "&:hover": {
+              bgcolor: "#1741a6",
+            },
+            minWidth: 200,
+          }}
+          onClick={() => handleGameReviewClick(gameReview!)}
+          disabled={!gameReview || gameReview.length === 0 || chatLoading}
+        >
+          Generate Game Review Report
+        </Button>
       </Box>
 
       {getStatistics() && (

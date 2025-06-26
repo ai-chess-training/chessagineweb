@@ -11,7 +11,7 @@ import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
 import { CandidateMove, getChessDBSpeech, useChessDB } from "../tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
-import useGameReview, { MoveAnalysis } from "./useGameReview";
+import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 
 export default function useAgine(fen: string) {
   // Analysis Results State
@@ -832,6 +832,250 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     ]
   );
 
+  const handleGameReviewSummaryClick = useCallback(
+  async (review: MoveAnalysis[]): Promise<void> => {
+    if (
+      !setChatMessages ||
+      !setChatLoading ||
+      !setAnalysisTab ||
+      !makeApiRequest ||
+      !currentFenRef
+    ) {
+      console.warn("Chat functionality not properly configured");
+      return;
+    }
+
+    if (chatLoading) return;
+
+    // Helper function to find moves by quality and player
+    const findMovesByQuality = (quality: MoveQuality, player: 'w' | 'b') => {
+      return review.filter(move => 
+        move.quality === quality && move.player === player
+      );
+    };
+
+    // Find specific moves for the report
+    const whiteDubious = findMovesByQuality('Dubious', 'w')[0];
+    const whiteMistake = findMovesByQuality('Mistake', 'w')[0];
+    const whiteBlunder = findMovesByQuality('Blunder', 'w')[0];
+    
+    const blackDubious = findMovesByQuality('Dubious', 'b')[0];
+    const blackMistake = findMovesByQuality('Mistake', 'b')[0];
+    const blackBlunder = findMovesByQuality('Blunder', 'b')[0];
+
+    // Helper function to format move notation
+    const formatMove = (move: MoveAnalysis) => {
+      if (!move) return null;
+      
+      const moveNumber = Math.floor(move.plyNumber / 2) + 1;
+      const isWhiteMove = move.plyNumber % 2 === 0;
+      const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
+      
+      return {
+        notation: `${moveNotation} ${move.notation}`,
+        fen: move.fen,
+        quality: move.quality,
+        player: move.player === "w" ? "White" : "Black"
+      };
+    };
+
+    // Format the found moves
+    const keyMoves = {
+      white: {
+        dubious: formatMove(whiteDubious),
+        mistake: formatMove(whiteMistake),
+        blunder: formatMove(whiteBlunder)
+      },
+      black: {
+        dubious: formatMove(blackDubious),
+        mistake: formatMove(blackMistake),
+        blunder: formatMove(blackBlunder)
+      }
+    };
+
+    // Add Stockfish analysis for each key move
+    const engineAnalyses: { [key: string]: string } = {};
+    
+    if (engine) {
+      const movesToAnalyze = [
+        { key: 'whiteDubious', move: keyMoves.white.dubious },
+        { key: 'whiteMistake', move: keyMoves.white.mistake },
+        { key: 'whiteBlunder', move: keyMoves.white.blunder },
+        { key: 'blackDubious', move: keyMoves.black.dubious },
+        { key: 'blackMistake', move: keyMoves.black.mistake },
+        { key: 'blackBlunder', move: keyMoves.black.blunder },
+      ];
+
+      for (const { key, move } of movesToAnalyze) {
+        if (move) {
+          try {
+            const engineResult = await engine.evaluatePositionWithUpdate({
+              fen: move.fen,
+              depth: engineDepth,
+              multiPv: engineLines,
+              setPartialEval: () => {},
+            });
+
+            if (engineResult) {
+              const formattedEngineLines = engineResult.lines
+                .map((line, index) => {
+                  const evaluation = formatEvaluation(line);
+                  const moves = formatPrincipalVariation(line.pv, line.fen);
+                  let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+                  if (line.resultPercentages) {
+                    formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+                  }
+
+                  return formattedLine;
+                })
+                .join("\n");
+
+              engineAnalyses[key] = formattedEngineLines;
+            }
+          } catch (error) {
+            console.warn(`Engine analysis failed for ${key}:`, error);
+          }
+        }
+      }
+    }
+
+    // Build the comprehensive query
+    let query = `As a chess coach, generate a comprehensive game review report based on these key moves from the analysis:
+
+GAME REVIEW SUMMARY:
+
+WHITE'S KEY MOVES:`;
+
+    if (keyMoves.white.dubious) {
+      query += `\n- Dubious Move: ${keyMoves.white.dubious.notation} (Position: ${keyMoves.white.dubious.fen})`;
+      if (engineAnalyses.whiteDubious) {
+        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.whiteDubious}`;
+      }
+    }
+    if (keyMoves.white.mistake) {
+      query += `\n- Mistake: ${keyMoves.white.mistake.notation} (Position: ${keyMoves.white.mistake.fen})`;
+      if (engineAnalyses.whiteMistake) {
+        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.whiteMistake}`;
+      }
+    }
+    if (keyMoves.white.blunder) {
+      query += `\n- Blunder: ${keyMoves.white.blunder.notation} (Position: ${keyMoves.white.blunder.fen})`;
+      if (engineAnalyses.whiteBlunder) {
+        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.whiteBlunder}`;
+      }
+    }
+
+    query += `\n\nBLACK'S KEY MOVES:`;
+
+    if (keyMoves.black.dubious) {
+      query += `\n- Dubious Move: ${keyMoves.black.dubious.notation} (Position: ${keyMoves.black.dubious.fen})`;
+      if (engineAnalyses.blackDubious) {
+        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.blackDubious}`;
+      }
+    }
+    if (keyMoves.black.mistake) {
+      query += `\n- Mistake: ${keyMoves.black.mistake.notation} (Position: ${keyMoves.black.mistake.fen})`;
+      if (engineAnalyses.blackMistake) {
+        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.blackMistake}`;
+      }
+    }
+    if (keyMoves.black.blunder) {
+      query += `\n- Blunder: ${keyMoves.black.blunder.notation} (Position: ${keyMoves.black.blunder.fen})`;
+      if (engineAnalyses.blackBlunder) {
+        query += `\n  Stockfish Analysis:\n  ${engineAnalyses.blackBlunder}`;
+      }
+    }
+
+    query += `\n\nPlease provide a detailed game review report covering:
+
+1. OVERALL GAME ASSESSMENT
+   - General performance evaluation for both players
+   - Key turning points in the game
+
+2. DETAILED MOVE ANALYSIS
+   - For each identified move above, explain:
+     * Why it was problematic
+     * What the player should have played instead
+     * The strategic/tactical concepts involved
+
+3. LEARNING POINTS
+   - Main lessons from this game
+   - Specific areas for improvement for both players
+   - Patterns to watch for in future games
+
+4. RECOMMENDATIONS
+   - Study suggestions based on the mistakes made
+   - Training exercises that would help avoid similar errors
+
+Format this as a comprehensive coaching report that would help both players improve their game.`;
+
+    // Switch to analysis tab
+    setAnalysisTab(1);
+
+    // Add user message to chat
+    const userMessage = {
+      id: Date.now().toString(),
+      role: "user" as const,
+      content: "Agine generate game review report",
+      timestamp: new Date(),
+    };
+
+    setChatMessages((prev) => [...prev, userMessage]);
+    setChatLoading(true);
+
+    try {
+      // Use the FEN of the first key move found, or current position as fallback
+      const firstKeyMoveFen = keyMoves.white.dubious?.fen || 
+                             keyMoves.white.mistake?.fen || 
+                             keyMoves.white.blunder?.fen || 
+                             keyMoves.black.dubious?.fen || 
+                             keyMoves.black.mistake?.fen || 
+                             keyMoves.black.blunder?.fen || 
+                             currentFenRef.current;
+
+      const result = await makeApiRequest(firstKeyMoveFen, query, "review");
+
+      // Add assistant response to chat
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant" as const,
+        content: result,
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Error generating game review report:", error);
+      if (
+        !(error instanceof Error && error.message === "Request cancelled")
+      ) {
+        const errorMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant" as const,
+          content:
+            "Sorry, I couldn't generate the game review report right now. Please try again.",
+          timestamp: new Date(),
+        };
+        setChatMessages((prev) => [...prev, errorMessage]);
+      }
+    } finally {
+      setChatLoading(false);
+    }
+  },
+  [
+    chatLoading,
+    setChatMessages,
+    setChatLoading,
+    setAnalysisTab,
+    makeApiRequest,
+    currentFenRef,
+    engine,
+    engineDepth,
+    engineLines,
+    formatEvaluation,
+    formatPrincipalVariation,
+  ]
+);
    const handleMoveAnnontateClick = useCallback(
     async (review: MoveAnalysis, customQuery?: string): Promise<void> => {
       if (
@@ -1056,6 +1300,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       handleMoveClick,
       handleMoveCoachClick,
       handleMoveAnnontateClick,
+      handleGameReviewSummaryClick,
 
       // Utility Functions
       formatEvaluation,
@@ -1094,6 +1339,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       handleOpeningMoveClick,
       handleMoveClick,
       handleMoveCoachClick,
+      handleGameReviewSummaryClick,
       formatEvaluation,
       formatPrincipalVariation,
       formatLineForLLM,

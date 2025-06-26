@@ -161,6 +161,7 @@ function GameInfoTab({
   gameReview,
   handleMoveCoachClick,
   handleMoveAnnontateClick,
+  handleGameReviewClick,
   gameReviewProgress,
   chatLoading,
 }: {
@@ -176,6 +177,7 @@ function GameInfoTab({
   chatLoading: boolean;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
+  handleGameReviewClick: (gameReview: MoveAnalysis[]) => void;
 
 }) {
   const formatTimeControl = (timeControl: string) => {
@@ -425,6 +427,7 @@ function GameInfoTab({
         gameReviewProgress={gameReviewProgress}
         comment={comment}
         handleMoveAnnontateClick={handleMoveAnnontateClick}
+        handleGameReviewClick={handleGameReviewClick}
         gameReviewLoading={gameReviewLoading}
         goToMove={goToMove}
         currentMoveIndex={currentMoveIndex}
@@ -495,6 +498,7 @@ export default function PGNUploaderPage() {
     handleOpeningMoveClick,
     handleMoveClick,
     handleMoveCoachClick,
+    handleGameReviewSummaryClick,
     chessdbdata,
   } = useAgine(fen);
 
@@ -902,6 +906,7 @@ export default function PGNUploaderPage() {
                   generateGameReview={generateGameReview}
                   gameReviewLoading={gameReviewLoading}
                   gameReviewProgress={gameReviewProgress}
+                  handleGameReviewClick={handleGameReviewSummaryClick}
                   handleMoveAnnontateClick={handleMoveAnnontateClick}
                   handleMoveCoachClick={handleMoveCoachClick}
                   chatLoading={chatLoading}

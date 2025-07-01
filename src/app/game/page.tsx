@@ -810,6 +810,7 @@ export default function PGNUploaderPage() {
               setFen={setFen}
               setGame={setGame}
               reviewMove={gameReview[currentMoveIndex]}
+              gameReviewMoveIndex={currentMoveIndex}
               setLlmAnalysisResult={setLlmAnalysisResult}
               setOpeningData={setOpeningData}
               setStockfishAnalysisResult={setStockfishAnalysisResult}

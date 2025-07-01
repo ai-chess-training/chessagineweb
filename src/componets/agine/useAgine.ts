@@ -579,6 +579,8 @@ Provide both theoretical background and practical advice.`;
     async (move: CandidateMove): Promise<void> => {
       if (llmLoading) return;
 
+      setChatLoading(true);
+     
       const currentFen = currentFenRef.current;
       const chessInstance = new Chess(currentFen);
       const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
@@ -664,7 +666,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       };
       setChatMessages((prev) => [...prev, userMessage]);
 
-      setChatLoading(true);
+      
 
       try {
         const result = await makeApiRequest(currentFen, query, "position");
@@ -712,6 +714,8 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       }
 
       if (chatLoading) return;
+
+       setChatLoading(true);
 
       const currentFen = currentFenRef.current;
       const pastFen = review.fen;
@@ -790,7 +794,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
       setChatMessages((prev) => [...prev, userMessage]);
 
-      setChatLoading(true);
+     
 
       try {
         const result = await makeApiRequest(pastFen, query, "position");

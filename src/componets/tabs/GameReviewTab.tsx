@@ -11,6 +11,7 @@ import {
   Tooltip,
   Badge,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import { grey } from "@mui/material/colors";
@@ -131,10 +132,64 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
 }) => {
 
   const [userThoughts, setUserThoughts] = useState<string>("");
+  const [loadingStates, setLoadingStates] = useState<{
+    chat: Record<number, boolean>;
+    annotate: Record<number, boolean>;
+    gameReport: boolean;
+  }>({
+    chat: {},
+    annotate: {},
+    gameReport: false,
+  });
 
   useEffect(() => {
       setUserThoughts(comment || "");
     }, [comment]);
+
+  // Reset loading states when chatLoading changes
+  useEffect(() => {
+    if (!chatLoading) {
+      setLoadingStates({
+        chat: {},
+        annotate: {},
+        gameReport: false,
+      });
+    }
+  }, [chatLoading]);
+
+  const handleChatClick = (review: MoveAnalysis) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      chat: { ...prev.chat, [review.plyNumber]: true }
+    }));
+    handleMoveCoachClick(review);
+  };
+
+  const handleAnnotateClick = (review: MoveAnalysis, customQuery?: string) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      annotate: { ...prev.annotate, [review.plyNumber]: true }
+    }));
+    handleMoveAnnontateClick(review, customQuery);
+  };
+
+  const handleGameReportClick = () => {
+    setLoadingStates(prev => ({
+      ...prev,
+      gameReport: true
+    }));
+    
+    // Get stats
+    const stats = getStatistics();
+    let newGameInfo = gameInfo;
+    if (stats) {
+      const { whiteStats, blackStats } = stats;
+      const whiteStatsStr = `White Stats: Best: ${whiteStats.Best}, Very Good: ${whiteStats["Very Good"]}, Good: ${whiteStats.Good}, Dubious: ${whiteStats.Dubious}, Mistake: ${whiteStats.Mistake}, Blunder: ${whiteStats.Blunder}, Book: ${whiteStats.Book}, accuracy: ${calculateAccuracy(whiteStats)} `;
+      const blackStatsStr = `Black Stats: Best: ${blackStats.Best}, Very Good: ${blackStats["Very Good"]}, Good: ${blackStats.Good}, Dubious: ${blackStats.Dubious}, Mistake: ${blackStats.Mistake}, Blunder: ${blackStats.Blunder}, Book: ${blackStats.Book}, accuracy: ${calculateAccuracy(blackStats)}`;
+      newGameInfo = `${gameInfo}\n GAME REVIEW DETAILS${whiteStatsStr}\n${blackStatsStr}`;
+    }
+    handleGameReviewClick(gameReview!, newGameInfo);
+  };
   
   const getStatistics = () => {
     if (!gameReview) return null;
@@ -552,23 +607,22 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             "&:hover": {
               bgcolor: "#1741a6",
             },
+            "&:disabled": {
+              bgcolor: grey[700],
+              color: grey[500],
+            },
             minWidth: 200,
+            position: "relative",
           }}
-          onClick={() => {
-            // Get stats
-            const stats = getStatistics();
-            let newGameInfo = gameInfo;
-            if (stats) {
-              const { whiteStats, blackStats } = stats;
-              const whiteStatsStr = `White Stats: Best: ${whiteStats.Best}, Very Good: ${whiteStats["Very Good"]}, Good: ${whiteStats.Good}, Dubious: ${whiteStats.Dubious}, Mistake: ${whiteStats.Mistake}, Blunder: ${whiteStats.Blunder}, Book: ${whiteStats.Book}, accuracy: ${calculateAccuracy(whiteStats)} `;
-              const blackStatsStr = `Black Stats: Best: ${blackStats.Best}, Very Good: ${blackStats["Very Good"]}, Good: ${blackStats.Good}, Dubious: ${blackStats.Dubious}, Mistake: ${blackStats.Mistake}, Blunder: ${blackStats.Blunder}, Book: ${blackStats.Book}, accuracy: ${calculateAccuracy(blackStats)}`;
-              newGameInfo = `${gameInfo}\n GAME REVIEW DETAILS${whiteStatsStr}\n${blackStatsStr}`;
-            }
-            handleGameReviewClick(gameReview!, newGameInfo);
-          }}
+          onClick={handleGameReportClick}
           disabled={!gameReview || gameReview.length === 0 || chatLoading}
+          startIcon={
+            loadingStates.gameReport ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : null
+          }
         >
-          {chatLoading ? "Generating..." : "Generate Game Review Report"}
+          {loadingStates.gameReport ? "Generating..." : "Generate Game Review Report"}
         </Button>
       </Box>
 
@@ -667,21 +721,19 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                             sx={{
                               color: "#4FC3F7",
                               "&:hover": { bgcolor: "#4FC3F720" },
+                              "&:disabled": {
+                                color: grey[600],
+                                bgcolor: "transparent",
+                              },
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleMoveCoachClick(review);
+                              handleChatClick(review);
                             }}
                             disabled={chatLoading}
                           >
-                            {chatLoading ? (
-                              <Badge
-                                badgeContent=" "
-                                color="primary"
-                                variant="dot"
-                              >
-                                <MessageCircle size={16} />
-                              </Badge>
+                            {loadingStates.chat[review.plyNumber] ? (
+                              <CircularProgress size={16} color="inherit" />
                             ) : (
                               <MessageCircle size={16} />
                             )}
@@ -696,21 +748,19 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                             sx={{
                               color: "#4FC3F7",
                               "&:hover": { bgcolor: "#4FC3F720" },
+                              "&:disabled": {
+                                color: grey[600],
+                                bgcolor: "transparent",
+                              },
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleMoveAnnontateClick(review, userThoughts);
+                              handleAnnotateClick(review, userThoughts);
                             }}
                             disabled={chatLoading}
                           >
-                            {chatLoading ? (
-                              <Badge
-                                badgeContent=" "
-                                color="primary"
-                                variant="dot"
-                              >
-                                <Pen size={16} />
-                              </Badge>
+                            {loadingStates.annotate[review.plyNumber] ? (
+                              <CircularProgress size={16} color="inherit" />
                             ) : (
                               <Pen size={16} />
                             )}
@@ -780,21 +830,19 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                             sx={{
                               color: "#4FC3F7",
                               "&:hover": { bgcolor: "#4FC3F720" },
+                              "&:disabled": {
+                                color: grey[600],
+                                bgcolor: "transparent",
+                              },
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleMoveCoachClick(review);
+                              handleChatClick(review);
                             }}
                             disabled={chatLoading}
                           >
-                            {chatLoading ? (
-                              <Badge
-                                badgeContent=" "
-                                color="primary"
-                                variant="dot"
-                              >
-                                <MessageCircle size={16} />
-                              </Badge>
+                            {loadingStates.chat[review.plyNumber] ? (
+                              <CircularProgress size={16} color="inherit" />
                             ) : (
                               <MessageCircle size={16} />
                             )}
@@ -808,21 +856,19 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                             sx={{
                               color: "#4FC3F7",
                               "&:hover": { bgcolor: "#4FC3F720" },
+                              "&:disabled": {
+                                color: grey[600],
+                                bgcolor: "transparent",
+                              },
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleMoveAnnontateClick(review, userThoughts);
+                              handleAnnotateClick(review, userThoughts);
                             }}
                             disabled={chatLoading}
                           >
-                            {chatLoading ? (
-                              <Badge
-                                badgeContent=" "
-                                color="primary"
-                                variant="dot"
-                              >
-                                <Pen size={16} />
-                              </Badge>
+                            {loadingStates.annotate[review.plyNumber] ? (
+                              <CircularProgress size={16} color="inherit" />
                             ) : (
                               <Pen size={16} />
                             )}

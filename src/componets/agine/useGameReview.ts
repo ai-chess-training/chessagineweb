@@ -143,7 +143,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
 
     try {
       const encodedFen = encodeURIComponent(fenString);
-      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&json=1`;
+      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&learn=0&json=1`;
 
       const response = await fetch(apiUrl);
 
@@ -283,8 +283,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
           sanBestMove = moveObjSan ? moveObjSan.san : undefined;
           }else{
-            preMoveWinRate = Number(chessDbEvals[0].winrate)
-            secondBestWinRate = chessDbEvals[1].winrate ? Number(chessDbEvals[1].winrate) : undefined;
+            preMoveWinRate = centipawnToWinRate(Number(chessDbEvals[0].score));
+            secondBestWinRate = chessDbEvals[1].score ? centipawnToWinRate(Number(chessDbEvals[1].score)) : undefined;
             bestMove = chessDbEvals[0].uci;
             sanBestMove = chessDbEvals[0].san;
           }

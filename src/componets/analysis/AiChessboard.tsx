@@ -41,6 +41,7 @@ interface AiChessboardPanelProps {
   setFen: (fen: string) => void;
   setLlmAnalysisResult: (result: string | null) => void;
   setStockfishAnalysisResult: (result: PositionEval | null) => void;
+  gameReviewMoveIndex?: number;
   setOpeningData: (result: MasterGames | null) => void;
   puzzleMode?: boolean;
   onDropPuzzle?: (source: string, target: string) => boolean;
@@ -73,6 +74,7 @@ export default function AiChessboardPanel({
   setMoveSquares,
   puzzleCustomSquareStyle,
   reviewMove,
+  gameReviewMoveIndex,
   side,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
@@ -113,6 +115,8 @@ export default function AiChessboardPanel({
     setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
     setCurrentMoveIndex(0);
+    
+    
   }, [gameHistory, setGame, setFen]);
 
   // Memoized function to safely mutate game state
@@ -163,34 +167,52 @@ export default function AiChessboardPanel({
     [safeGameMutate, clearAnalysis, setMoveSquares]
   );
 
-  // Memoized arrows calculation
+  // Memoized arrows calculation - FIXED VERSION
   const customArrows = useMemo((): Arrow[] => {
-    if (!showArrows || !stockfishAnalysisResult?.lines) {
+    if (!showArrows) {
       return [];
     }
 
-    const bestLine = stockfishAnalysisResult.lines[0]?.pv;
-    if (!bestLine || bestLine.length === 0) {
-      return [];
-    }
+    const arrows: Arrow[] = [];
+    setShowArrows(false);
+    // Add review move arrow if present
+    if (reviewMove) {
+      const reviewArrow: Arrow = [
+        reviewMove.arrowMove.from,
+        reviewMove.arrowMove.to,
+        getMoveClassificationStyle(reviewMove.quality).color
+      ];
+      arrows.push(reviewArrow);
 
-    let reviewArrow: Arrow[] = [];
-    if(reviewMove){
-      reviewArrow = [[reviewMove.arrowMove.from, reviewMove.arrowMove.to, getMoveClassificationStyle(reviewMove.quality).color]]
-    }
-
-    const move = bestLine[0];
-    if (move && move.length >= 4) {
-      const from = move.substring(0, 2);
-      const to = move.substring(2, 4);
-      if (reviewMove && reviewMove.quality !== "Best") {
-        return [[from as Square, to as Square, "#4caf50"], ...reviewArrow];
+      // Only add engine arrow if reviewMove quality is not "Best"
+      if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
+        const bestLine = stockfishAnalysisResult.lines[0]?.pv;
+        if (bestLine && bestLine.length > 0) {
+          const move = bestLine[0];
+          if (move && move.length >= 4) {
+            const from = move.substring(0, 2);
+            const to = move.substring(2, 4);
+            const engineArrow: Arrow = [from as Square, to as Square, "#4caf50"];
+            arrows.push(engineArrow);
+          }
+        }
       }
-      return [[from as Square, to as Square, "#4caf50"]];
+    } else if (stockfishAnalysisResult?.lines) {
+      // Only show engine arrow if no reviewMove is present
+      const bestLine = stockfishAnalysisResult.lines[0]?.pv;
+      if (bestLine && bestLine.length > 0) {
+        const move = bestLine[0];
+        if (move && move.length >= 4) {
+          const from = move.substring(0, 2);
+          const to = move.substring(2, 4);
+          const engineArrow: Arrow = [from as Square, to as Square, "#4caf50"];
+          arrows.push(engineArrow);
+        }
+      }
     }
-
-    return [];
-  }, [showArrows, stockfishAnalysisResult, reviewMove]);
+    setShowArrows(true);
+    return arrows;
+  }, [showArrows, gameReviewMoveIndex]);
 
   // Optimized square click handler
   const handleSquareClick = useCallback(
@@ -347,6 +369,8 @@ export default function AiChessboardPanel({
         onPieceDrop={puzzleMode ? onDropPuzzle : onDrop}
         onSquareClick={puzzleMode ? handleSquarePuzzleClick : handleSquareClick}
         allowDragOutsideBoard={false}
+        animationDuration={600}
+        showBoardNotation
         customSquareStyles={
           puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
         }

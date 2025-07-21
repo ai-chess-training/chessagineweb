@@ -143,7 +143,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
 
     try {
       const encodedFen = encodeURIComponent(fenString);
-      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&learn=0&json=1`;
+      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&learn=1&json=1`;
 
       const response = await fetch(apiUrl);
 

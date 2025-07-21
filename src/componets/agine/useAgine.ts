@@ -880,11 +880,6 @@ const handleGameReviewSummaryClick = useCallback(
     if (whiteDubious) keyMoves.push(whiteDubious);
     if (blackDubious) keyMoves.push(blackDubious);
     
-    // Add first very good move for each player (to show what went well)
-    const whiteVeryGood = findMovesByQuality('Very Good', 'w')[0];
-    const blackVeryGood = findMovesByQuality('Very Good', 'b')[0];
-    if (whiteVeryGood) keyMoves.push(whiteVeryGood);
-    if (blackVeryGood) keyMoves.push(blackVeryGood);
 
     // Sort by ply number to maintain game order
     keyMoves.sort((a, b) => a.plyNumber - b.plyNumber);

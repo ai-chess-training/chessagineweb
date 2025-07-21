@@ -726,18 +726,21 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
 
       let query = `As a chess buddy, analyze this move from the game review:
+
+    Move: ${moveNotation} ${review.notation}
+    Classification: ${review.quality}
+    Side: ${sideToMove}
+    Position FEN: ${pastFen}
+
+    Please follow this structure in your analysis:
+    1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+    2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+    3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+    4. Take account of 1, 2, 3 and explain why this move is classified as a ${review.quality} move.
   
-  Move: ${moveNotation} ${review.notation}
-  Classification: ${review.quality}
-  Side: ${sideToMove}
-  Position FEN: ${pastFen}
-  
-  1. Why is this move a ${review.quality} move?
-  2. Consider engine lines and how they reflect the analysis
-  3. Consider the candidates moves
-  4. Consider the board state
-  
-  `;
+
+    Be concise but thorough, and use clear chess language.
+    `;
 // Add opening data
       if (openingData) {
         const openingSpeech = getOpeningStatSpeech(openingData);

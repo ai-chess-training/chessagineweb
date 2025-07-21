@@ -740,17 +740,16 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   4. What can be learned from this move for future games?
   
   Provide practical advice that would help improve understanding of similar positions.`;
+// Add opening data
+      if (openingData) {
+        const openingSpeech = getOpeningStatSpeech(openingData);
+        query += `\n\nOpening Information:\n${openingSpeech}`;
+      }
 
-      // Add opening data
-      // if (openingData) {
-      //   const openingSpeech = getOpeningStatSpeech(openingData);
-      //   query += `\n\nOpening Information:\n${openingSpeech}`;
-      // }
-
-      // if (chessdbdata) {
-      //   const candiateMoves = getChessDBSpeech(chessdbdata);
-      //   query += `Candidate Moves:\n ${candiateMoves}`;
-      // }
+      if (chessdbdata) {
+        const candiateMoves = getChessDBSpeech(chessdbdata);
+        query += `Candidate Moves:\n ${candiateMoves}`;
+      }
 
         if (engine) {
           const engineResult = await engine.evaluatePositionWithUpdate({
@@ -788,7 +787,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       const userMessage = {
         id: Date.now().toString(),
         role: "user" as const,
-        content: `Agine, analyze move: ${moveNotation} ${review.notation} (${review.quality})`,
+        content: `Agine, analyze move: ${moveNotation} ${review.notation} (${review.quality}) for ${sideToMove}`,
         timestamp: new Date(),
       };
 
@@ -836,9 +835,9 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     ]
   );
 
-  const handleGameReviewSummaryClick = useCallback(
-  async (review: MoveAnalysis[], gameInfo: string): Promise<void> => {
 
+const handleGameReviewSummaryClick = useCallback(
+  async (review: MoveAnalysis[], gameInfo: string): Promise<void> => {
     if (
       !setChatMessages ||
       !setChatLoading ||
@@ -852,8 +851,6 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
     if (chatLoading) return;
 
-     setChatLoading(true);
-
     // Helper function to find moves by quality and player
     const findMovesByQuality = (quality: MoveQuality, player: 'w' | 'b') => {
       return review.filter(move => 
@@ -861,184 +858,75 @@ Discuss the strategic and tactical implications of this move. Provide both theor
       );
     };
 
-    const whiteBook = findMovesByQuality('Book', 'w')[0];
-    const whiteGood = findMovesByQuality('Good', 'w')[0];
-    const whiteVeryGood = findMovesByQuality('Very Good', 'w')[0];
-    const whiteDubious = findMovesByQuality('Dubious', 'w')[0];
-    const whiteMistake = findMovesByQuality('Mistake', 'w')[0];
+    // Collect the first key move of each type for each player
+    const keyMoves: MoveAnalysis[] = [];
+    
+    // Add first blunder for each player (most important)
     const whiteBlunder = findMovesByQuality('Blunder', 'w')[0];
-    
-    const blackBook = findMovesByQuality('Book', 'b')[0];
-    const blackGood = findMovesByQuality('Good', 'b')[0];
-    const blackVeryGood = findMovesByQuality('Very Good', 'b')[0];
-    const blackDubious = findMovesByQuality('Dubious', 'b')[0];
-    const blackMistake = findMovesByQuality('Mistake', 'b')[0];
     const blackBlunder = findMovesByQuality('Blunder', 'b')[0];
-
-    // Helper function to format move notation
-    const formatMove = (move: MoveAnalysis) => {
-      if (!move) return null;
-      
-      const moveNumber = Math.floor(move.plyNumber / 2) + 1;
-      const isWhiteMove = move.plyNumber % 2 === 0;
-      const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
-      
-      return {
-        notation: `${moveNotation} ${move.notation}`,
-        bestSanNotation: move.sanNotation,
-        fen: move.fen,
-        quality: move.quality,
-        player: move.player === "w" ? "White" : "Black"
-      };
-    };
-
-    // Format the found moves
-    const keyMoves = {
-      white: {
-        book: formatMove(whiteBook),
-        good: formatMove(whiteGood),
-        very: formatMove(whiteVeryGood),
-        dubious: formatMove(whiteDubious),
-        mistake: formatMove(whiteMistake),
-        blunder: formatMove(whiteBlunder)
-      },
-      black: {
-        book: formatMove(blackBook),
-        good: formatMove(blackGood),
-        very: formatMove(blackVeryGood),
-        dubious: formatMove(blackDubious),
-        mistake: formatMove(blackMistake),
-        blunder: formatMove(blackBlunder)
-      }
-    };
-
+    if (whiteBlunder) keyMoves.push(whiteBlunder);
+    if (blackBlunder) keyMoves.push(blackBlunder);
     
+    // Add first mistake for each player
+    const whiteMistake = findMovesByQuality('Mistake', 'w')[0];
+    const blackMistake = findMovesByQuality('Mistake', 'b')[0];
+    if (whiteMistake) keyMoves.push(whiteMistake);
+    if (blackMistake) keyMoves.push(blackMistake);
     
-    let query = `As a chess coach, generate a comprehensive game review report based on these key moves from the analysis:
+    // Add first dubious move for each player
+    const whiteDubious = findMovesByQuality('Dubious', 'w')[0];
+    const blackDubious = findMovesByQuality('Dubious', 'b')[0];
+    if (whiteDubious) keyMoves.push(whiteDubious);
+    if (blackDubious) keyMoves.push(blackDubious);
+    
+    // Add first very good move for each player (to show what went well)
+    const whiteVeryGood = findMovesByQuality('Very Good', 'w')[0];
+    const blackVeryGood = findMovesByQuality('Very Good', 'b')[0];
+    if (whiteVeryGood) keyMoves.push(whiteVeryGood);
+    if (blackVeryGood) keyMoves.push(blackVeryGood);
 
-GAME REVIEW SUMMARY:
+    // Sort by ply number to maintain game order
+    keyMoves.sort((a, b) => a.plyNumber - b.plyNumber);
 
-GAME INFO
-
-${gameInfo}
-
-WHITE'S KEY MOVES:`;
-
-    // WHITE'S KEY MOVES
-    if (keyMoves.white.book) {
-      query += `\n- Book Move: ${keyMoves.white.book.notation} Best Move: ${keyMoves.white.book.bestSanNotation} (Position: ${keyMoves.white.book.fen})`;
-    }
-    if (keyMoves.white.good) {
-      query += `\n- Good Move: ${keyMoves.white.good.notation} Best Move: ${keyMoves.white.good.bestSanNotation} (Position: ${keyMoves.white.good.fen})`;
-    }
-    if (keyMoves.white.very) {
-      query += `\n- Very Good Move: ${keyMoves.white.very.notation} Best Move: ${keyMoves.white.very.bestSanNotation} (Position: ${keyMoves.white.very.fen})`;
-    }
-    if (keyMoves.white.dubious) {
-      query += `\n- Dubious Move: ${keyMoves.white.dubious.notation} Best Move: ${keyMoves.white.dubious.bestSanNotation} (Position: ${keyMoves.white.dubious.fen})`;
-    }
-    if (keyMoves.white.mistake) {
-      query += `\n- Mistake: ${keyMoves.white.mistake.notation} Best Move: ${keyMoves.white.mistake.bestSanNotation} (Position: ${keyMoves.white.mistake.fen})`;
-    }
-    if (keyMoves.white.blunder) {
-      query += `\n- Blunder: ${keyMoves.white.blunder.notation} Best Move: ${keyMoves.white.blunder.bestSanNotation} (Position: ${keyMoves.white.blunder.fen})`;
-    }
-
-    query += `\n\nBLACK'S KEY MOVES:`;
-
-    if (keyMoves.black.book) {
-      query += `\n- Book Move: ${keyMoves.black.book.notation} Best Move: ${keyMoves.black.book.bestSanNotation} (Position: ${keyMoves.black.book.fen})`;
-    }
-    if (keyMoves.black.good) {
-      query += `\n- Good Move: ${keyMoves.black.good.notation} Best Move: ${keyMoves.black.good.bestSanNotation} (Position: ${keyMoves.black.good.fen})`;
-    }
-    if (keyMoves.black.very) {
-      query += `\n- Very Good Move: ${keyMoves.black.very.notation} Best Move: ${keyMoves.black.very.bestSanNotation} (Position: ${keyMoves.black.very.fen})`;
-    }
-    if (keyMoves.black.dubious) {
-      query += `\n- Dubious Move: ${keyMoves.black.dubious.notation} Best Move: ${keyMoves.black.dubious.bestSanNotation} (Position: ${keyMoves.black.dubious.fen})`;
-    }
-    if (keyMoves.black.mistake) {
-      query += `\n- Mistake: ${keyMoves.black.mistake.notation} Best Move: ${keyMoves.black.mistake.bestSanNotation} (Position: ${keyMoves.black.mistake.fen})`;
-    }
-    if (keyMoves.black.blunder) {
-      query += `\n- Blunder: ${keyMoves.black.blunder.notation} Best Move: ${keyMoves.black.blunder.bestSanNotation} (Position: ${keyMoves.black.blunder.fen})`;
-    }
-
-    query += `\n\nPlease provide a detailed game review report covering:
-
-1. OVERALL GAME ASSESSMENT
-   - General performance evaluation for both players
-   - Key turning points in the game
-
-2. DETAILED MOVE ANALYSIS
-   - For each identified move above, explain:
-     * Why it was problematic
-     * What the player should have played instead
-     * The strategic/tactical concepts involved
-
-3. LEARNING POINTS
-   - Main lessons from this game
-   - Specific areas for improvement for both players
-   - Patterns to watch for in future games
-
-4. RECOMMENDATIONS
-   - Study suggestions based on the mistakes made
-   - Training exercises that would help avoid similar errors
-
-Format this as a comprehensive coaching report that would help both players improve their game.`;
-
-    // Switch to analysis tab
+    // Switch to analysis tab first
     setAnalysisTab(1);
 
-    // Add user message to chat
-    const userMessage = {
+    // Add initial summary message
+    const summaryMessage = {
       id: Date.now().toString(),
       role: "user" as const,
-      content: "Agine generate game review report",
+      content: `Starting game review analysis for ${keyMoves.length} key moves from: ${gameInfo}`,
       timestamp: new Date(),
     };
 
-    setChatMessages((prev) => [...prev, userMessage]);
-   
+    setChatMessages((prev) => [...prev, summaryMessage]);
 
-    try {
-      // Use the FEN of the first key move found, or current position as fallback
-      const firstKeyMoveFen = keyMoves.white.dubious?.fen || 
-                             keyMoves.white.mistake?.fen || 
-                             keyMoves.white.blunder?.fen || 
-                             keyMoves.black.dubious?.fen || 
-                             keyMoves.black.mistake?.fen || 
-                             keyMoves.black.blunder?.fen || 
-                             currentFenRef.current;
-
-      const result = await makeApiRequest(firstKeyMoveFen, query, "review");
-
-      // Add assistant response to chat
-      const assistantMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant" as const,
-        content: result,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error generating game review report:", error);
-      if (
-        !(error instanceof Error && error.message === "Request cancelled")
-      ) {
-        const errorMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content:
-            "Sorry, I couldn't generate the game review report right now. Please try again.",
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, errorMessage]);
+    // Process each key move sequentially
+    for (let i = 0; i < keyMoves.length; i++) {
+      const move = keyMoves[i];
+      
+      // Add a small delay between moves to prevent overwhelming the UI
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    } finally {
-      setChatLoading(false);
+
+      try {
+        await handleMoveCoachClick(move);
+      } catch (error) {
+        console.error(`Error analyzing move ${i + 1}:`, error);
+        // Continue with next move even if one fails
+      }
     }
+
+    // Add final summary message
+    const finalMessage = {
+      id: (Date.now() + keyMoves.length + 1).toString(),
+      role: "assistant" as const,
+      content: `Game review complete! Analyzed ${keyMoves.length} key moves. The analysis above covers the most important moments in your game, focusing on critical mistakes and excellent moves. Review each analysis to understand the key concepts and improve your play.`,
+      timestamp: new Date(),
+    };
+
+    setChatMessages((prev) => [...prev, finalMessage]);
   },
   [
     chatLoading,
@@ -1047,13 +935,10 @@ Format this as a comprehensive coaching report that would help both players impr
     setAnalysisTab,
     makeApiRequest,
     currentFenRef,
-    engine,
-    engineDepth,
-    engineLines,
-    formatEvaluation,
-    formatPrincipalVariation,
+    handleMoveCoachClick
   ]
 );
+
    const handleMoveAnnontateClick = useCallback(
     async (review: MoveAnalysis, customQuery?: string): Promise<void> => {
       if (

@@ -300,7 +300,21 @@ export default function useAgine(fen: string) {
         let query = `USER PROMPT: ${currentInput}\n\nCurrent Position: ${currentFen}\nSide to Move: ${sideToMove}`;
 
         if(puzzleMode === true){
-          query += `\n\n Puzzle Mode: Active`
+          query += `\n\n Puzzle Mode: Active
+          1. Act as an interactive chess puzzle coach.
+          2. Do not reveal the solution immediately.
+          3. Guide the user through the puzzle one step at a time.
+          4. If the user asks for a hint, provide a subtle clue about the best move or tactical idea.
+          5. If the user requests the solution directly, explain the correct sequence of moves and the reasoning behind them.
+          6. Encourage the user to consider candidate moves, threats, and tactical motifs in the position.
+          7. Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution.
+          `
+        }else {
+          query += `\n\n
+          1. Analyze the board state: describe the pawn structure, piece activity, king safety, imbalances, and threats in the current position.
+          2. Review the engine analysis and candidate moves: summarize the main engine lines, their evaluations, and what they reveal about the position.
+          3. Answer the user's prompt by combining insights from the board state and engine analysis, providing clear reasoning and actionable advice.
+          `
         }
 
         if(puzzleQuery){
@@ -436,6 +450,16 @@ export default function useAgine(fen: string) {
 Position: ${currentFen}
 Engine Line: ${formattedLine}
 Side To Move ${sideToMove}
+
+Please follow this structure in your analysis:
+ 1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+ 2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+ 3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+ 4. Take account of 1, 2, 3, 4 and provide the analysis for this engine line.
+  
+ Be concise but thorough, and use clear chess language.
+
+
 `;
 
       // Add opening data
@@ -526,9 +550,17 @@ Move Statistics from Master Games:
 - Draws: ${drawRate}%
 - Black wins: ${blackWinRate}%
 
- Analyze this from different point of views.
+Please follow this structure in your analysis:
+ 1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+ 2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+ 3. Then, understand the opening stats, the win, draw, loss rates and amount of games that were played by masters.
+ 4. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+ 5. Take account of 1, 2, 3, 4 and provide the analysis for this move.
+  
+ Be concise but thorough, and use clear chess language.
 
-Provide both theoretical background and practical advice.`;
+
+ `;
 
       setAnalysisTab(1);
 
@@ -584,7 +616,6 @@ Provide both theoretical background and practical advice.`;
       const currentFen = currentFenRef.current;
       const chessInstance = new Chess(currentFen);
       const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-      const updatedFen = chessInstance.fen();
 
       let query = `Analyze the chess move ${move.san} (${move.uci}) in this position:
 
@@ -593,9 +624,14 @@ Side To Move: ${sideToMove}
 ChessDb Score For Move ${move.score} the higher the postive score the better white is, the negative the score is better black is
 ChessDb Winrate: ${move.winrate}
 
-Move leads to FEN: ${updatedFen}
+Please follow this structure in your analysis:
+1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position
+Be concise but thorough, and use clear chess language.
 
-Discuss the strategic and tactical implications of this move. Provide both theoretical background and practical advice.`;
+`;
 
       // Add opening data
       if (openingData) {
@@ -733,7 +769,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
     Position FEN: ${pastFen}
 
     Please follow this structure in your analysis:
-    1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+    1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
     2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
     3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
     4. Take account of 1, 2, 3 and explain why this move is classified as a ${review.quality} move.

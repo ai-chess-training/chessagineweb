@@ -717,7 +717,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
 
        setChatLoading(true);
 
-      const currentFen = currentFenRef.current;
+     
       const pastFen = review.fen;
       const sideToMove = review.player === "w" ? "White" : "Black";
 
@@ -730,16 +730,7 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   Move: ${moveNotation} ${review.notation}
   Classification: ${review.quality}
   Side: ${sideToMove}
-  Position FEN: ${pastFen}
-  Current FEN: ${currentFen}
-  
-  Please provide coaching insights about this move:
-  1. Why was this move classified as "${review.quality}"?
-  2. What were the key strategic or tactical considerations?
-  3. If this was a mistake or blunder, what would have been better alternatives?
-  4. What can be learned from this move for future games?
-  
-  Provide practical advice that would help improve understanding of similar positions.`;
+  Position FEN: ${pastFen}`;
 // Add opening data
       if (openingData) {
         const openingSpeech = getOpeningStatSpeech(openingData);

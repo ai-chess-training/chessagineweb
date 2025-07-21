@@ -730,7 +730,14 @@ Discuss the strategic and tactical implications of this move. Provide both theor
   Move: ${moveNotation} ${review.notation}
   Classification: ${review.quality}
   Side: ${sideToMove}
-  Position FEN: ${pastFen}`;
+  Position FEN: ${pastFen}
+  
+  1. Why is this move a ${review.quality} move?
+  2. Consider engine lines and how they reflect the analysis
+  3. Consider the candidates moves
+  4. Consider the board state
+  
+  `;
 // Add opening data
       if (openingData) {
         const openingSpeech = getOpeningStatSpeech(openingData);

@@ -61,6 +61,7 @@ export default function PositionPage() {
     formatEvaluation,
     formatPrincipalVariation,
     handleEngineLineClick,
+    abortChatMessage,
     handleOpeningMoveClick,
     handleMoveClick,
     chessdbdata
@@ -167,6 +168,7 @@ export default function PositionPage() {
                 setChatInput={setChatInput}
                 sendChatMessage={sendChatMessage}
                 chatLoading={chatLoading}
+                abortChatMessage={abortChatMessage}
                 puzzleMode={false}
                 handleChatKeyPress={handleChatKeyPress}
                 clearChatHistory={clearChatHistory}

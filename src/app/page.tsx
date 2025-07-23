@@ -14,7 +14,7 @@ import {
 import ChatIcon from '@mui/icons-material/Chat';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import SchoolIcon from '@mui/icons-material/School';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import { FaRobot } from 'react-icons/fa6';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ViewBoardIcon from '@mui/icons-material/Bolt';
 import { useClerk, useUser } from '@clerk/nextjs';
@@ -58,14 +58,14 @@ export default function HomePage() {
                   icon: <ViewBoardIcon sx={{ fontSize: 48 }} />,
                   title: 'Position Board',
                   description:
-                    'Set up any position and analyze it with Agine. Perfect for studying specific scenarios or exploring tactical ideas.',
+                    'Set up any position and analyze it with Agine. ',
                   onClick: () => router.push('/position'),
                 },
                 {
                   icon: <AnalyticsIcon sx={{ fontSize: 48 }} />,
                   title: 'Game Analysis',
                   description:
-                    'Upload your games or paste PGN to get detailed analysis and insights from Agine about your play.',
+                    'Upload your games or paste PGN to get detailed analysis .',
                   onClick: () => router.push('/game'),
                 },
                 {
@@ -75,26 +75,35 @@ export default function HomePage() {
                     'Do Random Lichess puzzles interactivly with Agine',
                   onClick: () => router.push('/puzzle'),
                 },
+                {
+                  icon: <FaRobot style={{ fontSize: 48 }} />,
+                  title: 'Play Stockfish',
+                  description:
+                    'Challenge Stockfish in a chess game and get feedback on your moves as you play.',
+                  onClick: () => router.push('/play'),
+                }
               ].map((card) => (
                 <Card
                   key={card.title}
                   elevation={6}
                   sx={{
-                    flex: 1,
-                    height: 320,
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                    color: 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    borderRadius: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    '&:hover': {
-                      transform: 'translateY(-8px) scale(1.02)',
-                      boxShadow: '0 20px 40px rgba(124, 58, 237, 0.3)',
-                    },
+                  flex: 1,
+                  minWidth: 220,
+                  maxWidth: 340,
+                  height: { xs: 'auto', md: 320 },
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  borderRadius: 3,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  '&:hover': {
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: '0 20px 40px rgba(124, 58, 237, 0.3)',
+                  },
                   }}
                   onClick={card.onClick}
                 >
@@ -153,7 +162,7 @@ export default function HomePage() {
                   
                 }}
               >
-                <SmartToyIcon fontSize="inherit" />
+                
               </Avatar>
               <Box 
                 sx={{

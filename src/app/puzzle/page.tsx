@@ -352,6 +352,7 @@ export default function PuzzlePage() {
     clearChatHistory,
     analyzeWithStockfish,
     formatEvaluation,
+    abortChatMessage,
     formatPrincipalVariation,
     handleEngineLineClick,
   } = useAgine(fen);
@@ -1085,6 +1086,7 @@ export default function PuzzlePage() {
                 chatMessages={chatMessages}
                 chatInput={chatInput}
                 setChatInput={setChatInput}
+                abortChatMessage={abortChatMessage}
                 sendChatMessage={sendChatMessage}
                 chatLoading={chatLoading}
                 puzzleMode={true}

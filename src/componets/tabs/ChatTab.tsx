@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { grey } from "@mui/material/colors";
-import { Send, MenuBook, Close, ContentCopy, History } from "@mui/icons-material";
+import { Send, MenuBook, Close, ContentCopy, History, Stop } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
 import {
   Stack,
@@ -43,7 +43,8 @@ interface ChatTabProps {
   gameInfo?: string;
   currentMove?: string;
   chatInput: string;
-  puzzleMode: boolean;
+  puzzleMode?: boolean;
+  playMode?: boolean; // New prop for play mode
   puzzleQuery?: string;
   setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -51,8 +52,10 @@ interface ChatTabProps {
     gameInfo?: string,
     currentMove?: string,
     puzzleMode?: boolean,
-    puzzleQuery?: string
+    puzzleQuery?: string,
+    playMode?: boolean // Add playMode parameter
   ) => void;
+  abortChatMessage?: () => void; // New prop for aborting requests
 }
 
 const sessionPrompts = [
@@ -70,13 +73,28 @@ const sessionPrompts = [
   "What's the evaluation of this position?",
 ];
 
-const PuzzlePrompts = [
+const puzzlePrompts = [
   "Can you give me a hint",
   "How to solve this puzzle",
   "Analyze this position for me",
   "What's the theme of this puzzle?",
   "Show me the key move",
   "Explain the solution step by step",
+];
+
+const playPrompts = [
+  "What's the best move here?",
+  "Should I castle now?",
+  "Is this a good time to attack?",
+  "How should I defend this position?",
+  "What's my opponent's threat?",
+  "Should I trade pieces?",
+  "Is this move safe?",
+  "What's the key plan in this position?",
+  "Should I advance my pawns?",
+  "How do I improve my piece coordination?",
+  "Is there a tactical shot available?",
+  "What's the most important piece to develop?",
 ];
 
 const chatPrompts = [
@@ -108,9 +126,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   setChatInput,
   handleChatKeyPress,
   sendChatMessage,
+  abortChatMessage,
   gameInfo,
   currentMove,
-  puzzleMode,
+  puzzleMode = false,
+  playMode = false,
   puzzleQuery,
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -129,14 +149,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     }
   }, [chatMessages, chatLoading]);
 
- 
-  const handlePromptSelect = (prompt: string) => {
+  const  handlePromptSelect = (prompt: string) => {
     setChatInput(prompt);
     setDrawerOpen(false);
     // Auto-send the message
-    setTimeout(() => {
-      sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery);
-    }, 100);
   };
 
   const copyToClipboard = async (text: string) => {
@@ -169,10 +185,27 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     setCopyMenuAnchor(null);
   };
 
+  const handleAbortMessage = () => {
+    if (abortChatMessage) {
+      abortChatMessage();
+    }
+  };
+
+  // Determine which prompts to show based on mode
   let currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
+  let modeTitle = sessionMode ? "Position Analysis" : "Chess Discussion";
+  let modeDescription = sessionMode
+    ? "🔗 Session Mode: Agine will analyze your questions with current position, engine data, and opening theory"
+    : "💬 Chat Mode: General conversation without position context";
 
   if (puzzleMode) {
-    currentPrompts = PuzzlePrompts;
+    currentPrompts = puzzlePrompts;
+    modeTitle = "Puzzle Prompts";
+    modeDescription = "🧩 Puzzle Mode: Get hints and solutions for chess puzzles";
+  } else if (playMode) {
+    currentPrompts = playPrompts;
+    modeTitle = "Game Assistant";
+    modeDescription = "🎮 Play Mode: Get real-time assistance during your game";
   }
 
   const drawerContent = (
@@ -187,7 +220,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         }}
       >
         <Typography variant="h6" sx={{ color: "wheat", fontWeight: "bold" }}>
-          {puzzleMode ? "Puzzle Prompts" : sessionMode ? "Position Analysis" : "Chess Discussion"}
+          {modeTitle}
         </Typography>
         <IconButton
           onClick={() => setDrawerOpen(false)}
@@ -286,7 +319,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </Tooltip>
           )}
           
-          {!puzzleMode ? (
+          {!puzzleMode && !playMode ? (
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="caption" sx={{ color: "wheat" }}>
                 Session Mode
@@ -311,15 +344,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         </Box>
       </Box>
 
-      {!puzzleMode && (
-        <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
-          <Typography variant="caption" sx={{ color: "wheat" }}>
-            {sessionMode
-              ? "🔗 Session Mode: Agine will analyze your questions with current position, engine data, and opening theory"
-              : "💬 Chat Mode: General conversation without position context"}
-          </Typography>
-        </Paper>
-      )}
+      {/* Mode Description */}
+      <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
+        <Typography variant="caption" sx={{ color: "wheat" }}>
+          {modeDescription}
+        </Typography>
+      </Paper>
 
       {/* Chat Messages */}
       <Box
@@ -357,7 +387,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }}
             />
             <Typography variant="body1" sx={{ mb: 3, textAlign: "center" }}>
-              Hey friend, lets talk about chess positions!
+              {playMode 
+                ? "Ready to help you during your game!" 
+                : puzzleMode 
+                ? "Let's solve some chess puzzles together!"
+                : "Hey friend, lets talk about chess positions!"
+              }
             </Typography>
 
             {/* Quick Start Prompts */}
@@ -543,6 +578,23 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   <Typography variant="body2" sx={{ color: "wheat" }}>
                     Agine is thinking...
                   </Typography>
+                  {abortChatMessage && (
+                    <Tooltip title="Stop response" arrow>
+                      <IconButton
+                        onClick={handleAbortMessage}
+                        size="small"
+                        sx={{
+                          color: "wheat",
+                          ml: 1,
+                          "&:hover": {
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          },
+                        }}
+                      >
+                        <Stop fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </Paper>
               </Box>
             )}
@@ -559,7 +611,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           multiline
           maxRows={3}
           placeholder={
-            sessionMode ? "Ask about this position..." : "Chat with AI..."
+            playMode 
+              ? "Ask for game advice..." 
+              : puzzleMode 
+                ? "Ask about this puzzle..." 
+                : sessionMode 
+                  ? "Ask about this position..." 
+                  : "Chat with AI..."
           }
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
@@ -589,7 +647,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         <Button
           variant="contained"
           onClick={() =>
-            sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery)
+            sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode)
           }
           disabled={chatLoading || !chatInput.trim()}
           sx={{

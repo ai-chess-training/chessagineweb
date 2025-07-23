@@ -7,7 +7,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { FaChessPawn, FaChessBoard, FaDiscord, FaPuzzlePiece } from "react-icons/fa6";
+import { FaChessPawn, FaChessBoard, FaDiscord, FaPuzzlePiece, FaRobot } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import {
   SignedIn,
@@ -45,6 +45,10 @@ export default function NavBar() {
 
             <Button color="inherit" startIcon={<FaPuzzlePiece/>} href="/puzzle">
               Puzzles
+            </Button>
+
+            <Button color="inherit" startIcon={<FaRobot/>} href="/play">
+              Play
             </Button>
 
             <Button

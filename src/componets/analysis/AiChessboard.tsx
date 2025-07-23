@@ -44,6 +44,7 @@ interface AiChessboardPanelProps {
   gameReviewMoveIndex?: number;
   setOpeningData: (result: MasterGames | null) => void;
   puzzleMode?: boolean;
+  playMode?: boolean;
   onDropPuzzle?: (source: string, target: string) => boolean;
   handleSquarePuzzleClick?: (square: string) => void;
   reviewMove?: MoveAnalysis;
@@ -55,6 +56,10 @@ interface AiChessboardPanelProps {
   moves?: string[];
   stockfishAnalysisResult?: PositionEval | null;
   setMoveSquares: (square: { [square: string]: string }) => void;
+  // Play mode specific props
+  gameStatus?: string;
+  playerSide?: "white" | "black";
+  engineThinking?: boolean;
 }
 
 export default function AiChessboardPanel({
@@ -76,6 +81,10 @@ export default function AiChessboardPanel({
   reviewMove,
   gameReviewMoveIndex,
   side,
+  playMode,
+  gameStatus = "waiting",
+  playerSide = "white",
+  engineThinking = false,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
   const [isFlipped, setIsFlipped] = useState(false);
@@ -83,7 +92,9 @@ export default function AiChessboardPanel({
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [showArrows, setShowArrows] = useState(puzzleMode ? false : true);
+  const [showArrows, setShowArrows] = useState(
+    puzzleMode || playMode ? false : true
+  );
   const [boardSize, setBoardSize] = useState(550);
 
   // Memoize the initial game setup to avoid recalculation
@@ -114,21 +125,23 @@ export default function AiChessboardPanel({
     setGame(startGame);
     setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
-    setCurrentMoveIndex(0);
-    
-    
+    setCurrentMoveIndex(gameHistory.length - 1); // Start at the end of the loaded game
   }, [gameHistory, setGame, setFen]);
 
-  // Memoized function to safely mutate game state
+  // Fixed function to safely mutate game state with proper branching
   const safeGameMutate = useCallback(
     (modify: (game: Chess) => void) => {
-      const baseFen = moveHistory[currentMoveIndex];
-      if (!baseFen) return;
+      // Use the current FEN that's being displayed, not from moveHistory
+      const currentFen = fen;
+      if (!currentFen) return;
 
-      const newGame = new Chess(baseFen);
+      const newGame = new Chess(currentFen);
       modify(newGame);
 
       const newFen = newGame.fen();
+      
+      // Create a new branch from the current position
+      // Keep all moves up to the current position, then add the new move
       const newHistory = [
         ...moveHistory.slice(0, currentMoveIndex + 1),
         newFen,
@@ -140,7 +153,7 @@ export default function AiChessboardPanel({
       setCurrentMoveIndex(newHistory.length - 1);
       setOpeningData(null);
     },
-    [moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]
+    [fen, moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]
   );
 
   // Memoized clear analysis callback
@@ -150,21 +163,155 @@ export default function AiChessboardPanel({
     setOpeningData(null);
   }, [setLlmAnalysisResult, setStockfishAnalysisResult, setOpeningData]);
 
-  // Optimized onDrop handler
-  const onDrop = useCallback(
+  // Check if player can move in play mode
+  const canPlayerMove = useCallback(() => {
+    if (!playMode || gameStatus !== "playing") return true;
+    
+    const currentTurn = game.turn();
+    return (
+      (side === "white" && currentTurn === "w") ||
+      (side === "black" && currentTurn === "b")
+    ) && !engineThinking;
+  }, [playMode, gameStatus, game, playerSide, engineThinking]);
+
+  // Custom onDrop handler for gameplay
+  const handlePlayerMove = useCallback(
     (source: string, target: string) => {
-      let moveMade = false;
-      safeGameMutate((game) => {
-        const move = game.move({ from: source, to: target, promotion: "q" });
-        if (move) {
-          moveMade = true;
-          clearAnalysis();
+      if (playMode) {
+        if (!canPlayerMove()) return false;
+
+        try {
+          const move = game.move({
+            from: source,
+            to: target,
+            promotion: "q", // Auto-promote to queen for simplicity
+          });
+
+          if (move) {
+            const newGame = new Chess(game.fen());
+            setGame(newGame);
+            setFen(newGame.fen());
+            setSelectedSquare(null);
+            setLegalMoves([]);
+            setMoveSquares({});
+            return true;
+          }
+        } catch (error) {
+          console.log("Invalid move:", error);
         }
-      });
-      setMoveSquares({});
-      return moveMade;
+        return false;
+      } else {
+        // Original logic for non-play mode with fixed branching
+        let moveMade = false;
+        safeGameMutate((gameInstance) => {
+          const move = gameInstance.move({ from: source, to: target, promotion: "q" });
+          if (move) {
+            moveMade = true;
+            clearAnalysis();
+          }
+        });
+        setMoveSquares({});
+        return moveMade;
+      }
     },
-    [safeGameMutate, clearAnalysis, setMoveSquares]
+    [playMode, canPlayerMove, game, setGame, setFen, setMoveSquares, safeGameMutate, clearAnalysis]
+  );
+
+  // Optimized square click handler for both play mode and regular mode
+  const handleSquareClick = useCallback(
+    (square: string) => {
+      // // In play mode, check if player can move
+      // if (playMode && !canPlayerMove()) {
+      //   return;
+      // }
+
+      // If clicking on the same square, deselect
+      if (selectedSquare === square) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+
+      // If a square is already selected and clicking on a legal move target
+      if (selectedSquare && legalMoves.includes(square)) {
+        if (playMode) {
+          // In play mode, make the move directly
+          try {
+            const move = game.move({
+              from: selectedSquare,
+              to: square,
+              promotion: "q",
+            });
+
+            if (move) {
+              const newGame = new Chess(game.fen());
+              setGame(newGame);
+              setFen(newGame.fen());
+            }
+          } catch (error) {
+            console.log("Invalid move:", error);
+          }
+        } else {
+          // Regular mode logic with fixed branching
+          safeGameMutate((newGame) => {
+            try {
+              const move = newGame.move({
+                from: selectedSquare,
+                to: square,
+                promotion: "q",
+              });
+
+              if (move) {
+                clearAnalysis();
+              }
+            } catch (error) {
+              console.log("Invalid move:", error);
+            }
+          });
+        }
+
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+
+      // Check if the clicked square has a piece
+      const piece = game.get(square as Square);
+      if (!piece || piece.color !== game.turn()) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+
+      // In play mode, only allow selecting player's pieces
+      if (playMode) {
+        const playerColor = side === "white" ? "w" : "b";
+        if (piece.color !== playerColor) {
+          setSelectedSquare(null);
+          setLegalMoves([]);
+          return;
+        }
+      }
+
+      // Get legal moves for this piece
+      const moves = game.moves({ square: square as Square, verbose: true });
+      const targetSquares = moves.map((move) => move.to);
+
+      setSelectedSquare(square);
+      setLegalMoves(targetSquares);
+    },
+    [
+      playMode,
+      canPlayerMove,
+      selectedSquare,
+      legalMoves,
+      game,
+      playerSide,
+      setGame,
+      setFen,
+      safeGameMutate,
+      clearAnalysis,
+    ]
   );
 
   // Memoized arrows calculation - FIXED VERSION
@@ -174,13 +321,13 @@ export default function AiChessboardPanel({
     }
 
     const arrows: Arrow[] = [];
-    setShowArrows(false);
+
     // Add review move arrow if present
     if (reviewMove) {
       const reviewArrow: Arrow = [
         reviewMove.arrowMove.from,
         reviewMove.arrowMove.to,
-        getMoveClassificationStyle(reviewMove.quality).color
+        getMoveClassificationStyle(reviewMove.quality).color,
       ];
       arrows.push(reviewArrow);
 
@@ -192,7 +339,11 @@ export default function AiChessboardPanel({
           if (move && move.length >= 4) {
             const from = move.substring(0, 2);
             const to = move.substring(2, 4);
-            const engineArrow: Arrow = [from as Square, to as Square, "#4caf50"];
+            const engineArrow: Arrow = [
+              from as Square,
+              to as Square,
+              "#4caf50",
+            ];
             arrows.push(engineArrow);
           }
         }
@@ -210,60 +361,9 @@ export default function AiChessboardPanel({
         }
       }
     }
-    setShowArrows(true);
+
     return arrows;
-  }, [showArrows, gameReviewMoveIndex]);
-
-  // Optimized square click handler
-  const handleSquareClick = useCallback(
-    (square: string) => {
-      // If clicking on the same square, deselect
-      if (selectedSquare === square) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      // If a square is already selected and clicking on a legal move target
-      if (selectedSquare && legalMoves.includes(square)) {
-        safeGameMutate((newGame) => {
-          try {
-            const move = newGame.move({
-              from: selectedSquare,
-              to: square,
-              promotion: "q",
-            });
-
-            if (move) {
-              clearAnalysis();
-            }
-          } catch (error) {
-            console.log("Invalid move:", error);
-          }
-        });
-
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      // Check if the clicked square has a piece
-      const piece = game.get(square as Square);
-      if (!piece || piece.color !== game.turn()) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      // Get legal moves for this piece
-      const moves = game.moves({ square: square as Square, verbose: true });
-      const targetSquares = moves.map((move) => move.to);
-
-      setSelectedSquare(square);
-      setLegalMoves(targetSquares);
-    },
-    [selectedSquare, legalMoves, game, safeGameMutate, clearAnalysis]
-  );
+  }, [showArrows, reviewMove, stockfishAnalysisResult, gameReviewMoveIndex]);
 
   // Memoized custom square styles
   const customSquareStyles = useMemo(() => {
@@ -333,6 +433,9 @@ export default function AiChessboardPanel({
       const newGame = new Chess(customFen);
       setGame(newGame);
       setFen(newGame.fen());
+      // Reset move history to just this position
+      setMoveHistory([newGame.fen()]);
+      setCurrentMoveIndex(0);
       clearAnalysis();
     } catch (error) {
       console.log(error);
@@ -362,12 +465,21 @@ export default function AiChessboardPanel({
   const isPreviousDisabled = currentMoveIndex <= 0;
   const isNextDisabled = currentMoveIndex >= moveHistory.length - 1;
 
+  // Determine board orientation for play mode
+  const getBoardOrientation = useCallback(() => {
+    if (puzzleMode) return side;
+    if (playMode) return side;
+    return isFlipped ? "black" : "white";
+  }, [puzzleMode, playMode, side, playerSide, isFlipped]);
+
   return (
     <Stack spacing={2} alignItems="center">
       <Chessboard
         position={fen}
-        onPieceDrop={puzzleMode ? onDropPuzzle : onDrop}
-        onSquareClick={puzzleMode ? handleSquarePuzzleClick : handleSquareClick}
+        onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
+        onSquareClick={
+          puzzleMode ? handleSquarePuzzleClick : handleSquareClick
+        }
         allowDragOutsideBoard={false}
         animationDuration={600}
         showBoardNotation
@@ -376,16 +488,15 @@ export default function AiChessboardPanel({
         }
         customArrows={customArrows}
         boardWidth={boardSize}
-        boardOrientation={puzzleMode ? side : isFlipped ? "black" : "white"}
+        boardOrientation={getBoardOrientation()}
       />
 
-      {/* Board Size Control */}
       <Box sx={{ width: "100%", px: 2 }}>
         <Slider
           value={boardSize}
           onChange={handleBoardSizeChange}
           min={300}
-          max={800}
+          max={650}
           step={25}
           valueLabelDisplay="auto"
           sx={{
@@ -403,48 +514,56 @@ export default function AiChessboardPanel({
         />
       </Box>
 
-      {/* Arrow Toggle Control */}
-      <FormControlLabel
-        control={
-          <Switch
-            checked={showArrows}
-            onChange={toggleArrows}
-            color="primary"
+      {/* Board Size Control */}
+      {!playMode && (
+        <>
+          {/* Arrow Toggle Control */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showArrows}
+                onChange={toggleArrows}
+                color="primary"
+              />
+            }
+            label={
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <BsArrowsMove />
+                <span style={{ color: "wheat" }}>Show Analysis Arrows</span>
+              </Stack>
+            }
+            sx={{ alignSelf: "flex-start" }}
           />
-        }
-        label={
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <BsArrowsMove />
-            <span style={{ color: "wheat" }}>Show Analysis Arrows</span>
+        </>
+      )}
+
+      {/* Navigation buttons - disabled in play mode during active game */}
+       {!playMode && (
+          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+            <Button
+              onClick={goToPreviousMove}
+              variant="contained"
+              color="primary"
+              disabled={isPreviousDisabled}
+              startIcon={<MdNavigateBefore />}
+              fullWidth
+            >
+              Back
+            </Button>
+            <Button
+              onClick={goToNextMove}
+              variant="contained"
+              color="primary"
+              disabled={isNextDisabled}
+              endIcon={<MdNavigateNext />}
+              fullWidth
+            >
+              Forward
+            </Button>
           </Stack>
-        }
-        sx={{ alignSelf: "flex-start" }}
-      />
+        )}
 
-      <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-        <Button
-          onClick={goToPreviousMove}
-          variant="contained"
-          color="primary"
-          disabled={isPreviousDisabled}
-          startIcon={<MdNavigateBefore />}
-          fullWidth
-        >
-          Back
-        </Button>
-        <Button
-          onClick={goToNextMove}
-          variant="contained"
-          color="primary"
-          disabled={isNextDisabled}
-          endIcon={<MdNavigateNext />}
-          fullWidth
-        >
-          Forward
-        </Button>
-      </Stack>
-
-      {!puzzleMode ? (
+      {!puzzleMode && !playMode && (
         <>
           <TextField
             label="Paste FEN"
@@ -500,11 +619,11 @@ export default function AiChessboardPanel({
             }}
           >
             {fen}
-          </Paper>{" "}
+          </Paper>
         </>
-      ) : (
-        <Divider />
       )}
+
+      {(puzzleMode || playMode) && <Divider />}
     </Stack>
   );
 }

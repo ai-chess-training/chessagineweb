@@ -236,6 +236,29 @@ export default function useAgine(fen: string) {
     [session]
   );
 
+  // ==================== ABORT CHAT MESSAGE FUNCTION ====================
+
+  const abortChatMessage = useCallback((): void => {
+    if (abortControllerRef.current) {
+      console.log("Aborting chat message...");
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      
+      // Reset loading state
+      setChatLoading(false);
+      
+      // Optionally add a message indicating the request was cancelled
+      const cancelMessage = {
+        id: (Date.now()).toString(),
+        role: "assistant" as const,
+        content: "Message generation was cancelled.",
+        timestamp: new Date(),
+      };
+      
+      setChatMessages((prev) => [...prev, cancelMessage]);
+    }
+  }, []);
+
   // Auto-recalculate engine results when FEN changes
   useEffect(() => {
     if (!engine || !fen) return;
@@ -271,13 +294,10 @@ export default function useAgine(fen: string) {
     fetchOpeningData,
   ]);
 
-  // ==================== OPTIMIZED ANALYSIS FUNCTION ====================
-
-
   // ==================== OPTIMIZED CHAT FUNCTIONS ====================
 
   const sendChatMessage = useCallback(
-    async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean, puzzleQuery?: string): Promise<void> => {
+    async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean, puzzleQuery?: string, playMode?: boolean): Promise<void> => {
       if (!chatInput.trim()) return;
 
       const userMessage = {
@@ -309,7 +329,17 @@ export default function useAgine(fen: string) {
           6. Encourage the user to consider candidate moves, threats, and tactical motifs in the position.
           7. Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution.
           `
-        }else {
+        } else if(playMode === true) {
+          query += `\n\n Play Mode: Active
+          1. Act as a supportive chess coach during live gameplay.
+          2. Provide real-time strategic advice and tactical guidance.
+          3. Help identify threats and opportunities in the current position.
+          4. Suggest candidate moves and explain their benefits.
+          5. Focus on practical, actionable advice for the current game situation.
+          6. Be encouraging and supportive while providing accurate analysis.
+          7. Help with time management and decision-making during the game.
+          `
+        } else {
           query += `\n\n
           1. Analyze the board state: describe the pawn structure, piece activity, king safety, imbalances, and threats in the current position.
           2. Review the engine analysis and candidate moves: summarize the main engine lines, their evaluations, and what they reveal about the position.
@@ -329,7 +359,7 @@ export default function useAgine(fen: string) {
           query += `\n Current Game Move: \n ${currentMove}`;
         }
 
-        if (sessionMode) {
+        if (sessionMode && !playMode) { // Don't auto-add engine analysis in play mode to keep responses faster
           // Get engine analysis if not available
           let engineResult = stockfishAnalysisResult;
           if (!engineResult && engine) {
@@ -377,7 +407,8 @@ export default function useAgine(fen: string) {
           }
         }
 
-        const result = await makeApiRequest(currentFen, query, puzzleMode === true || puzzleQuery ? "puzzle" : "position");
+        const mode = puzzleMode === true || puzzleQuery ? "puzzle" : playMode ? "play" : "position";
+        const result = await makeApiRequest(currentFen, query, mode);
 
         const assistantMessage = {
           id: (Date.now() + 1).toString(),
@@ -1177,17 +1208,18 @@ const handleGameReviewSummaryClick = useCallback(
       engine,
 
       // Game Review
-
       gameReview,
       gameReviewProgress,
       setGameReview,
       gameReviewLoading,
       setGameReviewLoading,
+
       // Functions
       fetchOpeningData,
       analyzeWithStockfish,
       generateGameReview,
       sendChatMessage,
+      abortChatMessage, // New abort function
       handleChatKeyPress,
       clearChatHistory,
       handleEngineLineClick,
@@ -1228,6 +1260,7 @@ const handleGameReviewSummaryClick = useCallback(
       fetchOpeningData,
       analyzeWithStockfish,
       sendChatMessage,
+      abortChatMessage,
       handleChatKeyPress,
       clearChatHistory,
       handleEngineLineClick,

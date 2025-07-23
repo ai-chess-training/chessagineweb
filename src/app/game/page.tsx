@@ -521,6 +521,7 @@ export default function PGNUploaderPage() {
     handleEngineLineClick,
     handleOpeningMoveClick,
     handleMoveClick,
+    abortChatMessage,
     handleMoveCoachClick,
     handleGameReviewSummaryClick,
     chessdbdata,
@@ -947,6 +948,7 @@ export default function PGNUploaderPage() {
                   puzzleMode={false}
                   setChatInput={setChatInput}
                   gameInfo={pgnText}
+                  abortChatMessage={abortChatMessage}
                   currentMove={moves[currentMoveIndex]}
                   sendChatMessage={sendChatMessage}
                   chatLoading={chatLoading}

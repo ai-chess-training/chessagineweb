@@ -489,6 +489,8 @@ export default function PGNUploaderPage() {
     setOpeningData,
     llmLoading,
     stockfishLoading,
+    lichessOpeningData,
+    lichessOpeningLoading,
     openingLoading,
     moveSquares,
     analysisTab,
@@ -987,6 +989,8 @@ export default function PGNUploaderPage() {
                   openingLoading={openingLoading}
                   openingData={openingData}
                   llmLoading={llmLoading}
+                  lichessOpeningData={lichessOpeningData}
+                  lichessOpeningLoading={lichessOpeningLoading}
                   handleOpeningMoveClick={handleOpeningMoveClick}
                 />
               </TabPanel>

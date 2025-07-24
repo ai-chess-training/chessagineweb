@@ -54,6 +54,21 @@ export const getOpeningStats = async (fen: string): Promise<MasterGames | null> 
   }
 };
 
+export const getLichessOpeningStats = async (fen: string): Promise<MasterGames | null> => {
+  try {
+    const masterEndpoint = `https://explorer.lichess.ovh/lichess?fen=${fen}&moves=5&topGames=4`;
+    const response = await fetch(masterEndpoint);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const masterData = (await response.json()) as MasterGames;
+    return masterData;
+  } catch (error) {
+    console.error("Error fetching opening stats:", error);
+    return null;
+  }
+};
+
 export const getOpeningStatSpeech = (masterData: MasterGames): string => {
   const { opening, white, draws, black, moves, topGames } = masterData;
 

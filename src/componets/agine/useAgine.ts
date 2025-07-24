@@ -5,6 +5,7 @@ import {
   getOpeningStatSpeech,
   getOpeningStats,
   Moves,
+  getLichessOpeningStats,
 } from "@/componets/opening/helper";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
@@ -21,11 +22,13 @@ export default function useAgine(fen: string) {
   const [stockfishAnalysisResult, setStockfishAnalysisResult] =
     useState<PositionEval | null>(null);
   const [openingData, setOpeningData] = useState<MasterGames | null>(null);
+  const [lichessOpeningData, setLichessOpeningData] = useState<MasterGames | null>(null);
 
   // Loading States
   const [llmLoading, setLlmLoading] = useState(false);
   const [stockfishLoading, setStockfishLoading] = useState(false);
   const [openingLoading, setOpeningLoading] = useState(false);
+  const [lichessOpeningLoading, setLichessOpeningLoading] = useState(false);
 
   // UI State
   const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>(
@@ -147,6 +150,28 @@ export default function useAgine(fen: string) {
     } finally {
       if (currentFenRef.current === currentFen) {
         setOpeningLoading(false);
+      }
+    }
+  }, []);
+
+  const fetchLichessOpeningData = useCallback(async (): Promise<void> => {
+    const currentFen = currentFenRef.current;
+    setLichessOpeningLoading(true);
+
+    try {
+      const data = await getLichessOpeningStats(currentFen);
+      // Only update if we're still analyzing the same position
+      if (currentFenRef.current === currentFen) {
+        setLichessOpeningData(data);
+      }
+    } catch (error) {
+      console.error("Error fetching opening data:", error);
+      if (currentFenRef.current === currentFen) {
+        setLichessOpeningData(null);
+      }
+    } finally {
+      if (currentFenRef.current === currentFen) {
+        setLichessOpeningLoading(false);
       }
     }
   }, []);
@@ -279,6 +304,7 @@ export default function useAgine(fen: string) {
       if (currentFenRef.current === fen) {
         analyzeWithStockfish();
         fetchOpeningData();
+        fetchLichessOpeningData();
       }
     }, 300);
 
@@ -337,7 +363,6 @@ export default function useAgine(fen: string) {
           4. Suggest candidate moves and explain their benefits.
           5. Focus on practical, actionable advice for the current game situation.
           6. Be encouraging and supportive while providing accurate analysis.
-          7. Help with time management and decision-making during the game.
           `
         } else {
           query += `\n\n
@@ -1183,6 +1208,10 @@ const handleGameReviewSummaryClick = useCallback(
       setStockfishLoading,
       openingLoading,
       setOpeningLoading,
+      lichessOpeningData,
+      lichessOpeningLoading,
+      fetchLichessOpeningData,
+      setLichessOpeningLoading,
 
       // UI State
       moveSquares,
@@ -1238,6 +1267,8 @@ const handleGameReviewSummaryClick = useCallback(
       llmAnalysisResult,
       stockfishAnalysisResult,
       openingData,
+      lichessOpeningData,
+      lichessOpeningLoading,
       chessdbdata,
       llmLoading,
       stockfishLoading,
@@ -1258,6 +1289,7 @@ const handleGameReviewSummaryClick = useCallback(
       setEngineLines,
       generateGameReview,
       fetchOpeningData,
+      fetchLichessOpeningData,
       analyzeWithStockfish,
       sendChatMessage,
       abortChatMessage,

@@ -24,10 +24,8 @@ import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 export default function PositionPage() {
   
   const session = useSession();
-
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-
   
   const {
     setLlmAnalysisResult,
@@ -47,6 +45,8 @@ export default function PositionPage() {
     setChatInput,
     chatLoading,
     sessionMode,
+    lichessOpeningData,
+    lichessOpeningLoading,
     setSessionMode,
     engineDepth,
     setEngineDepth,
@@ -185,6 +185,8 @@ export default function PositionPage() {
               <OpeningExplorer
                 openingLoading={openingLoading}
                 openingData={openingData}
+                lichessOpeningData={lichessOpeningData}
+                lichessOpeningLoading={lichessOpeningLoading}
                 llmLoading={llmLoading}
                 handleOpeningMoveClick={handleOpeningMoveClick}
               />

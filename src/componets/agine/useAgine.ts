@@ -346,23 +346,8 @@ export default function useAgine(fen: string) {
       
       // Get all legal moves
       const legalMoves = chessInstance.moves({ verbose: true });
-      const formattedLegalMoves = legalMoves.map(move => {
-        // Format each move with algebraic notation and additional info
-        let moveStr = move.san;
-        if (move.flags.includes('c')) moveStr += ' (capture)';
-        if (move.flags.includes('k')) moveStr += ' (kingside castle)';
-        if (move.flags.includes('q')) moveStr += ' (queenside castle)';
-        if (move.flags.includes('e')) moveStr += ' (en passant)';
-        if (move.flags.includes('p')) moveStr += ' (promotion)';
-        if (move.flags.includes('+')) moveStr += ' (check)';
-        if (move.flags.includes('#')) moveStr += ' (checkmate)';
-        return moveStr;
-      }).join(', ');
-
+   
       let query = `USER PROMPT: ${currentInput}\n\nCurrent Position: ${currentFen}\nSide to Move: ${sideToMove}`;
-      
-      // Add legal moves information
-      query += `\nAll Legal Moves: ${formattedLegalMoves}`;
 
       if(puzzleMode === true){
         query += `\n\n Puzzle Mode: Active

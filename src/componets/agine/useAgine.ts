@@ -323,161 +323,155 @@ export default function useAgine(fen: string) {
   // ==================== OPTIMIZED CHAT FUNCTIONS ====================
 
   const sendChatMessage = useCallback(
-  async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean, puzzleQuery?: string, playMode?: boolean): Promise<void> => {
-    if (!chatInput.trim()) return;
+    async (gameInfo?: string, currentMove?: string, puzzleMode?: boolean, puzzleQuery?: string, playMode?: boolean): Promise<void> => {
+      if (!chatInput.trim()) return;
 
-    const userMessage = {
-      id: Date.now().toString(),
-      role: "user" as const,
-      content: chatInput,
-      timestamp: new Date(),
-    };
-
-    setChatMessages((prev) => [...prev, userMessage]);
-    const currentInput = chatInput;
-    setChatInput("");
-    setChatLoading(true);
-
-    const currentFen = currentFenRef.current;
-
-    try {
-      const chessInstance = new Chess(currentFen);
-      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-      
-      // Get all legal moves
-      const legalMoves = chessInstance.moves({ verbose: true });
-   
-      let query = `USER PROMPT: ${currentInput}\n\nCurrent Position: ${currentFen}\nSide to Move: ${sideToMove}`;
-
-      if(puzzleMode === true){
-        query += `\n\n Puzzle Mode: Active
-        1. Act as an interactive chess puzzle coach.
-        2. Do not reveal the solution immediately.
-        3. Guide the user through the puzzle one step at a time.
-        4. If the user asks for a hint, provide a subtle clue about the best move or tactical idea.
-        5. If the user requests the solution directly, explain the correct sequence of moves and the reasoning behind them.
-        6. Encourage the user to consider candidate moves, threats, and tactical motifs in the position.
-        7. Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution.
-        `
-      } else if(playMode === true) {
-        query += `\n\n Play Mode: Active
-        1. Act as a supportive chess coach during live gameplay.
-        2. Provide real-time strategic advice and tactical guidance.
-        3. Help identify threats and opportunities in the current position.
-        4. Suggest candidate moves and explain their benefits.
-        5. Focus on practical, actionable advice for the current game situation.
-        6. Be encouraging and supportive while providing accurate analysis.
-        `
-      } else {
-        query += `\n\n
-        `
-      }
-
-      if(puzzleQuery){
-        query += `\n\n Puzzle Info: ${puzzleQuery}`
-      }
-
-      if (gameInfo) {
-        query += `\n\n Game PGN \n ${gameInfo}`;
-      }
-
-      if (currentMove) {
-        query += `\n Current Game Move: \n ${currentMove}`;
-      }
-
-      if (sessionMode && !playMode) { // Don't auto-add engine analysis in play mode to keep responses faster
-        // Get engine analysis if not available
-        let engineResult = stockfishAnalysisResult;
-        if (!engineResult && engine) {
-          // Set multiPv to the number of legal moves to get evaluation for all moves
-          const numLegalMoves = legalMoves.length;
-          engineResult = await engine.evaluatePositionWithUpdate({
-            fen: currentFen,
-            depth: engineDepth,
-            multiPv: Math.min(numLegalMoves, 50), // Cap at 50 to avoid performance issues
-            setPartialEval: () => {},
-          });
-          if (currentFenRef.current === currentFen) {
-            setStockfishAnalysisResult(engineResult);
-          }
-        }
-
-        // Add engine analysis for all legal moves
-        if (engineResult) {
-          const formattedEngineLines = engineResult.lines
-            .map((line, index) => {
-              const evaluation = formatEvaluation(line);
-              const moves = formatPrincipalVariation(line.pv, line.fen);
-              let formattedLine = `Line ${
-                index + 1
-              }: ${evaluation} - ${moves}`;
-
-              if (line.resultPercentages) {
-                formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-              }
-
-              return formattedLine;
-            })
-            .join("\n");
-
-          query += `\nEngine Analysis (All Legal Moves):\n${formattedEngineLines}`;
-        }
-
-        // Add opening data
-        if (openingData) {
-          const openingSpeech = getOpeningStatSpeech(openingData);
-          query += `\n\nOpening Information:\n${openingSpeech}`;
-        }
-
-        if (chessdbdata) {
-          const candiateMoves = getChessDBSpeech(chessdbdata);
-          query += `${candiateMoves}`;
-        }
-      }
-
-      const mode = puzzleMode === true || puzzleQuery ? "puzzle" : playMode ? "play" : "position";
-      const result = await makeApiRequest(currentFen, query, mode);
-
-      const assistantMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant" as const,
-        content: result,
+      const userMessage = {
+        id: Date.now().toString(),
+        role: "user" as const,
+        content: chatInput,
         timestamp: new Date(),
       };
 
-      setChatMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error sending chat message:", error);
-      if (
-        !(error instanceof Error && error.message === "Request cancelled")
-      ) {
-        const errorMessage = {
+      setChatMessages((prev) => [...prev, userMessage]);
+      const currentInput = chatInput;
+      setChatInput("");
+      setChatLoading(true);
+
+      const currentFen = currentFenRef.current;
+
+      try {
+        const chessInstance = new Chess(currentFen);
+        const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+        let query = `USER PROMPT: ${currentInput}\n\n Current FEN: ${currentFen}\nSide to Move: ${sideToMove}`;
+
+        if(puzzleMode === true){
+          query += `\n\n Puzzle Mode: Active
+          1. Act as an interactive chess puzzle coach.
+          2. Do not reveal the solution immediately.
+          3. Guide the user through the puzzle one step at a time.
+          4. If the user asks for a hint, provide a subtle clue about the best move or tactical idea.
+          5. If the user requests the solution directly, explain the correct sequence of moves and the reasoning behind them.
+          6. Encourage the user to consider candidate moves, threats, and tactical motifs in the position.
+          7. Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution.
+          `
+        } else if(playMode === true) {
+          query += `\n\n Play Mode: Active
+          1. Act as a supportive chess coach during live gameplay.
+          2. Provide real-time strategic advice and tactical guidance.
+          3. Help identify threats and opportunities in the current position.
+          4. Suggest candidate moves and explain their benefits.
+          5. Focus on practical, actionable advice for the current game situation.
+          6. Be encouraging and supportive while providing accurate analysis.
+          `
+        } else {
+          query += `\n\n
+          `
+        }
+
+        if(puzzleQuery){
+          query += `\n\n Puzzle Info: ${puzzleQuery}`
+        }
+
+        if (gameInfo) {
+          query += `\n\n Game PGN \n ${gameInfo}`;
+        }
+
+        if (currentMove) {
+          query += `\n Current Game Move: \n ${currentMove}`;
+        }
+
+        if (sessionMode && !playMode) { // Don't auto-add engine analysis in play mode to keep responses faster
+          // Get engine analysis if not available
+          let engineResult = stockfishAnalysisResult;
+          if (!engineResult && engine) {
+            engineResult = await engine.evaluatePositionWithUpdate({
+              fen: currentFen,
+              depth: engineDepth,
+              multiPv: engineLines,
+              setPartialEval: () => {},
+            });
+            if (currentFenRef.current === currentFen) {
+              setStockfishAnalysisResult(engineResult);
+            }
+          }
+
+          // Add engine analysis
+          if (engineResult) {
+            const formattedEngineLines = engineResult.lines
+              .map((line, index) => {
+                const evaluation = formatEvaluation(line);
+                const moves = formatPrincipalVariation(line.pv, line.fen);
+                let formattedLine = `Line ${
+                  index + 1
+                }: ${evaluation} - ${moves}`;
+
+                if (line.resultPercentages) {
+                  formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+                }
+
+                return formattedLine;
+              })
+              .join("\n");
+
+            query += `\nEngine Analysis:\n${formattedEngineLines}`;
+          }
+
+          // Add opening data
+          if (openingData) {
+            const openingSpeech = getOpeningStatSpeech(openingData);
+            query += `\n\nOpening Information:\n${openingSpeech}`;
+          }
+
+          if (chessdbdata) {
+            const candiateMoves = getChessDBSpeech(chessdbdata);
+            query += `${candiateMoves}`;
+          }
+        }
+
+        const mode = puzzleMode === true || puzzleQuery ? "puzzle" : playMode ? "play" : "position";
+        const result = await makeApiRequest(currentFen, query, mode);
+
+        const assistantMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant" as const,
-          content:
-            "Sorry, there was an error processing your message. Please try again.",
+          content: result,
           timestamp: new Date(),
         };
-        setChatMessages((prev) => [...prev, errorMessage]);
+
+        setChatMessages((prev) => [...prev, assistantMessage]);
+      } catch (error) {
+        console.error("Error sending chat message:", error);
+        if (
+          !(error instanceof Error && error.message === "Request cancelled")
+        ) {
+          const errorMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant" as const,
+            content:
+              "Sorry, there was an error processing your message. Please try again.",
+            timestamp: new Date(),
+          };
+          setChatMessages((prev) => [...prev, errorMessage]);
+        }
+      } finally {
+        setChatLoading(false);
       }
-    } finally {
-      setChatLoading(false);
-    }
-  },
-  [
-    chatInput,
-    sessionMode,
-    stockfishAnalysisResult,
-    engine,
-    engineDepth,
-    engineLines,
-    openingData,
-    chessdbdata,
-    formatEvaluation,
-    formatPrincipalVariation,
-    makeApiRequest,
-  ]
-);
+    },
+    [
+      chatInput,
+      sessionMode,
+      stockfishAnalysisResult,
+      engine,
+      engineDepth,
+      engineLines,
+      openingData,
+      chessdbdata,
+      formatEvaluation,
+      formatPrincipalVariation,
+      makeApiRequest,
+    ]
+  );
 
   const handleChatKeyPress = useCallback(
     (e: React.KeyboardEvent): void => {

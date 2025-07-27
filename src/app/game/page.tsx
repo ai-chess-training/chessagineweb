@@ -5,18 +5,33 @@ import {
   Box,
   Button,
   CircularProgress,
-  Paper,
   Stack,
   Tabs,
   Tab,
   TextField,
   Typography,
   Divider,
-  IconButton,
-  LinearProgress,
+  Card,
+  CardContent,
+  Chip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
-import { User, Clock, Calendar, Trophy, Navigation, SkipBack, ChevronLeft, ChevronRight, SkipForward } from "lucide-react";
+import { 
+  deepPurple, 
+  purple, 
+  indigo 
+} from "@mui/material/colors";
+import { 
+  ExpandMore as ExpandMoreIcon,
+  Analytics as AnalyticsIcon,
+  Chat as ChatIcon,
+  Info as InfoIcon,
+  Upload as UploadIcon,
+  Refresh as RefreshIcon,
+  PlayArrow as PlayIcon
+} from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/componets/agine/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -26,11 +41,28 @@ import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
-import GameReviewTab from "@/componets/tabs/GameReviewTab";
-import { MoveAnalysis } from "@/componets/agine/useGameReview";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
-import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
+import UserPGNUploader from "@/componets/lichess/UserPGNUpload"
+import GameInfoTab from "@/componets/tabs/GameInfoTab";
 
+// Custom theme colors
+const purpleTheme = {
+  primary: deepPurple[500],
+  primaryDark: deepPurple[700],
+  secondary: purple[400],
+  accent: indigo[300],
+  background: {
+    main: '#1a0d2e',
+    paper: '#2d1b3d',
+    card: '#3e2463',
+    input: '#4a2c5a'
+  },
+  text: {
+    primary: '#e1d5f0',
+    secondary: '#b39ddb',
+    accent: '#ce93d8'
+  }
+};
 
 function parsePgnChapters(pgnText: string) {
   const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
@@ -44,7 +76,7 @@ function parsePgnChapters(pgnText: string) {
 function extractMovesWithComments(
   pgn: string
 ): { move: string; comment?: string }[] {
-  const strippedHeaders = pgn.replace(/\[.*?\]\s*/g, ""); // remove PGN tags
+  const strippedHeaders = pgn.replace(/\[.*?\]\s*/g, "");
   const tokenRegex = /(\{[^}]*\})|(;[^\n]*)|([^\s{};]+)/g;
   const tokens = [...strippedHeaders.matchAll(tokenRegex)];
 
@@ -58,7 +90,6 @@ function extractMovesWithComments(
     } else if (token.startsWith(";")) {
       currentComment = token.slice(1).trim();
     } else if (/^[a-hRNBQKO0-9+#=x-]+$/.test(token)) {
-      // token is a move (very rough pattern)
       result.push({ move: token, comment: currentComment });
       currentComment = undefined;
     }
@@ -81,43 +112,28 @@ function extractGameInfo(pgn: string) {
   return info;
 }
 
-// Improved function to extract game ID from Lichess URLs
 function getValidGameId(url: string): string {
   if (!url) return "";
 
   try {
-    // Handle various Lichess URL formats
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-
-    // Extract game ID from different URL patterns:
-    // https://lichess.org/abcdefgh
-    // https://lichess.org/abcdefgh/white
-    // https://lichess.org/abcdefgh/black
-    // https://lichess.org/abcdefgh1234
     const gameIdMatch = pathname.match(/^\/([a-zA-Z0-9]{8,12})(?:\/|$)/);
 
     if (gameIdMatch) {
       let gameId = gameIdMatch[1];
-
-      // If the ID is longer than 8 characters, it might have extra characters
-      // Lichess game IDs are typically 8 characters, but can be longer
       if (gameId.length > 8) {
-        // Try to extract the base game ID (first 8 characters)
         gameId = gameId.substring(0, 8);
       }
-
       return gameId;
     }
 
     return "";
   } catch (error) {
-    // If URL parsing fails, try simple string manipulation
     console.log(error);
     const parts = url.split("/");
     if (parts.length >= 4) {
       const gameId = parts[3];
-      // Remove any query parameters or fragments
       const cleanGameId = gameId.split(/[?#]/)[0];
       return cleanGameId.substring(0, 8);
     }
@@ -126,7 +142,6 @@ function getValidGameId(url: string): string {
   }
 }
 
-// Function to fetch game PGN from Lichess
 async function fetchLichessGame(gameId: string): Promise<string> {
   const response = await fetch(`https://lichess.org/game/export/${gameId}`, {
     headers: {
@@ -149,317 +164,6 @@ async function fetchLichessGame(gameId: string): Promise<string> {
   return pgnText;
 }
 
-// Game Info Tab Component (renamed from MovesTab)
-function GameInfoTab({
-  moves,
-  currentMoveIndex,
-  goToMove,
-  comment,
-  gameInfo,
-  generateGameReview,
-  gameReviewLoading,
-  gameReview,
-  handleMoveCoachClick,
-  handleMoveAnnontateClick,
-  handleGameReviewClick,
-  gameReviewProgress,
-  chatLoading,
-}: {
-  moves: string[];
-  currentMoveIndex: number;
-  goToMove: (index: number) => void;
-  comment: string;
-  generateGameReview: (moves: string[]) => void;
-  gameReviewLoading: boolean;
-  gameReview: MoveAnalysis[];
-  gameReviewProgress: number;
-  gameInfo: Record<string, string>;
-  chatLoading: boolean;
-  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
-  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
-  handleGameReviewClick: (gameReview: MoveAnalysis[], gameInfo: string) => void;
-
-}) {
-  const formatTimeControl = (timeControl: string) => {
-    const tc = timeControl.split("+");
-    const time = tc[0];
-    const inc = tc[1];
-    const numberTime = parseInt(time);
-
-    return `${Math.round(numberTime / 60)}+${inc}`;
-  };
-
-  const handlePreviousMove = () => {
-    if (currentMoveIndex > 0) {
-      goToMove(currentMoveIndex - 1);
-    }
-  };
-
-  const handleNextMove = () => {
-    if (currentMoveIndex < moves.length - 1) {
-      goToMove(currentMoveIndex + 1);
-    }
-  };
-
-  const handleFirstMove = () => {
-    goToMove(0);
-  };
-
-  const handleLastMove = () => {
-    goToMove(moves.length - 1);
-  };
-
-
-  function generateGameInfoPrompt(gameInfo: Record<string, string>): string {
-    const lines: string[] = [];
-    if (gameInfo.White || gameInfo.WhiteElo)
-      lines.push(
-        `White: ${gameInfo.White || "Unknown"}${gameInfo.WhiteElo ? ` (${gameInfo.WhiteElo})` : ""}`
-      );
-    if (gameInfo.Black || gameInfo.BlackElo)
-      lines.push(
-        `Black: ${gameInfo.Black || "Unknown"}${gameInfo.BlackElo ? ` (${gameInfo.BlackElo})` : ""}`
-      );
-    if (gameInfo.Date) lines.push(`Date: ${gameInfo.Date}`);
-    if (gameInfo.Event) lines.push(`Event: ${gameInfo.Event}`);
-    if (gameInfo.Site) lines.push(`Site: ${gameInfo.Site}`);
-    if (gameInfo.Result) lines.push(`Result: ${gameInfo.Result}`);
-    if (gameInfo.TimeControl) lines.push(`Time Control: ${formatTimeControl(gameInfo.TimeControl)}`);
-    if (gameInfo.ECO) lines.push(`ECO: ${gameInfo.ECO}`);
-    if (gameInfo.Opening) lines.push(`Opening: ${gameInfo.Opening}`);
-    return lines.join("\n");
-  }
-
-  return (
-    <Stack spacing={3}>
-      {/* Game Information Section */}
-      <Paper
-        sx={{
-          p: 2,
-          bgcolor: grey[900],
-          color: "white",
-          borderRadius: 2,
-        }}
-      >
-        <Typography
-          variant="h6"
-          gutterBottom
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <Trophy size={20} />
-          Game Information
-        </Typography>
-
-        <Stack spacing={2}>
-          {/* Players */}
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={4}>
-            <Stack spacing={0.5} flex={1}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <User size={16} />
-                <Typography variant="subtitle2" sx={{ color: "wheat" }}>
-                  Players
-                </Typography>
-              </Box>
-              <Typography variant="body2">
-                <strong>White:</strong> {gameInfo.White || "Unknown"}
-                {gameInfo.WhiteElo && ` (${gameInfo.WhiteElo})`}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Black:</strong> {gameInfo.Black || "Unknown"}
-                {gameInfo.BlackElo && ` (${gameInfo.BlackElo})`}
-              </Typography>
-            </Stack>
-            <Stack spacing={0.5} flex={1}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Calendar size={16} />
-                <Typography variant="subtitle2" sx={{ color: "wheat" }}>
-                  Game Details
-                </Typography>
-              </Box>
-              {gameInfo.Date && (
-                <Typography variant="body2">
-                  <strong>Date:</strong> {gameInfo.Date}
-                </Typography>
-              )}
-              {gameInfo.Event && (
-                <Typography variant="body2">
-                  <strong>Event:</strong> {gameInfo.Event}
-                </Typography>
-              )}
-              {gameInfo.Site && (
-                <Typography variant="body2">
-                  <strong>Site:</strong> {gameInfo.Site}
-                </Typography>
-              )}
-              {gameInfo.Result && (
-                <Typography variant="body2">
-                  <strong>Result:</strong> {gameInfo.Result}
-                </Typography>
-              )}
-            </Stack>
-          </Stack>
-
-          {/* Time Control */}
-          {gameInfo.TimeControl && (
-            <Stack spacing={0.5}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Clock size={16} />
-                <Typography variant="subtitle2" sx={{ color: "wheat" }}>
-                  Time Control
-                </Typography>
-              </Box>
-              <Typography variant="body2">
-                {formatTimeControl(gameInfo.TimeControl)}
-              </Typography>
-            </Stack>
-          )}
-
-          {/* Additional Info */}
-          {(gameInfo.Opening || gameInfo.ECO) && (
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2" sx={{ color: "wheat" }}>
-                Opening
-              </Typography>
-              {gameInfo.ECO && (
-                <Typography variant="body2">
-                  <strong>ECO:</strong> {gameInfo.ECO}
-                </Typography>
-              )}
-              {gameInfo.Opening && (
-                <Typography variant="body2">
-                  <strong>Opening:</strong> {gameInfo.Opening}
-                </Typography>
-              )}
-            </Stack>
-          )}
-        </Stack>
-      </Paper>
-
-      {/* Move Navigation Section */}
-      <Paper
-        sx={{
-          p: 2,
-          bgcolor: grey[900],
-          color: "white",
-          borderRadius: 2,
-        }}
-      >
-        <Typography
-          variant="h6"
-          gutterBottom
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <Navigation size={20} />
-          Move Navigation
-        </Typography>
-
-        <Stack spacing={2}>
-          {/* Navigation Controls */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>
-            <IconButton
-              onClick={handleFirstMove}
-              disabled={currentMoveIndex === 0}
-              sx={{ 
-                color: "white",
-                "&:disabled": { color: grey[600] }
-              }}
-              size="small"
-            >
-              <SkipBack size={20} />
-            </IconButton>
-            <IconButton
-              onClick={handlePreviousMove}
-              disabled={currentMoveIndex === 0}
-              sx={{ 
-                color: "white",
-                "&:disabled": { color: grey[600] }
-              }}
-              size="small"
-            >
-              <ChevronLeft size={20} />
-            </IconButton>
-            <Typography variant="body2" sx={{ mx: 2, minWidth: "120px", textAlign: "center" }}>
-              Move {currentMoveIndex + 1} of {moves.length}
-            </Typography>
-            <IconButton
-              onClick={handleNextMove}
-              disabled={currentMoveIndex === moves.length - 1}
-              sx={{ 
-                color: "white",
-                "&:disabled": { color: grey[600] }
-              }}
-              size="small"
-            >
-              <ChevronRight size={20} />
-            </IconButton>
-            <IconButton
-              onClick={handleLastMove}
-              disabled={currentMoveIndex === moves.length - 1}
-              sx={{ 
-                color: "white",
-                "&:disabled": { color: grey[600] }
-              }}
-              size="small"
-            >
-              <SkipForward size={20} />
-            </IconButton>
-          </Box>
-
-          {/* Current Move Display */}
-          {moves[currentMoveIndex] && (
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="subtitle2" sx={{ color: "wheat", mb: 0.5 }}>
-                Current Move
-              </Typography>
-              <Typography variant="h6" sx={{ fontFamily: "monospace" }}>
-                {moves[currentMoveIndex]}
-              </Typography>
-            </Box>
-          )}
-
-          {/* Move Progress Bar */}
-          <Box sx={{ width: "100%", px: 1 }}>
-            <LinearProgress
-              variant="determinate"
-              value={moves.length > 0 ? ((currentMoveIndex + 1) / moves.length) * 100 : 0}
-              sx={{
-                height: 6,
-                borderRadius: 3,
-                bgcolor: grey[700],
-                "& .MuiLinearProgress-bar": {
-                  bgcolor: "wheat",
-                  borderRadius: 3,
-                }
-              }}
-            />
-          </Box>
-        </Stack>
-      </Paper>
-
-      <Divider sx={{ bgcolor: grey[600] }} />
-
-      {/* Game Review Tab */}
-      <GameReviewTab
-        gameReview={gameReview}
-        generateGameReview={async () => generateGameReview(moves)}
-        moves={moves}
-        handleMoveCoachClick={handleMoveCoachClick}
-        chatLoading={chatLoading}
-        gameReviewProgress={gameReviewProgress}
-        comment={comment}
-        whitePlayer={gameInfo.White || "Unknown"}
-        blackPlayer={gameInfo.Black || "Unknown"}
-        gameInfo={generateGameInfoPrompt(gameInfo)}
-        handleMoveAnnontateClick={handleMoveAnnontateClick}
-        handleGameReviewClick={handleGameReviewClick}
-        gameReviewLoading={gameReviewLoading}
-        goToMove={goToMove}
-        currentMoveIndex={currentMoveIndex}
-      />
-    </Stack>
-  );
-}
-
 export default function PGNUploaderPage() {
   const session = useSession();
 
@@ -480,6 +184,7 @@ export default function PGNUploaderPage() {
   const [comment, setComment] = useState("");
   const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
   const [loadingGame, setLoadingGame] = useState(false);
+  const [activeAnalysisTab, setActiveAnalysisTab] = useState(0);
 
   const {
     setLlmAnalysisResult,
@@ -529,7 +234,6 @@ export default function PGNUploaderPage() {
     chessdbdata,
   } = useAgine(fen);
 
-  // Move useEffect to before conditional returns
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft" && currentMoveIndex > 0) {
@@ -543,20 +247,34 @@ export default function PGNUploaderPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentMoveIndex, moves]);
 
-  // Show a spinner while session is loading
   if (!session.isLoaded) {
     return (
-      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
+      <Box 
+        sx={{ 
+          p: 4, 
+          display: "flex", 
+          justifyContent: "center",
+          backgroundColor: purpleTheme.background.main,
+          minHeight: "100vh"
+        }}
+      >
+        <CircularProgress sx={{ color: purpleTheme.accent }} />
       </Box>
     );
   }
 
-  // If user is not signed in, redirect them to sign-in page
   if (!session.isSignedIn) {
     return (
-      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-        <Typography variant="h6" color="wheat">
+      <Box 
+        sx={{ 
+          p: 4, 
+          display: "flex", 
+          justifyContent: "center",
+          backgroundColor: purpleTheme.background.main,
+          minHeight: "100vh"
+        }}
+      >
+        <Typography variant="h6" sx={{ color: purpleTheme.text.primary }}>
           Please sign in to view this page.
         </Typography>
       </Box>
@@ -644,9 +362,8 @@ export default function PGNUploaderPage() {
     setLoadingGame(true);
     try {
       const fetchedPgn = await fetchLichessGame(gameId);
-      console.log("Fetched PGN:", fetchedPgn); // Debug log
+      console.log("Fetched PGN:", fetchedPgn);
 
-      // Process the PGN immediately instead of relying on state update
       try {
         const tempGame = new Chess();
         tempGame.loadPgn(fetchedPgn);
@@ -654,7 +371,6 @@ export default function PGNUploaderPage() {
         const parsed = extractMovesWithComments(fetchedPgn);
         const info = extractGameInfo(fetchedPgn);
 
-        // Update all states
         setPgnText(fetchedPgn);
         setMoves(moveList);
         setParsedMovesWithComments(parsed);
@@ -668,7 +384,6 @@ export default function PGNUploaderPage() {
         setComment("");
         setGameReview([]);
 
-        // Hide input section
         setInputsVisible(false);
 
         console.log("Game loaded successfully:", {
@@ -694,142 +409,267 @@ export default function PGNUploaderPage() {
   };
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ 
+      p: 4, 
+      backgroundColor: purpleTheme.background.main,
+      minHeight: "100vh"
+    }}>
       {inputsVisible && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" gutterBottom>
-            Analyze Your Chess Game With Agine
-          </Typography>
-          <Typography variant="subtitle1" sx={{ color: "wheat", mb: 1 }}>
-            Get detailed Agine insights on your game! Paste your PGN, Lichess
-            game URL, or study URL to begin analysis. You can search your recent
-            Lichess games!
-          </Typography>
-        </Box>
+        <Card sx={{ 
+          mb: 4, 
+          backgroundColor: purpleTheme.background.paper,
+          borderRadius: 3,
+          boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`
+        }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography 
+                variant="h3" 
+                gutterBottom 
+                sx={{ 
+                  color: purpleTheme.text.primary,
+                  fontWeight: 700,
+                  background: `linear-gradient(45deg, ${purpleTheme.accent}, ${purpleTheme.secondary})`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                Chess Analysis with Agine
+              </Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: purpleTheme.text.secondary, 
+                  mb: 3,
+                  maxWidth: 600,
+                  mx: 'auto'
+                }}
+              >
+                Get detailed AI insights on your games! Paste your PGN, Lichess game URL, or study URL to begin analysis.
+              </Typography>
+            </Box>
+
+            <Stack spacing={3}>
+              {/* Lichess Study Section */}
+              <Box>
+                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2, display: 'flex', alignItems: 'center' }}>
+                  <AnalyticsIcon sx={{ mr: 1 }} />
+                  Lichess Study
+                </Typography>
+                <TextField
+                  fullWidth
+                  label="Paste Lichess Study URL"
+                  value={studyUrl}
+                  onChange={(e) => setStudyUrl(e.target.value)}
+                  placeholder="https://lichess.org/study/GuglnqGD"
+                  sx={{ 
+                    backgroundColor: purpleTheme.background.input,
+                    borderRadius: 2,
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: purpleTheme.secondary,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: purpleTheme.accent,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: purpleTheme.accent,
+                      },
+                    }
+                  }}
+                  slotProps={{
+                    inputLabel: { sx: { color: purpleTheme.text.secondary } },
+                    input: { sx: { color: purpleTheme.text.primary } },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{
+                    backgroundColor: purpleTheme.primary,
+                    '&:hover': { backgroundColor: purpleTheme.primaryDark },
+                    borderRadius: 2,
+                    py: 1.5,
+                    textTransform: 'none',
+                    fontSize: '1rem'
+                  }}
+                  onClick={async () => {
+                    const idMatch = studyUrl.match(/study\/([a-zA-Z0-9]+)/);
+                    if (!idMatch) return alert("Invalid study URL");
+
+                    const res = await fetch(
+                      `https://lichess.org/api/study/${idMatch[1]}.pgn`
+                    );
+                    const text = await res.text();
+                    const parsed = parsePgnChapters(text);
+                    if (parsed.length === 0) return alert("No chapters found");
+
+                    setChapters(parsed);
+                    setPgnText(parsed[0].pgn);
+                    setTimeout(() => loadPGN(), 0);
+                    setInputsVisible(false);
+                  }}
+                >
+                  Load Study
+                </Button>
+              </Box>
+
+              <Divider sx={{ borderColor: purpleTheme.secondary }} />
+
+              {/* Lichess Game Section */}
+              <Box>
+                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2, display: 'flex', alignItems: 'center' }}>
+                  <PlayIcon sx={{ mr: 1 }} />
+                  Lichess Game
+                </Typography>
+                <TextField
+                  fullWidth
+                  label="Paste Lichess Game URL"
+                  value={gameUrl}
+                  onChange={(e) => setGameUrl(e.target.value)}
+                  placeholder="https://lichess.org/abcdefgh or https://lichess.org/abcdefgh1234"
+                  sx={{ 
+                    backgroundColor: purpleTheme.background.input,
+                    borderRadius: 2,
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: purpleTheme.secondary,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: purpleTheme.accent,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: purpleTheme.accent,
+                      },
+                    }
+                  }}
+                  slotProps={{
+                    inputLabel: { sx: { color: purpleTheme.text.secondary } },
+                    input: { sx: { color: purpleTheme.text.primary } },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleLoadLichessGame}
+                  disabled={loadingGame}
+                  startIcon={loadingGame ? <CircularProgress size={20} /> : null}
+                  sx={{
+                    backgroundColor: purpleTheme.primary,
+                    '&:hover': { backgroundColor: purpleTheme.primaryDark },
+                    borderRadius: 2,
+                    py: 1.5,
+                    textTransform: 'none',
+                    fontSize: '1rem'
+                  }}
+                >
+                  {loadingGame ? "Loading Game..." : "Load Game"}
+                </Button>
+              </Box>
+
+              <Divider sx={{ borderColor: purpleTheme.secondary }} />
+
+              {/* PGN Section */}
+              <Box>
+                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2, display: 'flex', alignItems: 'center' }}>
+                  <UploadIcon sx={{ mr: 1 }} />
+                  Direct PGN Input
+                </Typography>
+                <TextField
+                  multiline
+                  minRows={4}
+                  label="Paste PGN Here"
+                  fullWidth
+                  value={pgnText}
+                  onChange={(e) => setPgnText(e.target.value)}
+                  sx={{
+                    backgroundColor: purpleTheme.background.input,
+                    borderRadius: 2,
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: purpleTheme.secondary,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: purpleTheme.accent,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: purpleTheme.accent,
+                      },
+                    }
+                  }}
+                  placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6..."
+                  slotProps={{
+                    input: { sx: { color: purpleTheme.text.primary } },
+                    inputLabel: { sx: { color: purpleTheme.text.secondary } },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => {
+                    loadPGN();
+                    setInputsVisible(false);
+                  }}
+                  sx={{
+                    backgroundColor: purpleTheme.primary,
+                    '&:hover': { backgroundColor: purpleTheme.primaryDark },
+                    borderRadius: 2,
+                    py: 1.5,
+                    textTransform: 'none',
+                    fontSize: '1rem'
+                  }}
+                >
+                  Load PGN
+                </Button>
+              </Box>
+
+              <Divider sx={{ borderColor: purpleTheme.secondary }} />
+
+              {/* User Games Section */}
+              <Box>
+                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2 }}>
+                  Your Lichess Games
+                </Typography>
+                <UserGameSelect loadPGN={loadUserPGN} />
+                <Box sx={{ mt: 2 }}>
+                  <UserPGNUploader loadPGN={loadUserPGN} />
+                </Box>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
       )}
 
-      {inputsVisible && (
-        <Stack spacing={2} sx={{ mb: 3 }}>
-          <TextField
-            fullWidth
-            label="Paste Lichess Study URL"
-            value={studyUrl}
-            onChange={(e) => setStudyUrl(e.target.value)}
-            placeholder="https://lichess.org/study/GuglnqGD"
-            sx={{ backgroundColor: grey[900], borderRadius: 1 }}
-            slotProps={{
-              inputLabel: { sx: { color: "wheat" } },
-              input: { sx: { color: "wheat" } },
-            }}
-          />
-          <Button
-            variant="contained"
-            onClick={async () => {
-              const idMatch = studyUrl.match(/study\/([a-zA-Z0-9]+)/);
-              if (!idMatch) return alert("Invalid study URL");
-
-              const res = await fetch(
-                `https://lichess.org/api/study/${idMatch[1]}.pgn`
-              );
-              const text = await res.text();
-              const parsed = parsePgnChapters(text);
-              if (parsed.length === 0) return alert("No chapters found");
-
-              setChapters(parsed);
-              setPgnText(parsed[0].pgn); // Auto-load first chapter
-              setTimeout(() => loadPGN(), 0);
-              setInputsVisible(false);
-            }}
-          >
-            Load Study
-          </Button>
-
-          <TextField
-            fullWidth
-            label="Paste Lichess Game URL"
-            value={gameUrl}
-            onChange={(e) => setGameUrl(e.target.value)}
-            placeholder="https://lichess.org/abcdefgh or https://lichess.org/abcdefgh1234"
-            sx={{ backgroundColor: grey[900], borderRadius: 1 }}
-            slotProps={{
-              inputLabel: { sx: { color: "wheat" } },
-              input: { sx: { color: "wheat" } },
-            }}
-          />
-          <Button
-            variant="contained"
-            onClick={handleLoadLichessGame}
-            disabled={loadingGame}
-            startIcon={loadingGame ? <CircularProgress size={20} /> : null}
-          >
-            {loadingGame ? "Loading Game..." : "Load Game"}
-          </Button>
-
-          <TextField
-            multiline
-            minRows={4}
-            label="Paste PGN Here"
-            fullWidth
-            value={pgnText}
-            onChange={(e) => setPgnText(e.target.value)}
-            sx={{
-              backgroundColor: grey[900],
-              borderRadius: 1,
-            }}
-            placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6..."
-            slotProps={{
-              input: { sx: { color: "wheat" } },
-              inputLabel: { sx: { color: "wheat" } },
-            }}
-          />
-          <Button
-            variant="contained"
-            onClick={() => {
-              loadPGN();
-              setInputsVisible(false);
-            }}
-          >
-            Load PGN
-          </Button>
-          <Typography variant="subtitle1" sx={{ color: "wheat" }}>
-            Select a game for the given Lichess username
-          </Typography>
-          <Divider />
-          <UserGameSelect loadPGN={loadUserPGN} />
-          <Divider />
-          <UserPGNUploader loadPGN={loadUserPGN} />
-        </Stack>
-      )}
-
-      <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={4}>
         {!inputsVisible && (
-          <Stack spacing={2} alignItems="center">
-            <AiChessboardPanel
-              game={game}
-              fen={fen}
-              moveSquares={moveSquares}
-              engine={engine}
-              setMoveSquares={setMoveSquares}
-              setFen={setFen}
-              setGame={setGame}
-              reviewMove={gameReview[currentMoveIndex]}
-              gameReviewMoveIndex={currentMoveIndex}
-              setLlmAnalysisResult={setLlmAnalysisResult}
-              setOpeningData={setOpeningData}
-              setStockfishAnalysisResult={setStockfishAnalysisResult}
-              stockfishAnalysisResult={stockfishAnalysisResult}
-              fetchOpeningData={fetchOpeningData}
-              analyzeWithStockfish={analyzeWithStockfish}
-              llmLoading={llmLoading}
-              stockfishLoading={stockfishLoading}
-              openingLoading={openingLoading}
-            />
+          <Box sx={{ flex: '0 0 auto' }}>
+            <Stack spacing={3} alignItems="center">
+              <AiChessboardPanel
+                game={game}
+                fen={fen}
+                moveSquares={moveSquares}
+                engine={engine}
+                setMoveSquares={setMoveSquares}
+                setFen={setFen}
+                setGame={setGame}
+                reviewMove={gameReview[currentMoveIndex]}
+                gameReviewMoveIndex={currentMoveIndex}
+                gameReviewMode={true}
+                setLlmAnalysisResult={setLlmAnalysisResult}
+                setOpeningData={setOpeningData}
+                setStockfishAnalysisResult={setStockfishAnalysisResult}
+                stockfishAnalysisResult={stockfishAnalysisResult}
+                fetchOpeningData={fetchOpeningData}
+                analyzeWithStockfish={analyzeWithStockfish}
+                llmLoading={llmLoading}
+                stockfishLoading={stockfishLoading}
+                openingLoading={openingLoading}
+              />
 
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2}
-              width="100%"
-            >
               <Button
                 variant="outlined"
                 onClick={() => {
@@ -845,165 +685,270 @@ export default function PGNUploaderPage() {
                   setGame(reset);
                   setFen(reset.fen());
                 }}
-                fullWidth
+                startIcon={<RefreshIcon />}
+                sx={{
+                  borderColor: purpleTheme.secondary,
+                  color: purpleTheme.text.primary,
+                  '&:hover': {
+                    borderColor: purpleTheme.accent,
+                    backgroundColor: `${purpleTheme.accent}20`
+                  },
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1.5,
+                  textTransform: 'none'
+                }}
               >
                 Load New Game
               </Button>
             </Stack>
-          </Stack>
+          </Box>
         )}
-        <Stack spacing={2} sx={{ flex: 1 }}>
-          {!inputsVisible && chapters.length > 0 && (
-            <Paper
-              sx={{
-                p: 2,
-                backgroundColor: grey[900],
-                borderRadius: 2,
-                color: "white",
-                maxHeight: 200,
-                overflowY: "auto",
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                Chapters
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {chapters.map((ch, index) => (
-                  <Button
-                    key={index}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      setPgnText(ch.pgn);
-                      setTimeout(() => loadPGN(), 0);
-                    }}
-                    sx={{
-                      justifyContent: "start",
-                      textTransform: "none",
-                      color: "wheat",
-                      borderColor: grey[700],
-                      fontSize: "0.9rem",
-                      px: 1.5,
-                      py: 0.5,
-                      minWidth: 80,
-                    }}
-                  >
-                    {ch.title}
-                  </Button>
-                ))}
-              </Stack>
-            </Paper>
-          )}
 
-          {moves.length > 0 && (
-            <Paper
-              elevation={3}
-              sx={{
-                p: 3,
-                flex: 1,
-                minHeight: 300,
-                color: "white",
-                backgroundColor: grey[800],
-                maxHeight: "80vh",
-                overflow: "auto",
-              }}
-            >
-              <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                <Tabs
-                  value={analysisTab}
-                  onChange={(_, newValue) => setAnalysisTab(newValue)}
+        {!inputsVisible && (
+          <Box sx={{ flex: 1 }}>
+            <Stack spacing={3}>
+              {chapters.length > 0 && (
+                <Card
                   sx={{
-                    "& .MuiTab-root": { color: "wheat" },
-                    "& .Mui-selected": { color: "white !important" },
+                    backgroundColor: purpleTheme.background.paper,
+                    borderRadius: 3,
+                    boxShadow: `0 4px 20px rgba(138, 43, 226, 0.1)`
                   }}
                 >
-                  <Tab label="Game Info" />
-                  <Tab label="AI Chat" />
-                  <Tab label="Stockfish Analysis" />
-                  <Tab label="Opening Explorer" />
-                  <Tab label="Chess DB" />
-                </Tabs>
-              </Box>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom sx={{ color: purpleTheme.text.primary, mb: 2 }}>
+                      Study Chapters
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {chapters.map((ch, index) => (
+                        <Chip
+                          key={index}
+                          label={ch.title}
+                          onClick={() => {
+                            setPgnText(ch.pgn);
+                            setTimeout(() => loadPGN(), 0);
+                          }}
+                          sx={{
+                            backgroundColor: purpleTheme.background.card,
+                            color: purpleTheme.text.primary,
+                            '&:hover': {
+                              backgroundColor: purpleTheme.secondary,
+                            },
+                            borderRadius: 2,
+                            mb: 1
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              )}
 
-              <TabPanel value={analysisTab} index={0}>
-                <GameInfoTab
-                  moves={moves}
-                  currentMoveIndex={currentMoveIndex}
-                  goToMove={goToMove}
-                  comment={comment}
-                  gameInfo={gameInfo}
-                  generateGameReview={generateGameReview}
-                  gameReviewLoading={gameReviewLoading}
-                  gameReviewProgress={gameReviewProgress}
-                  handleGameReviewClick={handleGameReviewSummaryClick}
-                  handleMoveAnnontateClick={handleMoveAnnontateClick}
-                  handleMoveCoachClick={handleMoveCoachClick}
-                  chatLoading={chatLoading}
-                  gameReview={gameReview}
-                />
-              </TabPanel>
+              {moves.length > 0 && (
+                <Card
+                  sx={{
+                    backgroundColor: purpleTheme.background.paper,
+                    borderRadius: 3,
+                    boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
+                    minHeight: 500
+                  }}
+                >
+                  <Box sx={{ 
+                    borderBottom: `1px solid ${purpleTheme.secondary}40`,
+                    px: 3,
+                    pt: 2
+                  }}>
+                    <Tabs
+                      value={analysisTab}
+                      onChange={(_, newValue) => setAnalysisTab(newValue)}
+                      sx={{
+                        "& .MuiTab-root": { 
+                          color: purpleTheme.text.secondary,
+                          textTransform: 'none',
+                          fontSize: '1rem',
+                          fontWeight: 500,
+                          minHeight: 48
+                        },
+                        "& .Mui-selected": { 
+                          color: `${purpleTheme.accent} !important`,
+                          fontWeight: 600
+                        },
+                        "& .MuiTabs-indicator": {
+                          backgroundColor: purpleTheme.accent,
+                          height: 3,
+                          borderRadius: 2
+                        }
+                      }}
+                    >
+                      <Tab 
+                        icon={<InfoIcon />} 
+                        iconPosition="start" 
+                        label="Game Info" 
+                      />
+                      <Tab 
+                        icon={<ChatIcon />} 
+                        iconPosition="start" 
+                        label="AI Chat" 
+                      />
+                      <Tab 
+                        icon={<AnalyticsIcon />} 
+                        iconPosition="start" 
+                        label="Analysis" 
+                      />
+                    </Tabs>
+                  </Box>
 
-              <TabPanel value={analysisTab} index={1}>
-                <ChatTab
-                  chatMessages={chatMessages}
-                  chatInput={chatInput}
-                  puzzleMode={false}
-                  setChatInput={setChatInput}
-                  gameInfo={pgnText}
-                  abortChatMessage={abortChatMessage}
-                  currentMove={moves[currentMoveIndex]}
-                  sendChatMessage={sendChatMessage}
-                  chatLoading={chatLoading}
-                  handleChatKeyPress={handleChatKeyPress}
-                  clearChatHistory={clearChatHistory}
-                  sessionMode={sessionMode}
-                  setSessionMode={setSessionMode}
-                />
-              </TabPanel>
+                  <Box sx={{ p: 3 }}>
+                    <TabPanel value={analysisTab} index={0}>
+                      <GameInfoTab
+                        moves={moves}
+                        currentMoveIndex={currentMoveIndex}
+                        goToMove={goToMove}
+                        comment={comment}
+                        gameInfo={gameInfo}
+                        generateGameReview={generateGameReview}
+                        gameReviewLoading={gameReviewLoading}
+                        gameReviewProgress={gameReviewProgress}
+                        handleGameReviewClick={handleGameReviewSummaryClick}
+                        handleMoveAnnontateClick={handleMoveAnnontateClick}
+                        handleMoveCoachClick={handleMoveCoachClick}
+                        chatLoading={chatLoading}
+                        gameReview={gameReview}
+                      />
+                    </TabPanel>
 
-              <TabPanel value={analysisTab} index={2}>
-                <Typography variant="h6" gutterBottom>
-                  Stockfish 17 NNUE LITE Analysis
-                </Typography>
-                <StockfishAnalysisTab
-                  stockfishAnalysisResult={stockfishAnalysisResult}
-                  stockfishLoading={stockfishLoading}
-                  handleEngineLineClick={handleEngineLineClick}
-                  engineDepth={engineDepth}
-                  engineLines={engineLines}
-                  engine={engine}
-                  llmLoading={llmLoading}
-                  analyzeWithStockfish={analyzeWithStockfish}
-                  formatEvaluation={formatEvaluation}
-                  formatPrincipalVariation={formatPrincipalVariation}
-                  setEngineDepth={setEngineDepth}
-                  setEngineLines={setEngineLines}
-                />
-              </TabPanel>
+                    <TabPanel value={analysisTab} index={2}>
+                      <Stack spacing={3}>
+                        {/* Stockfish Analysis */}
+                        <Accordion 
+                          expanded={activeAnalysisTab === 0}
+                          onChange={() => setActiveAnalysisTab(activeAnalysisTab === 0 ? -1 : 0)}
+                          sx={{
+                            backgroundColor: purpleTheme.background.card,
+                            '&:before': { display: 'none' },
+                            borderRadius: 2,
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                            sx={{
+                              backgroundColor: purpleTheme.background.card,
+                              '&:hover': { backgroundColor: `${purpleTheme.secondary}20` }
+                            }}
+                          >
+                            <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
+                              Stockfish 17 NNUE Analysis
+                            </Typography>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ backgroundColor: purpleTheme.background.paper }}>
+                            <StockfishAnalysisTab
+                              stockfishAnalysisResult={stockfishAnalysisResult}
+                              stockfishLoading={stockfishLoading}
+                              handleEngineLineClick={handleEngineLineClick}
+                              engineDepth={engineDepth}
+                              engineLines={engineLines}
+                              engine={engine}
+                              llmLoading={llmLoading}
+                              analyzeWithStockfish={analyzeWithStockfish}
+                              formatEvaluation={formatEvaluation}
+                              formatPrincipalVariation={formatPrincipalVariation}
+                              setEngineDepth={setEngineDepth}
+                              setEngineLines={setEngineLines}
+                            />
+                          </AccordionDetails>
+                        </Accordion>
 
-              <TabPanel value={analysisTab} index={3}>
-                <Typography variant="h6" gutterBottom>
-                  Opening Explorer
-                </Typography>
-                <OpeningExplorer
-                  openingLoading={openingLoading}
-                  openingData={openingData}
-                  llmLoading={llmLoading}
-                  lichessOpeningData={lichessOpeningData}
-                  lichessOpeningLoading={lichessOpeningLoading}
-                  handleOpeningMoveClick={handleOpeningMoveClick}
-                />
-              </TabPanel>
+                        {/* Opening Explorer */}
+                        <Accordion 
+                          expanded={activeAnalysisTab === 1}
+                          onChange={() => setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)}
+                          sx={{
+                            backgroundColor: purpleTheme.background.card,
+                            '&:before': { display: 'none' },
+                            borderRadius: 2,
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                            sx={{
+                              backgroundColor: purpleTheme.background.card,
+                              '&:hover': { backgroundColor: `${purpleTheme.secondary}20` }
+                            }}
+                          >
+                            <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
+                              Opening Explorer
+                            </Typography>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ backgroundColor: purpleTheme.background.paper }}>
+                            <OpeningExplorer
+                              openingLoading={openingLoading}
+                              openingData={openingData}
+                              llmLoading={llmLoading}
+                              lichessOpeningData={lichessOpeningData}
+                              lichessOpeningLoading={lichessOpeningLoading}
+                              handleOpeningMoveClick={handleOpeningMoveClick}
+                            />
+                          </AccordionDetails>
+                        </Accordion>
 
-              <TabPanel value={analysisTab} index={4}>
-                <ChessDBDisplay
-                  data={chessdbdata}
-                  analyzeMove={handleMoveClick}
-                />
-              </TabPanel>
-            </Paper>
-          )}
-        </Stack>
+                        {/* Chess DB */}
+                        <Accordion 
+                          expanded={activeAnalysisTab === 2}
+                          onChange={() => setActiveAnalysisTab(activeAnalysisTab === 2 ? -1 : 2)}
+                          sx={{
+                            backgroundColor: purpleTheme.background.card,
+                            '&:before': { display: 'none' },
+                            borderRadius: 2,
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                            sx={{
+                              backgroundColor: purpleTheme.background.card,
+                              '&:hover': { backgroundColor: `${purpleTheme.secondary}20` }
+                            }}
+                          >
+                            <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
+                              Chess Database
+                            </Typography>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ backgroundColor: purpleTheme.background.paper }}>
+                            <ChessDBDisplay
+                              data={chessdbdata}
+                              analyzeMove={handleMoveClick}
+                            />
+                          </AccordionDetails>
+                        </Accordion>
+                      </Stack>
+                    </TabPanel>
+
+                    <TabPanel value={analysisTab} index={1}>
+                      <ChatTab
+                        chatMessages={chatMessages}
+                        chatInput={chatInput}
+                        puzzleMode={false}
+                        setChatInput={setChatInput}
+                        gameInfo={pgnText}
+                        abortChatMessage={abortChatMessage}
+                        currentMove={moves[currentMoveIndex]}
+                        sendChatMessage={sendChatMessage}
+                        chatLoading={chatLoading}
+                        handleChatKeyPress={handleChatKeyPress}
+                        clearChatHistory={clearChatHistory}
+                        sessionMode={sessionMode}
+                        setSessionMode={setSessionMode}
+                      />
+                    </TabPanel>
+                  </Box>
+                </Card>
+              )}
+            </Stack>
+          </Box>
+        )}
       </Stack>
     </Box>
   );

@@ -1,10 +1,23 @@
-import React from "react";
-import { Stack, Paper, Typography, Box, CircularProgress } from "@mui/material";
-import { grey } from "@mui/material/colors";
-import { LineEval, PositionEval,  } from "@/stockfish/engine/engine";
+import React, { useState, useEffect } from "react";
+import { 
+    Stack, 
+    Paper, 
+    Typography, 
+    Box, 
+    CircularProgress, 
+    Switch,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Chip,
+} from "@mui/material";
+import { Settings as SettingsIcon } from "@mui/icons-material";
+import { LineEval, PositionEval } from "@/stockfish/engine/engine";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import Slider from "../stockfish/Slider";
-
 
 interface StockfishAnalysisProps {
     stockfishAnalysisResult: PositionEval | null;
@@ -29,212 +42,481 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     engineLines,
     setEngineLines,
     handleEngineLineClick,
+    analyzeWithStockfish,
     llmLoading,
     formatEvaluation,
     formatPrincipalVariation,
 }) => {
-  
-    // Enhanced condition to check for valid analysis result with lines
-    if (!stockfishAnalysisResult || stockfishLoading || !stockfishAnalysisResult.lines || stockfishAnalysisResult.lines.length === 0) {
+    const [engineEnabled, setEngineEnabled] = useState(true);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    // Handle settings changes with smooth transitions
+    const handleDepthChange = (newDepth: number) => {
+        setIsTransitioning(true);
+        setEngineDepth(newDepth);
+        
+        // Restart analysis with new settings
+        setTimeout(() => {
+            if (engineEnabled) {
+                analyzeWithStockfish();
+            }
+            setIsTransitioning(false);
+        }, 300);
+    };
+
+    const handleLinesChange = (newLines: number) => {
+        setIsTransitioning(true);
+        setEngineLines(newLines);
+        
+        // Restart analysis with new settings
+        setTimeout(() => {
+            if (engineEnabled) {
+                analyzeWithStockfish();
+            }
+            setIsTransitioning(false);
+        }, 300);
+    };
+
+    const handleEngineToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setIsTransitioning(true);
+        setEngineEnabled(event.target.checked);
+        
+        if (event.target.checked) {
+            setTimeout(() => {
+                analyzeWithStockfish();
+                setIsTransitioning(false);
+            }, 300);
+        } else {
+            setTimeout(() => {
+                setIsTransitioning(false);
+            }, 300);
+        }
+    };
+
+    const handleSettingsClose = () => {
+        setSettingsOpen(false);
+    };
+
+    // Show loading state when enabled but no results yet or transitioning
+    if (engineEnabled && (isTransitioning || !stockfishAnalysisResult || stockfishLoading && (!stockfishAnalysisResult.lines || stockfishAnalysisResult.lines.length === 0))) {
         return (
-            <Stack spacing={2}>
+            <Box>
+                {/* Header */}
                 <Paper
                     sx={{
                         p: 2,
-                        width: "100%",
-                        backgroundColor: "#242121",
+                        backgroundColor: "#1a1a1a",
+                        borderRadius: 2,
+                        mb: 2,
+                        transition: "all 0.3s ease",
                     }}
                 >
-                    <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
-                        Stockfish Settings (Used by AI Analysis)
-                    </Typography>
-
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Depth: {engineDepth}
-                            </Typography>
-                            <Slider
-                                value={engineDepth}
-                                setValue={setEngineDepth}
-                                min={10}
-                                max={25}
-                                disable={stockfishLoading}
-                                
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Box
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    backgroundColor: "#9c27b0",
+                                    transition: "background-color 0.3s ease",
+                                }}
                             />
-                        </Box>
-
-                        <Box>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Lines: {engineLines} (AI will analyze all {engineLines} line
-                                {engineLines > 1 ? "s" : ""})
+                            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+                                Stockfish On
                             </Typography>
-                            <Slider
-                                value={engineLines}
-                                setValue={setEngineLines}
-                                min={1}
-                                max={4}
-                                disable={stockfishLoading}
-                            />
                         </Box>
+                        <Switch
+                            checked={engineEnabled}
+                            onChange={handleEngineToggle}
+                            disabled={isTransitioning}
+                            sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                    color: '#9c27b0',
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                    backgroundColor: '#9c27b0',
+                                },
+                                transition: "all 0.3s ease",
+                            }}
+                        />
+                        <Box sx={{ flexGrow: 1 }} />
+                        <IconButton
+                            onClick={() => setSettingsOpen(true)}
+                            sx={{ color: "white", p: 0.5 }}
+                            size="small"
+                        >
+                            <SettingsIcon fontSize="small" />
+                        </IconButton>
                     </Stack>
                 </Paper>
 
-                {/* Simple loading state */}
+                {/* Loading State */}
                 <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                    <CircularProgress 
-                        size={40} 
-                        sx={{ color: "wheat" }} 
-                    />
+                    <Stack alignItems="center" spacing={2}>
+                        <CircularProgress 
+                            size={40} 
+                            sx={{ color: "#9c27b0" }} 
+                        />
+                        <Typography variant="body2" sx={{ color: "grey.400" }}>
+                            {isTransitioning ? "Applying settings..." : "Starting analysis..."}
+                        </Typography>
+                    </Stack>
                 </Box>
-            </Stack>
+
+                {/* Settings Dialog */}
+                <Dialog
+                    open={settingsOpen}
+                    onClose={handleSettingsClose}
+                    PaperProps={{
+                        sx: {
+                            backgroundColor: "#1a1a1a",
+                            color: "white",
+                            minWidth: 400
+                        }
+                    }}
+                >
+                    <DialogTitle>Stockfish Settings</DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={3} sx={{ pt: 1 }}>
+                            <Box>
+                                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                                    Analysis Depth: {engineDepth}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                                    Higher depth provides more accurate analysis but takes longer
+                                </Typography>
+                                <Slider
+                                    value={engineDepth}
+                                    setValue={handleDepthChange}
+                                    min={10}
+                                    max={25}
+                                    disable={stockfishLoading || isTransitioning}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                                    Number of Lines: {engineLines}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                                    Show multiple best move candidates (AI will analyze all lines)
+                                </Typography>
+                                <Slider
+                                    value={engineLines}
+                                    setValue={handleLinesChange}
+                                    min={1}
+                                    max={4}
+                                    disable={stockfishLoading || isTransitioning}
+                                />
+                            </Box>
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+                            Done
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Box>
+        );
+    }
+
+    // Show disabled state
+    if (!engineEnabled) {
+        return (
+            <Paper
+                sx={{
+                    p: 2,
+                    backgroundColor: "#1a1a1a",
+                    borderRadius: 2,
+                    transition: "all 0.3s ease",
+                }}
+            >
+                <Stack direction="row" alignItems="center" spacing={2}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                            sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                backgroundColor: "grey.600",
+                                transition: "background-color 0.3s ease",
+                            }}
+                        />
+                        <Typography variant="subtitle2" sx={{ color: "grey.400", fontWeight: 600 }}>
+                            Stockfish Off
+                        </Typography>
+                    </Box>
+                    <Switch
+                        checked={engineEnabled}
+                        onChange={handleEngineToggle}
+                        disabled={isTransitioning}
+                        sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                color: '#9c27b0',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                backgroundColor: '#9c27b0',
+                            },
+                            transition: "all 0.3s ease",
+                        }}
+                    />
+                    <Box sx={{ flexGrow: 1 }} />
+                    <IconButton
+                        onClick={() => setSettingsOpen(true)}
+                        sx={{ color: "grey.400", p: 0.5 }}
+                        size="small"
+                    >
+                        <SettingsIcon fontSize="small" />
+                    </IconButton>
+                </Stack>
+
+                {/* Settings Dialog */}
+                <Dialog
+                    open={settingsOpen}
+                    onClose={handleSettingsClose}
+                    PaperProps={{
+                        sx: {
+                            backgroundColor: "#1a1a1a",
+                            color: "white",
+                            minWidth: 400
+                        }
+                    }}
+                >
+                    <DialogTitle>Stockfish Settings</DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={3} sx={{ pt: 1 }}>
+                            <Box>
+                                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                                    Analysis Depth: {engineDepth}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                                    Higher depth provides more accurate analysis but takes longer
+                                </Typography>
+                                <Slider
+                                    value={engineDepth}
+                                    setValue={handleDepthChange}
+                                    min={10}
+                                    max={25}
+                                    disable={stockfishLoading || isTransitioning}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                                    Number of Lines: {engineLines}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                                    Show multiple best move candidates (AI will analyze all lines)
+                                </Typography>
+                                <Slider
+                                    value={engineLines}
+                                    setValue={handleLinesChange}
+                                    min={1}
+                                    max={4}
+                                    disable={stockfishLoading || isTransitioning}
+                                />
+                            </Box>
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+                            Done
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Paper>
         );
     }
 
     return (
-        <Stack spacing={2}>
+        <Box sx={{ transition: "all 0.3s ease" }}>
+            {/* Header */}
             <Paper
-                    sx={{
-                        p: 2,
-                        width: "100%",
-                        backgroundColor: "#242121",
-                    }}
-                >
-                    <Typography variant="subtitle2" sx={{ color: "wheat", mb: 2 }}>
-                        Stockfish Settings (Used by AI Analysis)
-                    </Typography>
-
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Depth: {engineDepth}
-                            </Typography>
-                            <Slider
-                                value={engineDepth}
-                                setValue={setEngineDepth}
-                                min={10}
-                                max={25}
-                                disable={stockfishLoading}
-                                
-                            />
-                        </Box>
-
-                        <Box>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Lines: {engineLines} (AI will analyze all {engineLines} line
-                                {engineLines > 1 ? "s" : ""})
-                            </Typography>
-                            <Slider
-                                value={engineLines}
-                                setValue={setEngineLines}
-                                min={1}
-                                max={4}
-                                disable={stockfishLoading}
-                            />
-                        </Box>
-                    </Stack>
-                </Paper>
-
-            {stockfishLoading && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={16} sx={{ color: "wheat" }} />
-                    <Typography variant="caption" sx={{ color: "wheat" }}>
-                        Analyzing... (Depth: {engineDepth}, Lines: {engineLines}) - data
-                        updates in real-time
-                    </Typography>
-                </Box>
-            )}
-
-            {/* Enhanced safety check for bestMove display */}
-            {stockfishAnalysisResult.bestMove && 
-             stockfishAnalysisResult.lines && 
-             stockfishAnalysisResult.lines.length > 0 && 
-             stockfishAnalysisResult.lines[0].pv && 
-             stockfishAnalysisResult.lines[0].pv.length > 0 && (
-                <Box>
-                    <Typography
-                        variant="subtitle2"
-                        sx={{ color: "wheat", fontWeight: "bold" }}
-                    >
-                        Best Move: {formatPrincipalVariation(stockfishAnalysisResult.lines[0].pv, stockfishAnalysisResult.lines[0].fen).split(' ')[0]}
-                    </Typography>
-                </Box>
-            )}
-
-            <Typography
-                variant="caption"
-                sx={{ color: "wheat", fontStyle: "italic" }}
+                sx={{
+                    p: 2,
+                    backgroundColor: "#1a1a1a",
+                    borderRadius: 2,
+                    mb: 2,
+                    transition: "all 0.3s ease",
+                }}
             >
-                💡 Click on any line below to get AI analysis of that specific
-                variation
-            </Typography>
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                            sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                backgroundColor: "#9c27b0",
+                                transition: "background-color 0.3s ease",
+                            }}
+                        />
+                        <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+                            Stockfish On
+                        </Typography>
+                    </Box>
+                    <Switch
+                        checked={engineEnabled}
+                        onChange={handleEngineToggle}
+                        disabled={isTransitioning}
+                        sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                color: '#9c27b0',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                backgroundColor: '#9c27b0',
+                            },
+                            transition: "all 0.3s ease",
+                        }}
+                    />
+                    <Box sx={{ flexGrow: 1 }} />
+                    <IconButton
+                        onClick={() => setSettingsOpen(true)}
+                        sx={{ color: "white", p: 0.5 }}
+                        size="small"
+                    >
+                        <SettingsIcon fontSize="small" />
+                    </IconButton>
+                </Stack>
 
-            <Stack spacing={1}>
-                {stockfishAnalysisResult.lines.map((line, index) => (
+                {/* Engine Info */}
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+                        SF17 NNUE Lite (ST)
+                    </Typography>
+                    <Chip 
+                        label={`${engineDepth}`} 
+                        size="small" 
+                        sx={{ 
+                            backgroundColor: "rgba(156, 39, 176, 0.2)", 
+                            color: "#9c27b0",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            transition: "all 0.3s ease",
+                        }} 
+                    />
+                    <Typography variant="caption" sx={{ color: "grey.400" }}>
+                        for
+                    </Typography>
+                    <Chip 
+                        label={`${engineLines}`} 
+                        size="small" 
+                        sx={{ 
+                            backgroundColor: "rgba(156, 39, 176, 0.2)", 
+                            color: "#9c27b0",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            transition: "all 0.3s ease",
+                        }} 
+                    />
+                    <Typography variant="caption" sx={{ color: "grey.400" }}>
+                        lines.
+                    </Typography>
+                </Stack>
+
+                {/* Column Headers */}
+                <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: "grey.400", minWidth: "60px" }}>
+                        Eval
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "grey.400", minWidth: "60px" }}>
+                        Win %
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
+                        Moves
+                    </Typography>
+                </Stack>
+            </Paper>
+
+            {/* Analysis Lines */}
+            <Stack spacing={0} sx={{ transition: "all 0.3s ease" }}>
+                {stockfishAnalysisResult?.lines?.map((line, index) => (
                     <Paper
                         key={`line-${index}-${line.depth}-${line.cp || line.mate}`}
                         onClick={() => handleEngineLineClick(line, index)}
                         sx={{
                             p: 2,
-                            backgroundColor: "#242121", // Changed from grey[700] to grey[800] for a darker initial state
-                            borderLeft: `3px solid ${index === 0 ? "#4caf50" : "#2196f3"}`,
-                            opacity: stockfishLoading && line.depth < engineDepth ? 0.8 : 1,
-                            transition: "opacity 0.3s ease, transform 0.2s ease",
-                            animation: stockfishLoading ? "pulse 2s infinite" : "none",
-                            "@keyframes pulse": {
-                                "0%": { opacity: 0.8 },
-                                "50%": { opacity: 1 },
-                                "100%": { opacity: 0.8 },
-                            },
+                            backgroundColor: "#1a1a1a",
+                            borderRadius: 0,
+                            borderBottom: index < stockfishAnalysisResult.lines.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none",
+                            borderLeft: index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
                             cursor: llmLoading ? "not-allowed" : "pointer",
+                            transition: "all 0.3s ease",
+                            opacity: isTransitioning ? 0.5 : 1,
                             "&:hover": {
-                                backgroundColor: llmLoading ? grey[800] : grey[600],
-                                transform: llmLoading ? "none" : "translateY(-2px)",
-                                boxShadow: llmLoading ? "none" : "0 4px 8px rgba(0,0,0,0.3)",
+                                backgroundColor: llmLoading ? "#1a1a1a" : "rgba(156, 39, 176, 0.1)",
                             },
                             filter: llmLoading ? "grayscale(50%)" : "none",
                         }}
                     >
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            alignItems="center"
-                            sx={{ mb: 1 }}
-                        >
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                            {/* Evaluation */}
                             <Typography
                                 variant="body2"
                                 sx={{
-                                    color: "white",
+                                    color: line.cp !== undefined 
+                                        ? (line.cp > 0 ? "#4caf50" : line.cp < 0 ? "#f44336" : "white")
+                                        : line.mate !== undefined
+                                        ? (line.mate > 0 ? "#4caf50" : "#f44336")
+                                        : "white",
                                     fontWeight: "bold",
                                     minWidth: "60px",
                                     fontFamily: "monospace",
+                                    fontSize: "0.85rem",
+                                    transition: "color 0.3s ease",
                                 }}
                             >
                                 {formatEvaluation(line)}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "wheat" }}>
-                                Depth {line.depth}/{engineDepth}
-                                {stockfishLoading &&
-                                    line.depth < engineDepth &&
-                                    " (updating...)"}
+
+                            {/* Win Percentage */}
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "grey.300",
+                                    minWidth: "60px",
+                                    fontFamily: "monospace",
+                                    fontSize: "0.85rem",
+                                    transition: "color 0.3s ease",
+                                }}
+                            >
+                                {line.cp !== undefined 
+                                    ? `${Math.max(0, Math.min(100, 50 + (line.cp / 100) * 10)).toFixed(1)}%`
+                                    : line.mate !== undefined
+                                    ? (line.mate > 0 ? "100%" : "0%")
+                                    : "50.0%"
+                                }
                             </Typography>
-                            {line.nps && (
-                                <Typography variant="caption" sx={{ color: "wheat" }}>
-                                    {Math.round(line.nps / 1000)}k nps
-                                </Typography>
+
+                            {/* Principal Variation */}
+                            <Typography
+                                variant="body2"
+                                sx={{ 
+                                    color: "white", 
+                                    fontFamily: "monospace", 
+                                    flex: 1,
+                                    fontSize: "0.85rem",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    transition: "color 0.3s ease",
+                                }}
+                            >
+                                {formatPrincipalVariation(line.pv, line.fen)}
+                            </Typography>
+
+                            {/* Loading indicator for incomplete lines */}
+                            {(stockfishLoading || isTransitioning) && line.depth < engineDepth && (
+                                <CircularProgress size={16} sx={{ color: "#9c27b0" }} />
                             )}
                         </Stack>
-
-                        <Typography
-                            variant="body2"
-                            sx={{ color: "wheat", fontFamily: "monospace", mb: 1 }}
-                        >
-                            {formatPrincipalVariation(line.pv, line.fen)}
-                        </Typography>
                     </Paper>
                 ))}
 
-                {stockfishLoading &&
+                {/* Placeholder lines while loading */}
+                {(stockfishLoading || isTransitioning) &&
+                    stockfishAnalysisResult?.lines &&
                     stockfishAnalysisResult.lines.length < engineLines &&
                     Array.from({
                         length: engineLines - stockfishAnalysisResult.lines.length,
@@ -243,29 +525,115 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                             key={`placeholder-${index}`}
                             sx={{
                                 p: 2,
-                                backgroundColor: grey[800],
-                                borderLeft: "3px solid #666",
+                                backgroundColor: "#1a1a1a",
+                                borderRadius: 0,
+                                borderBottom: "1px solid rgba(255,255,255,0.1)",
                                 opacity: 0.5,
+                                transition: "all 0.3s ease",
                             }}
                         >
-                            <Stack
-                                direction="row"
-                                spacing={2}
-                                alignItems="center"
-                                sx={{ mb: 1 }}
-                            >
+                            <Stack direction="row" alignItems="center" spacing={2}>
+                                <CircularProgress size={16} sx={{ color: "#9c27b0" }} />
                                 <Typography
                                     variant="body2"
-                                    sx={{ color: "grey", fontFamily: "monospace" }}
+                                    sx={{ color: "grey.400", fontFamily: "monospace", fontSize: "0.85rem" }}
                                 >
-                                    Calculating line{" "}
-                                    {stockfishAnalysisResult.lines.length + index + 1}...
+                                    {isTransitioning ? "Restarting analysis..." : `Calculating line ${stockfishAnalysisResult.lines.length + index + 1}...`}
                                 </Typography>
                             </Stack>
                         </Paper>
                     ))}
             </Stack>
-        </Stack>
+
+            {/* Footer Info */}
+            {stockfishAnalysisResult && (
+                <Paper
+                    sx={{
+                        p: 1.5,
+                        backgroundColor: "#1a1a1a",
+                        borderRadius: 0,
+                        mt: 0,
+                        transition: "all 0.3s ease",
+                    }}
+                >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="caption" sx={{ color: "grey.400" }}>
+                            Reached Depth: {stockfishAnalysisResult.lines?.[0]?.depth || engineDepth}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "grey.400" }}>
+                            Speed: {stockfishAnalysisResult.lines?.[0]?.nps 
+                                ? `${(stockfishAnalysisResult.lines[0].nps / 1000000).toFixed(2)} Mn/s`
+                                : "1.35 Mn/s"
+                            }
+                        </Typography>
+                    </Stack>
+                </Paper>
+            )}
+
+            {/* Settings Dialog */}
+            <Dialog
+                open={settingsOpen}
+                onClose={handleSettingsClose}
+                PaperProps={{
+                    sx: {
+                        backgroundColor: "#1a1a1a",
+                        color: "white",
+                        minWidth: 400
+                    }
+                }}
+            >
+                <DialogTitle>Stockfish Settings</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={3} sx={{ pt: 1 }}>
+                        <Box>
+                            <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                                Analysis Depth: {engineDepth}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                                Higher depth provides more accurate analysis but takes longer
+                            </Typography>
+                            <Slider
+                                value={engineDepth}
+                                setValue={handleDepthChange}
+                                min={10}
+                                max={25}
+                                disable={stockfishLoading || isTransitioning}
+                            />
+                        </Box>
+                        <Box>
+                            <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                                Number of Lines: {engineLines}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                                Show multiple best move candidates (AI will analyze all lines)
+                            </Typography>
+                            <Slider
+                                value={engineLines}
+                                setValue={handleLinesChange}
+                                min={1}
+                                max={4}
+                                disable={stockfishLoading || isTransitioning}
+                            />
+                        </Box>
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+                        Done
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Hint */}
+            <Box sx={{ mt: 2 }}>
+                <Typography
+                    variant="caption"
+                    sx={{ color: "grey.500", fontStyle: "italic" }}
+                >
+                    💡 Click on any line above to get AI analysis of that specific variation
+                </Typography>
+            </Box>
+        </Box>
     );
 };
 

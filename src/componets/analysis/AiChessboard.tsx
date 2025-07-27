@@ -4,17 +4,26 @@ import {
   Button,
   TextField,
   Paper,
-  FormControlLabel,
   Switch,
   Slider,
   Box,
   Divider,
+  Typography,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
-import { FaArrowRotateLeft } from "react-icons/fa6";
-import { FaRegArrowAltCircleUp } from "react-icons/fa";
-import { BsArrowsMove } from "react-icons/bs";
-import { MdNavigateBefore, MdNavigateNext } from "react-icons/md";
+import { 
+  Settings as SettingsIcon,
+  NavigateBefore,
+  NavigateNext,
+  RotateLeft,
+  Upload,
+  Gamepad
+} from "@mui/icons-material";
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -45,6 +54,7 @@ interface AiChessboardPanelProps {
   setOpeningData: (result: MasterGames | null) => void;
   puzzleMode?: boolean;
   playMode?: boolean;
+  gameReviewMode?: boolean;
   onDropPuzzle?: (source: string, target: string) => boolean;
   handleSquarePuzzleClick?: (square: string) => void;
   reviewMove?: MoveAnalysis;
@@ -84,6 +94,7 @@ export default function AiChessboardPanel({
   playMode,
   gameStatus = "waiting",
   playerSide = "white",
+  gameReviewMode,
   engineThinking = false,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
@@ -96,6 +107,9 @@ export default function AiChessboardPanel({
     puzzleMode || playMode ? false : true
   );
   const [boardSize, setBoardSize] = useState(550);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showCoordinates, setShowCoordinates] = useState(true);
+  const [animationDuration, setAnimationDuration] = useState(300);
 
   // Memoize the initial game setup to avoid recalculation
   const gameHistory = useMemo(() => {
@@ -125,13 +139,12 @@ export default function AiChessboardPanel({
     setGame(startGame);
     setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
-    setCurrentMoveIndex(gameHistory.length - 1); // Start at the end of the loaded game
+    setCurrentMoveIndex(gameHistory.length - 1);
   }, [gameHistory, setGame, setFen]);
 
   // Fixed function to safely mutate game state with proper branching
   const safeGameMutate = useCallback(
     (modify: (game: Chess) => void) => {
-      // Use the current FEN that's being displayed, not from moveHistory
       const currentFen = fen;
       if (!currentFen) return;
 
@@ -140,8 +153,6 @@ export default function AiChessboardPanel({
 
       const newFen = newGame.fen();
       
-      // Create a new branch from the current position
-      // Keep all moves up to the current position, then add the new move
       const newHistory = [
         ...moveHistory.slice(0, currentMoveIndex + 1),
         newFen,
@@ -184,7 +195,7 @@ export default function AiChessboardPanel({
           const move = game.move({
             from: source,
             to: target,
-            promotion: "q", // Auto-promote to queen for simplicity
+            promotion: "q",
           });
 
           if (move) {
@@ -201,7 +212,6 @@ export default function AiChessboardPanel({
         }
         return false;
       } else {
-        // Original logic for non-play mode with fixed branching
         let moveMade = false;
         safeGameMutate((gameInstance) => {
           const move = gameInstance.move({ from: source, to: target, promotion: "q" });
@@ -217,25 +227,17 @@ export default function AiChessboardPanel({
     [playMode, canPlayerMove, game, setGame, setFen, setMoveSquares, safeGameMutate, clearAnalysis]
   );
 
-  // Optimized square click handler for both play mode and regular mode
+  // Optimized square click handler
   const handleSquareClick = useCallback(
     (square: string) => {
-      // // In play mode, check if player can move
-      // if (playMode && !canPlayerMove()) {
-      //   return;
-      // }
-
-      // If clicking on the same square, deselect
       if (selectedSquare === square) {
         setSelectedSquare(null);
         setLegalMoves([]);
         return;
       }
 
-      // If a square is already selected and clicking on a legal move target
       if (selectedSquare && legalMoves.includes(square)) {
         if (playMode) {
-          // In play mode, make the move directly
           try {
             const move = game.move({
               from: selectedSquare,
@@ -252,7 +254,6 @@ export default function AiChessboardPanel({
             console.log("Invalid move:", error);
           }
         } else {
-          // Regular mode logic with fixed branching
           safeGameMutate((newGame) => {
             try {
               const move = newGame.move({
@@ -275,7 +276,6 @@ export default function AiChessboardPanel({
         return;
       }
 
-      // Check if the clicked square has a piece
       const piece = game.get(square as Square);
       if (!piece || piece.color !== game.turn()) {
         setSelectedSquare(null);
@@ -283,7 +283,6 @@ export default function AiChessboardPanel({
         return;
       }
 
-      // In play mode, only allow selecting player's pieces
       if (playMode) {
         const playerColor = side === "white" ? "w" : "b";
         if (piece.color !== playerColor) {
@@ -293,7 +292,6 @@ export default function AiChessboardPanel({
         }
       }
 
-      // Get legal moves for this piece
       const moves = game.moves({ square: square as Square, verbose: true });
       const targetSquares = moves.map((move) => move.to);
 
@@ -314,7 +312,7 @@ export default function AiChessboardPanel({
     ]
   );
 
-  // Memoized arrows calculation - FIXED VERSION
+  // Memoized arrows calculation
   const customArrows = useMemo((): Arrow[] => {
     if (!showArrows) {
       return [];
@@ -369,25 +367,22 @@ export default function AiChessboardPanel({
   const customSquareStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
 
-    // Copy existing moveSquares styles
     Object.entries(moveSquares).forEach(([square, color]) => {
       styles[square] = { backgroundColor: color };
     });
 
-    // Highlight selected square
     if (selectedSquare) {
       styles[selectedSquare] = {
-        backgroundColor: "rgba(255, 255, 0, 0.4)",
+        backgroundColor: "rgba(156, 39, 176, 0.6)",
         ...styles[selectedSquare],
       };
     }
 
-    // Highlight legal move squares
     legalMoves.forEach((square) => {
       const piece = game.get(square as Square);
       const background = piece
-        ? "radial-gradient(circle, rgba(255,0,0,0.8) 85%, transparent 85%)"
-        : "radial-gradient(circle, rgba(0,0,0,0.3) 25%, transparent 25%)";
+        ? "radial-gradient(circle, rgba(156, 39, 176, 0.8) 85%, transparent 85%)"
+        : "radial-gradient(circle, rgba(156, 39, 176, 0.4) 25%, transparent 25%)";
 
       styles[square] = {
         background,
@@ -433,10 +428,10 @@ export default function AiChessboardPanel({
       const newGame = new Chess(customFen);
       setGame(newGame);
       setFen(newGame.fen());
-      // Reset move history to just this position
       setMoveHistory([newGame.fen()]);
       setCurrentMoveIndex(0);
       clearAnalysis();
+      setCustomFen("");
     } catch (error) {
       console.log(error);
       alert("Invalid FEN string.");
@@ -448,7 +443,11 @@ export default function AiChessboardPanel({
     setIsFlipped(!isFlipped);
   }, [isFlipped]);
 
-  // Board size change callback
+  // Settings handlers
+  const handleSettingsClose = () => {
+    setSettingsOpen(false);
+  };
+
   const handleBoardSizeChange = useCallback(
     (_: Event, newValue: number | number[]) => {
       setBoardSize(newValue as number);
@@ -456,174 +455,365 @@ export default function AiChessboardPanel({
     []
   );
 
-  // Arrow toggle callback
-  const toggleArrows = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setShowArrows(e.target.checked);
-  }, []);
+  const handleAnimationChange = useCallback(
+    (_: Event, newValue: number | number[]) => {
+      setAnimationDuration(newValue as number);
+    },
+    []
+  );
 
   // Navigation button disabled states
   const isPreviousDisabled = currentMoveIndex <= 0;
   const isNextDisabled = currentMoveIndex >= moveHistory.length - 1;
 
-  // Determine board orientation for play mode
+  // Determine board orientation
   const getBoardOrientation = useCallback(() => {
     if (puzzleMode) return side;
     if (playMode) return side;
     return isFlipped ? "black" : "white";
   }, [puzzleMode, playMode, side, playerSide, isFlipped]);
 
-  return (
-    <Stack spacing={2} alignItems="center">
-      <Chessboard
-        position={fen}
-        onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
-        onSquareClick={
-          puzzleMode ? handleSquarePuzzleClick : handleSquareClick
-        }
-        allowDragOutsideBoard={false}
-        animationDuration={600}
-        showBoardNotation
-        customSquareStyles={
-          puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
-        }
-        customArrows={customArrows}
-        boardWidth={boardSize}
-        boardOrientation={getBoardOrientation()}
-      />
+  // Get mode display info
+  const getModeInfo = () => {
+    if (puzzleMode) return { label: "Puzzle Mode", color: "#ff9800" };
+    if (playMode) return { label: "Play Mode", color: "#4caf50" };
+    return { label: "Analysis Mode", color: "#9c27b0" };
+  };
 
-      <Box sx={{ width: "100%", px: 2 }}>
-        <Slider
-          value={boardSize}
-          onChange={handleBoardSizeChange}
-          min={300}
-          max={650}
-          step={25}
-          valueLabelDisplay="auto"
-          sx={{
-            color: "wheat",
-            "& .MuiSlider-thumb": {
-              backgroundColor: "wheat",
-            },
-            "& .MuiSlider-track": {
-              backgroundColor: "wheat",
-            },
-            "& .MuiSlider-rail": {
-              backgroundColor: grey[600],
-            },
-          }}
+  const modeInfo = getModeInfo();
+
+  return (
+    <Box>
+      {/* Header */}
+      <Paper
+        sx={{
+          p: 2,
+          backgroundColor: "#1a1a1a",
+          borderRadius: 2,
+          mb: 2
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Gamepad sx={{ color: modeInfo.color }} />
+            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+              Chessboard
+            </Typography>
+          </Box>
+          <Chip 
+            label={modeInfo.label}
+            size="small" 
+            sx={{ 
+              backgroundColor: `${modeInfo.color}20`, 
+              color: modeInfo.color,
+              fontSize: "0.7rem",
+              fontWeight: 600
+            }} 
+          />
+          <Box sx={{ flexGrow: 1 }} />
+          <IconButton
+            onClick={() => setSettingsOpen(true)}
+            sx={{ color: "white", p: 0.5 }}
+            size="small"
+          >
+            <SettingsIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+
+        {/* Board Info */}
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+            Board Size: {boardSize}px
+          </Typography>
+          {(puzzleMode || playMode ) && (
+            <Typography variant="caption" sx={{ color: "grey.400" }}>
+              Orientation: {getBoardOrientation()}
+            </Typography>
+          )}
+        </Stack>
+      </Paper>
+
+      {/* Chessboard */}
+      <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+        <Chessboard
+          position={fen}
+          onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
+          onSquareClick={
+            puzzleMode ? handleSquarePuzzleClick : handleSquareClick
+          }
+          allowDragOutsideBoard={false}
+          animationDuration={animationDuration}
+          showBoardNotation={showCoordinates}
+          customSquareStyles={
+            puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
+          }
+          customArrows={customArrows}
+          boardWidth={boardSize}
+          boardOrientation={getBoardOrientation()}
         />
       </Box>
 
-      {/* Board Size Control */}
-      {!playMode && (
-        <>
-          {/* Arrow Toggle Control */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showArrows}
-                onChange={toggleArrows}
-                color="primary"
-              />
-            }
-            label={
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <BsArrowsMove />
-                <span style={{ color: "wheat" }}>Show Analysis Arrows</span>
-              </Stack>
-            }
-            sx={{ alignSelf: "flex-start" }}
-          />
-        </>
-      )}
-
-      {/* Navigation buttons - disabled in play mode during active game */}
-       {!playMode && (
-          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+      {/* Navigation Controls */}
+      {!playMode && !gameReviewMode && !puzzleMode && (
+        <Stack spacing={2}>
+          {/* Navigation buttons */}
+          <Stack direction="row" spacing={2}>
             <Button
               onClick={goToPreviousMove}
               variant="contained"
-              color="primary"
               disabled={isPreviousDisabled}
-              startIcon={<MdNavigateBefore />}
+              startIcon={<NavigateBefore />}
               fullWidth
+              sx={{
+                backgroundColor: "#9c27b0",
+                "&:hover": {
+                  backgroundColor: "#7b1fa2",
+                },
+                "&:disabled": {
+                  backgroundColor: "rgba(156, 39, 176, 0.3)",
+                }
+              }}
             >
-              Back
+              Previous
             </Button>
             <Button
               onClick={goToNextMove}
               variant="contained"
-              color="primary"
               disabled={isNextDisabled}
-              endIcon={<MdNavigateNext />}
+              endIcon={<NavigateNext />}
               fullWidth
+              sx={{
+                backgroundColor: "#9c27b0",
+                "&:hover": {
+                  backgroundColor: "#7b1fa2",
+                },
+                "&:disabled": {
+                  backgroundColor: "rgba(156, 39, 176, 0.3)",
+                }
+              }}
             >
-              Forward
+              Next
             </Button>
           </Stack>
-        )}
-
-      {!puzzleMode && !playMode && (
-        <>
-          <TextField
-            label="Paste FEN"
-            variant="outlined"
-            value={customFen}
-            onChange={(e) => setCustomFen(e.target.value)}
-            size="small"
-            sx={{
-              width: "100%",
-              backgroundColor: grey[900],
-              borderRadius: 1,
-            }}
-            placeholder="e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-            slotProps={{
-              input: {
-                sx: {
-                  color: "wheat",
-                },
-              },
-              inputLabel: {
-                sx: {
-                  color: "wheat",
-                },
-              },
-            }}
-          />
-          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-            <Button
-              variant="outlined"
-              onClick={loadCustomFen}
-              startIcon={<FaRegArrowAltCircleUp />}
-              fullWidth
-            >
-              Load FEN
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={flipBoard}
-              startIcon={<FaArrowRotateLeft />}
-              sx={{ width: "100%" }}
-            >
-              Flip Board
-            </Button>
-          </Stack>
-          <Paper
-            elevation={1}
-            sx={{
-              p: 1,
-              width: "100%",
-              color: "wheat",
-              backgroundColor: grey[800],
-              fontFamily: "monospace",
-            }}
-          >
-            {fen}
-          </Paper>
-        </>
+        </Stack>
       )}
 
-      {(puzzleMode || playMode) && <Divider />}
-    </Stack>
+      {!puzzleMode && !playMode && (
+        <Stack spacing={2} sx={{ mt: 2 }}>
+          {/* Current FEN Display */}
+          <Paper
+            sx={{
+              p: 2,
+              backgroundColor: "#1a1a1a",
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+              Current Position (FEN)
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "white",
+                fontFamily: "monospace",
+                backgroundColor: "rgba(255,255,255,0.05)",
+                p: 1,
+                borderRadius: 1,
+                wordBreak: "break-all",
+                fontSize: "0.8rem",
+              }}
+            >
+              {fen}
+            </Typography>
+          </Paper>
+        </Stack>
+      )}
+
+      {/* Settings Dialog */}
+      <Dialog
+        open={settingsOpen}
+        onClose={handleSettingsClose}
+        PaperProps={{
+          sx: {
+            backgroundColor: "#1a1a1a",
+            color: "white",
+            minWidth: 400
+          }
+        }}
+      >
+        <DialogTitle>Chessboard Settings</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ pt: 1 }}>
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                Board Size: {boardSize}px
+              </Typography>
+              <Slider
+                value={boardSize}
+                onChange={handleBoardSizeChange}
+                min={300}
+                max={650}
+                step={25}
+                sx={{
+                  color: "#9c27b0",
+                }}
+              />
+            </Box>
+            
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                Animation Speed: {animationDuration}ms
+              </Typography>
+              <Slider
+                value={animationDuration}
+                onChange={handleAnimationChange}
+                min={0}
+                max={1000}
+                step={50}
+                sx={{
+                  color: "#9c27b0",
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                Display Options
+              </Typography>
+              <Stack spacing={2}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    Show Coordinates
+                  </Typography>
+                  <Switch
+                    checked={showCoordinates}
+                    onChange={(e) => setShowCoordinates(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#9c27b0',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#9c27b0',
+                      },
+                    }}
+                  />
+                </Stack>
+                
+                {!puzzleMode && !playMode && (
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                      Show Analysis Arrows
+                    </Typography>
+                    <Switch
+                      checked={showArrows}
+                      onChange={(e) => setShowArrows(e.target.checked)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: '#9c27b0',
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: '#9c27b0',
+                        },
+                      }}
+                    />
+                  </Stack>
+                )}
+              </Stack>
+            </Box>
+
+            {!puzzleMode && !playMode && (
+              <>
+                <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+                
+                <Box>
+                  <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                    Board Controls
+                  </Typography>
+                  
+                  <Stack spacing={2}>
+                    {/* Flip Board Button */}
+                    <Button
+                      variant="outlined"
+                      onClick={flipBoard}
+                      startIcon={<RotateLeft />}
+                      fullWidth
+                      sx={{
+                        color: "#9c27b0",
+                        borderColor: "#9c27b0",
+                        "&:hover": {
+                          borderColor: "#7b1fa2",
+                          backgroundColor: "rgba(156, 39, 176, 0.1)",
+                        },
+                      }}
+                    >
+                      Flip Board
+                    </Button>
+
+                    {/* FEN Input */}
+                    <TextField
+                      label="Load custom position (FEN)"
+                      variant="outlined"
+                      value={customFen}
+                      onChange={(e) => setCustomFen(e.target.value)}
+                      size="small"
+                      fullWidth
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "rgba(255,255,255,0.05)",
+                          "& fieldset": {
+                            borderColor: "rgba(255,255,255,0.2)",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "rgba(255,255,255,0.3)",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#9c27b0",
+                          },
+                        },
+                      }}
+                      slotProps={{
+                        input: {
+                          sx: { color: "white" },
+                        },
+                        inputLabel: {
+                          sx: { color: "grey.400" },
+                        },
+                      }}
+                      placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                    />
+                    
+                    <Button
+                      variant="contained"
+                      onClick={loadCustomFen}
+                      startIcon={<Upload />}
+                      disabled={!customFen.trim()}
+                      fullWidth
+                      sx={{
+                        backgroundColor: "#9c27b0",
+                        "&:hover": {
+                          backgroundColor: "#7b1fa2",
+                        },
+                        "&:disabled": {
+                          backgroundColor: "rgba(156, 39, 176, 0.3)",
+                        }
+                      }}
+                    >
+                      Load FEN
+                    </Button>
+                  </Stack>
+                </Box>
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+            Done
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {(puzzleMode || playMode) && <Divider sx={{ mt: 2 }} />}
+    </Box>
   );
 }

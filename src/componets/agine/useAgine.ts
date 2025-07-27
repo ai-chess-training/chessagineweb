@@ -343,7 +343,7 @@ export default function useAgine(fen: string) {
       try {
         const chessInstance = new Chess(currentFen);
         const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-        let query = `USER PROMPT: ${currentInput}\n\n Current FEN: ${currentFen}\nSide to Move: ${sideToMove}`;
+        let query = `USER PROMPT: ${currentInput}\n\n Current FEN: ${currentFen}\n Side to Move: ${sideToMove}`;
 
         if(puzzleMode === true){
           query += `\n\n Puzzle Mode: Active

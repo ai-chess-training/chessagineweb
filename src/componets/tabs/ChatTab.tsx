@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { grey } from "@mui/material/colors";
-import { Send, MenuBook, Close, ContentCopy, History, Stop } from "@mui/icons-material";
+import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
 import {
   Stack,
@@ -25,6 +25,11 @@ import {
   Alert,
   Menu,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
 } from "@mui/material";
 
 interface ChatMessage {
@@ -44,7 +49,7 @@ interface ChatTabProps {
   currentMove?: string;
   chatInput: string;
   puzzleMode?: boolean;
-  playMode?: boolean; // New prop for play mode
+  playMode?: boolean;
   puzzleQuery?: string;
   setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -53,9 +58,9 @@ interface ChatTabProps {
     currentMove?: string,
     puzzleMode?: boolean,
     puzzleQuery?: string,
-    playMode?: boolean // Add playMode parameter
+    playMode?: boolean
   ) => void;
-  abortChatMessage?: () => void; // New prop for aborting requests
+  abortChatMessage?: () => void;
 }
 
 const sessionPrompts = [
@@ -134,25 +139,29 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   puzzleQuery,
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [copySnackbar, setCopySnackbar] = useState(false);
   const [copyMenuAnchor, setCopyMenuAnchor] = useState<null | HTMLElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [fontSize, setFontSize] = useState(14);
+  const [showTimestamps, setShowTimestamps] = useState(true);
+  const [compactView, setCompactView] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && autoScroll) {
       messagesEndRef.current.scrollIntoView({ 
         behavior: "smooth",
         block: "end"
       });
     }
-  }, [chatMessages, chatLoading]);
+  }, [chatMessages, chatLoading, autoScroll]);
 
-  const  handlePromptSelect = (prompt: string) => {
+  const handlePromptSelect = (prompt: string) => {
     setChatInput(prompt);
     setDrawerOpen(false);
-    // Auto-send the message
   };
 
   const copyToClipboard = async (text: string) => {
@@ -191,6 +200,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     }
   };
 
+  const handleSettingsClose = () => {
+    setSettingsOpen(false);
+  };
+
   // Determine which prompts to show based on mode
   let currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
   let modeTitle = sessionMode ? "Position Analysis" : "Chess Discussion";
@@ -200,7 +213,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
   if (puzzleMode) {
     currentPrompts = puzzlePrompts;
-    modeTitle = "Puzzle Prompts";
+    modeTitle = "Puzzle Assistant";
     modeDescription = "🧩 Puzzle Mode: Get hints and solutions for chess puzzles";
   } else if (playMode) {
     currentPrompts = playPrompts;
@@ -216,21 +229,23 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           p: 2,
-          borderBottom: `1px solid ${grey[600]}`,
+          borderBottom: `1px solid rgba(255,255,255,0.1)`,
+          backgroundColor: "#1a1a1a",
         }}
       >
-        <Typography variant="h6" sx={{ color: "wheat", fontWeight: "bold" }}>
+        <Typography variant="subtitle1" sx={{ color: "white", fontWeight: 600 }}>
           {modeTitle}
         </Typography>
         <IconButton
           onClick={() => setDrawerOpen(false)}
-          sx={{ color: "wheat" }}
+          sx={{ color: "white" }}
+          size="small"
         >
           <Close />
         </IconButton>
       </Box>
       
-      <List sx={{ p: 0 }}>
+      <List sx={{ p: 0, backgroundColor: "#1a1a1a", height: "calc(100% - 80px)" }}>
         {currentPrompts.map((prompt, index) => (
           <ListItem key={index} disablePadding>
             <ListItemButton
@@ -238,9 +253,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               sx={{
                 py: 1.5,
                 px: 2,
-                borderBottom: index < currentPrompts.length - 1 ? `1px solid ${grey[700]}` : "none",
+                borderBottom: index < currentPrompts.length - 1 ? `1px solid rgba(255,255,255,0.1)` : "none",
                 "&:hover": {
-                  backgroundColor: grey[700],
+                  backgroundColor: "#2a2a2a",
                 },
               }}
             >
@@ -248,7 +263,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 primary={prompt}
                 sx={{
                   "& .MuiListItemText-primary": {
-                    color: "wheat",
+                    color: "white",
                     fontSize: "0.9rem",
                     lineHeight: 1.4,
                   },
@@ -259,96 +274,159 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         ))}
       </List>
       
-      <Box sx={{ p: 2, mt: "auto", borderTop: `1px solid ${grey[600]}` }}>
-        <Typography variant="caption" sx={{ color: grey[400], fontStyle: "italic" }}>
-          💡 Click any prompt to send it instantly
+      <Box sx={{ p: 2, borderTop: `1px solid rgba(255,255,255,0.1)`, backgroundColor: "#1a1a1a" }}>
+        <Typography variant="caption" sx={{ color: "grey.400", fontStyle: "italic" }}>
+          💡 Click any prompt to use it
         </Typography>
       </Box>
     </Box>
   );
 
   return (
-    <Stack
-      spacing={2}
+    <Box
       sx={{
-        height: "60vh",
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
+        backgroundColor: "#1a1a1a",
+        overflow: "hidden",
       }}
     >
-      <Box
+      {/* Header */}
+      <Paper
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          p: 2,
+          backgroundColor: "#1a1a1a",
+          borderRadius: 0,
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
       >
-        <Typography variant="h6">AgineAI Chat</Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Tooltip title="Prompt Drawer" arrow>
-            <IconButton
-              onClick={() => setDrawerOpen(true)}
-              sx={{ 
-                color: "wheat",
-                backgroundColor: grey[700],
-                "&:hover": {
-                  backgroundColor: grey[600],
-                },
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Avatar
+              src="/static/images/agineowl.png"
+              sx={{
+                width: 24,
+                height: 24,
               }}
-              size="small"
-            >
-              <MenuBook />
-            </IconButton>
-          </Tooltip>
-
-          {chatMessages.length > 0 && (
-            <Tooltip title="Copy Chat History" arrow>
+            />
+            <Typography variant="subtitle1" sx={{ color: "white", fontWeight: 600 }}>
+              AgineAI Chat
+            </Typography>
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
+          
+          {/* Action Buttons */}
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Quick Prompts" arrow>
               <IconButton
-                onClick={handleCopyMenuClick}
-                sx={{ 
-                  color: "wheat",
-                  backgroundColor: grey[700],
-                  "&:hover": {
-                    backgroundColor: grey[600],
-                  },
-                }}
+                onClick={() => setDrawerOpen(true)}
+                sx={{ color: "white", p: 0.5 }}
                 size="small"
               >
-                <History />
+                <MenuBook fontSize="small" />
               </IconButton>
             </Tooltip>
-          )}
-          
-          {!puzzleMode && !playMode ? (
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="caption" sx={{ color: "wheat" }}>
-                Session Mode
-              </Typography>
-              <Switch
-                checked={sessionMode}
-                onChange={(e) => setSessionMode(e.target.checked)}
-                size="small"
-              />
-            </Stack>
-          ) : (
-            <Button
-              variant="outlined"
-              size="small"
-              sx={{ color: "wheat" }}
-              onClick={clearChatHistory}
-              disabled={chatMessages.length === 0}
-            >
-              Clear
-            </Button>
-          )}
-        </Box>
-      </Box>
 
-      {/* Mode Description */}
-      <Paper sx={{ p: 2, backgroundColor: grey[700] }}>
-        <Typography variant="caption" sx={{ color: "wheat" }}>
-          {modeDescription}
-        </Typography>
+            {chatMessages.length > 0 && (
+              <Tooltip title="Chat History" arrow>
+                <IconButton
+                  onClick={handleCopyMenuClick}
+                  sx={{ color: "white", p: 0.5 }}
+                  size="small"
+                >
+                  <History fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            <Tooltip title="Settings" arrow>
+              <IconButton
+                onClick={() => setSettingsOpen(true)}
+                sx={{ color: "white", p: 0.5 }}
+                size="small"
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Stack>
+
+        {/* Mode Controls */}
+        {!puzzleMode && !playMode && (
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+              Session Mode
+            </Typography>
+            <Switch
+              checked={sessionMode}
+              onChange={(e) => setSessionMode(e.target.checked)}
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: '#9c27b0',
+                },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                  backgroundColor: '#9c27b0',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: "grey.400" }}>
+              {sessionMode ? "Position context enabled" : "General chat mode"}
+            </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            {chatMessages.length > 0 && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={clearChatHistory}
+                sx={{ 
+                  color: "white",
+                  borderColor: "rgba(255,255,255,0.3)",
+                  "&:hover": {
+                    borderColor: "#9c27b0",
+                    backgroundColor: "rgba(156, 39, 176, 0.1)",
+                  }
+                }}
+              >
+                Clear Chat
+              </Button>
+            )}
+          </Stack>
+        )}
+
+        {(puzzleMode || playMode) && (
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Chip 
+              label={modeTitle}
+              sx={{ 
+                backgroundColor: "#9c27b0", 
+                color: "white",
+                fontWeight: 500
+              }} 
+            />
+            <Typography variant="caption" sx={{ color: "grey.400" }}>
+              {modeDescription}
+            </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            {chatMessages.length > 0 && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={clearChatHistory}
+                sx={{ 
+                  color: "white",
+                  borderColor: "rgba(255,255,255,0.3)",
+                  "&:hover": {
+                    borderColor: "#9c27b0",
+                    backgroundColor: "rgba(156, 39, 176, 0.1)",
+                  }
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </Stack>
+        )}
       </Paper>
 
       {/* Chat Messages */}
@@ -357,11 +435,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         sx={{
           flex: 1,
           overflowY: "auto",
-          border: `1px solid ${grey[600]}`,
-          borderRadius: 1,
-          p: 1,
-          backgroundColor: grey[900],
+          backgroundColor: "#1a1a1a",
           position: "relative",
+          px: 2,
+          py: 1,
         }}
       >
         {chatMessages.length === 0 ? (
@@ -372,34 +449,42 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               alignItems: "center",
               justifyContent: "center",
               height: "100%",
-              color: "wheat",
-              p: 2,
+              color: "white",
+              p: 4,
             }}
           >
             <Avatar
               src="/static/images/agineowl.png"
               sx={{
-                width: 55,
-                height: 55,
-                mr: 1,
-                mt: 0.5,
-                mb: 2,
+                width: 80,
+                height: 80,
+                mb: 3,
               }}
             />
-            <Typography variant="body1" sx={{ mb: 3, textAlign: "center" }}>
+            <Typography variant="h5" sx={{ mb: 2, textAlign: "center", fontWeight: 500 }}>
               {playMode 
-                ? "Ready to help you during your game!" 
+                ? "Ready to help you win!" 
                 : puzzleMode 
-                ? "Let's solve some chess puzzles together!"
-                : "Hey friend, lets talk about chess positions!"
+                ? "Let's solve some puzzles!"
+                : "Let's talk chess!"
+              }
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 4, textAlign: "center", color: "grey.300", maxWidth: 400 }}>
+              {playMode 
+                ? "Ask me about your moves, tactics, and strategy during your game."
+                : puzzleMode 
+                ? "Need a hint? Want to understand the solution? Just ask!"
+                : sessionMode
+                ? "I'll analyze the current position and provide detailed insights."
+                : "Ask me anything about chess - from basics to advanced strategy."
               }
             </Typography>
 
             {/* Quick Start Prompts */}
-            <Box sx={{ width: "100%", maxWidth: 500 }}>
+            <Box sx={{ width: "100%", maxWidth: 600 }}>
               <Typography
-                variant="caption"
-                sx={{ mb: 2, display: "block", opacity: 0.8, textAlign: "center" }}
+                variant="body2"
+                sx={{ mb: 3, display: "block", opacity: 0.8, textAlign: "center", color: "grey.400" }}
               >
                 Quick start - click any topic:
               </Typography>
@@ -407,7 +492,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 sx={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: 1,
+                  gap: 1.5,
                   justifyContent: "center",
                 }}
               >
@@ -416,30 +501,29 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     key={index}
                     label={prompt}
                     variant="outlined"
-                    size="small"
                     onClick={() => handlePromptSelect(prompt)}
                     sx={{
-                      color: "wheat",
-                      borderColor: grey[600],
+                      color: "white",
+                      borderColor: "rgba(156, 39, 176, 0.5)",
                       cursor: "pointer",
+                      transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: grey[700],
-                        borderColor: "wheat",
+                        backgroundColor: "rgba(156, 39, 176, 0.2)",
+                        borderColor: "#9c27b0",
+                        transform: "translateY(-1px)",
                       },
                     }}
                   />
                 ))}
               </Box>
-              <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Box sx={{ textAlign: "center", mt: 3 }}>
                 <Button
                   variant="text"
-                  size="small"
                   onClick={() => setDrawerOpen(true)}
                   sx={{ 
-                    color: grey[400],
-                    textDecoration: "underline",
+                    color: "#9c27b0",
                     "&:hover": {
-                      color: "wheat",
+                      backgroundColor: "rgba(156, 39, 176, 0.1)",
                     },
                   }}
                 >
@@ -449,14 +533,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </Box>
           </Box>
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={compactView ? 1 : 2}>
             {chatMessages.map((message) => (
               <Box
                 key={message.id}
                 sx={{
                   display: "flex",
-                  justifyContent:
-                    message.role === "user" ? "flex-end" : "flex-start",
+                  justifyContent: message.role === "user" ? "flex-end" : "flex-start",
                   alignItems: "flex-start",
                 }}
               >
@@ -465,8 +548,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   <Avatar
                     src="/static/images/agineowl.png"
                     sx={{
-                      width: 32,
-                      height: 32,
+                      width: compactView ? 28 : 32,
+                      height: compactView ? 28 : 32,
                       mr: 1,
                       mt: 0.5,
                       flexShrink: 0,
@@ -476,10 +559,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
                 <Paper
                   sx={{
-                    p: 2,
-                    maxWidth: "80%",
-                    backgroundColor:
-                      message.role === "user" ? "#1976d2" : "#5a2d80",
+                    p: compactView ? 1.5 : 2,
+                    maxWidth: "85%",
+                    backgroundColor: message.role === "user" ? "#1976d2" : "#7b1fa2",
                     color: "white",
                     borderRadius: 2,
                     position: "relative",
@@ -495,8 +577,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         onClick={() => copyMessage(message.content)}
                         sx={{
                           position: "absolute",
-                          top: 8,
-                          right: 8,
+                          top: 4,
+                          right: 4,
                           opacity: 0,
                           transition: "opacity 0.2s",
                           color: "rgba(255, 255, 255, 0.7)",
@@ -516,7 +598,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     <ReactMarkdown
                       components={{
                         p: ({ children }) => (
-                          <Typography variant="body2" component="p" sx={{ mb: 1, "&:last-child": { mb: 0 } }}>
+                          <Typography 
+                            variant="body2" 
+                            component="p" 
+                            sx={{ 
+                              mb: 1, 
+                              "&:last-child": { mb: 0 },
+                              fontSize: `${fontSize}px`,
+                              lineHeight: compactView ? 1.3 : 1.5
+                            }}
+                          >
                             {children}
                           </Typography>
                         ),
@@ -526,7 +617,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                           </Box>
                         ),
                         li: ({ children }) => (
-                          <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+                          <Typography 
+                            component="li" 
+                            variant="body2" 
+                            sx={{ 
+                              mb: 0.5,
+                              fontSize: `${fontSize}px`,
+                            }}
+                          >
                             {children}
                           </Typography>
                         ),
@@ -535,14 +633,29 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       {message.content}
                     </ReactMarkdown>
                   ) : (
-                    <Typography variant="body2">{message.content}</Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontSize: `${fontSize}px`,
+                        lineHeight: compactView ? 1.3 : 1.5
+                      }}
+                    >
+                      {message.content}
+                    </Typography>
                   )}
-                  <Typography
-                    variant="caption"
-                    sx={{ opacity: 0.7, display: "block", mt: 1 }}
-                  >
-                    {message.timestamp.toLocaleTimeString()}
-                  </Typography>
+                  {showTimestamps && (
+                    <Typography
+                      variant="caption"
+                      sx={{ 
+                        opacity: 0.7, 
+                        display: "block", 
+                        mt: 1,
+                        fontSize: `${fontSize - 2}px`
+                      }}
+                    >
+                      {message.timestamp.toLocaleTimeString()}
+                    </Typography>
+                  )}
                 </Paper>
               </Box>
             ))}
@@ -557,8 +670,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 <Avatar
                   src="/static/images/agineowl.png"
                   sx={{
-                    width: 32,
-                    height: 32,
+                    width: compactView ? 28 : 32,
+                    height: compactView ? 28 : 32,
                     mr: 1,
                     mt: 0.5,
                     flexShrink: 0,
@@ -566,16 +679,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 />
                 <Paper
                   sx={{
-                    p: 2,
-                    backgroundColor: "#5a2d80",
+                    p: compactView ? 1.5 : 2,
+                    backgroundColor: "#7b1fa2",
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
                     borderRadius: 2,
                   }}
                 >
-                  <CircularProgress size={16} sx={{ color: "wheat" }} />
-                  <Typography variant="body2" sx={{ color: "wheat" }}>
+                  <CircularProgress size={16} sx={{ color: "white" }} />
+                  <Typography variant="body2" sx={{ color: "white", fontSize: `${fontSize}px` }}>
                     Agine is thinking...
                   </Typography>
                   {abortChatMessage && (
@@ -584,7 +697,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         onClick={handleAbortMessage}
                         size="small"
                         sx={{
-                          color: "wheat",
+                          color: "white",
                           ml: 1,
                           "&:hover": {
                             backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -605,59 +718,181 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       </Box>
 
       {/* Chat Input */}
-      <Stack direction="row" spacing={1}>
-        <TextField
-          fullWidth
-          multiline
-          maxRows={3}
-          placeholder={
-            playMode 
-              ? "Ask for game advice..." 
-              : puzzleMode 
-                ? "Ask about this puzzle..." 
-                : sessionMode 
-                  ? "Ask about this position..." 
-                  : "Chat with AI..."
+      <Paper
+        sx={{
+          p: 2,
+          backgroundColor: "#1a1a1a",
+          borderRadius: 0,
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        <Stack direction="row" spacing={1}>
+          <TextField
+            fullWidth
+            multiline
+            maxRows={4}
+            placeholder={
+              playMode 
+                ? "Ask for game advice..." 
+                : puzzleMode 
+                  ? "Ask about this puzzle..." 
+                  : sessionMode 
+                    ? "Ask about this position..." 
+                    : "Chat with Agine..."
+            }
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={handleChatKeyPress}
+            disabled={chatLoading}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: "rgba(255,255,255,0.05)",
+                "& fieldset": {
+                  borderColor: "rgba(255,255,255,0.2)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(255,255,255,0.3)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#9c27b0",
+                },
+              },
+            }}
+            slotProps={{
+              input: {
+                sx: { 
+                  color: "white",
+                  fontSize: `${fontSize}px`
+                },
+              },
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode)}
+            disabled={chatLoading || !chatInput.trim()}
+            sx={{
+              minWidth: "auto",
+              px: 2,
+              backgroundColor: "#9c27b0",
+              "&:hover": {
+                backgroundColor: "#7b1fa2",
+              },
+              "&:disabled": {
+                backgroundColor: "rgba(156, 39, 176, 0.3)",
+              }
+            }}
+          >
+            <Send />
+          </Button>
+        </Stack>
+      </Paper>
+
+      {/* Settings Dialog */}
+      <Dialog
+        open={settingsOpen}
+        onClose={handleSettingsClose}
+        PaperProps={{
+          sx: {
+            backgroundColor: "#1a1a1a",
+            color: "white",
+            minWidth: 400
           }
-          value={chatInput}
-          onChange={(e) => setChatInput(e.target.value)}
-          onKeyDown={handleChatKeyPress}
-          disabled={chatLoading}
-          sx={{
-            backgroundColor: grey[900],
-            borderRadius: 1,
-            "& .MuiOutlinedInput-root": {
-              "& fieldset": {
-                borderColor: grey[600],
-              },
-              "&:hover fieldset": {
-                borderColor: grey[500],
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "wheat",
-              },
-            },
-          }}
-          slotProps={{
-            input: {
-              sx: { color: "wheat" },
-            },
-          }}
-        />
-        <Button
-          variant="contained"
-          onClick={() =>
-            sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode)
-          }
-          disabled={chatLoading || !chatInput.trim()}
-          sx={{
-            minWidth: "auto",
-            px: 2,
-          }}
-        >
-          <Send />
-        </Button>
-      </Stack>
+        }}
+      >
+        <DialogTitle>Chat Settings</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ pt: 1 }}>
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                Display Options
+              </Typography>
+              <Stack spacing={2}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    Auto-scroll to new messages
+                  </Typography>
+                  <Switch
+                    checked={autoScroll}
+                    onChange={(e) => setAutoScroll(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#9c27b0',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#9c27b0',
+                      },
+                    }}
+                  />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    Show timestamps
+                  </Typography>
+                  <Switch
+                    checked={showTimestamps}
+                    onChange={(e) => setShowTimestamps(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#9c27b0',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#9c27b0',
+                      },
+                    }}
+                  />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    Compact view
+                  </Typography>
+                  <Switch
+                    checked={compactView}
+                    onChange={(e) => setCompactView(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#9c27b0',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#9c27b0',
+                      },
+                    }}
+                  />
+                </Stack>
+              </Stack>
+            </Box>
+            
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+            
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                Font Size: {fontSize}px
+              </Typography>
+              <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                Adjust text size for better readability
+              </Typography>
+              <Box sx={{ px: 1 }}>
+                <input
+                  type="range"
+                  min={12}
+                  max={18}
+                  value={fontSize}
+                  onChange={(e) => setFontSize(Number(e.target.value))}
+                  style={{
+                    width: '100%',
+                    accentColor: '#9c27b0'
+                  }}
+                />
+              </Box>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+            Done
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Copy Menu */}
       <Menu
@@ -666,8 +901,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         onClose={handleCopyMenuClose}
         PaperProps={{
           sx: {
-            backgroundColor: grey[800],
-            color: "wheat",
+            backgroundColor: "#1a1a1a",
+            color: "white",
+            border: "1px solid rgba(255,255,255,0.1)",
           },
         }}
       >
@@ -689,7 +925,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           severity="success" 
           variant="filled"
           sx={{ 
-            backgroundColor: "#4caf50",
+            backgroundColor: "#9c27b0",
             color: "white"
           }}
         >
@@ -704,14 +940,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
           sx: {
-            backgroundColor: grey[800],
-            color: "wheat",
+            backgroundColor: "#1a1a1a",
+            color: "white",
           },
         }}
       >
         {drawerContent}
       </Drawer>
-    </Stack>
+    </Box>
   );
 };
 

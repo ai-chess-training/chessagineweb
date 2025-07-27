@@ -22,9 +22,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
   Chat as ChatIcon,
-  Timeline as TimelineIcon,
-  Explore as ExploreIcon,
-  Storage as StorageIcon
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import { TabPanel } from "@/componets/tabs/tab";
@@ -246,7 +243,7 @@ export default function PositionPage() {
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <TimelineIcon sx={{ mr: 2, color: purpleTheme.accent }} />
+                        
                         <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
                           Stockfish 17 NNUE Analysis
                         </Typography>
@@ -289,7 +286,7 @@ export default function PositionPage() {
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <ExploreIcon sx={{ mr: 2, color: purpleTheme.accent }} />
+                      
                         <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
                           Opening Explorer
                         </Typography>
@@ -326,7 +323,7 @@ export default function PositionPage() {
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <StorageIcon sx={{ mr: 2, color: purpleTheme.accent }} />
+                        
                         <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
                           Chess Database
                         </Typography>

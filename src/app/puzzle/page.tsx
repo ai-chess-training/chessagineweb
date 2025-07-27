@@ -36,6 +36,7 @@ import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/componets/agine/useAgine";
 import { useSession } from "@clerk/nextjs";
+import { purpleTheme } from "@/componets/lichess/UserGameSelect";
 import {
   Lightbulb,
   Star,
@@ -693,9 +694,10 @@ export default function PuzzlePage() {
 
   return (
     <>
-      <Box sx={{ p: 4 }}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
-          <AiChessboardPanel
+      <Box sx={{ p: 4, backgroundColor: purpleTheme.background.main, minHeight: "100vh" }} >
+        <Stack direction={{ xs: "column", md: "row", }} spacing={4} >
+           <Box sx={{ flex: '0 0 auto' }}>
+             <AiChessboardPanel
             game={game}
             fen={fen}
             moveSquares={moveSquares}
@@ -724,6 +726,8 @@ export default function PuzzlePage() {
             stockfishAnalysisResult={stockfishAnalysisResult}
             openingLoading={openingLoading}
           />
+           </Box>
+         
 
           <Paper
             elevation={3}
@@ -732,8 +736,8 @@ export default function PuzzlePage() {
               flex: 1,
               minHeight: 300,
               color: "white",
-              backgroundColor: grey[800],
-              maxHeight: "80vh",
+              backgroundColor: purpleTheme.background.paper,
+              maxHeight: "100vh",
               overflow: "auto",
             }}
           >
@@ -761,7 +765,7 @@ export default function PuzzlePage() {
               ) : (
                 <>
                 {/* Theme Selection Card */}
-                <Card sx={{ backgroundColor: grey[900] }}>
+                <Card sx={{ backgroundColor: purpleTheme.background.card }}>
                   <CardContent>
                   <Typography variant="h6" sx={{ mb: 2, color: "wheat" }}>
                     Puzzle Themes
@@ -888,7 +892,7 @@ export default function PuzzlePage() {
                   </CardContent>
                 </Card>
                 {/* Action Buttons Card */}
-                <Card sx={{ backgroundColor: grey[900] }}>
+                <Card sx={{ backgroundColor: purpleTheme.background.card }}>
                   <CardContent>
                   {showingSolution ? (
                     <Stack spacing={2}>
@@ -993,7 +997,7 @@ export default function PuzzlePage() {
                 </Card>
 
                 {/* Rating & Themes Card */}
-                <Card sx={{ backgroundColor: grey[900] }}>
+                <Card sx={{ backgroundColor: purpleTheme.background.card }}>
                   <CardContent>
                   <Stack spacing={2}>
                     <Stack

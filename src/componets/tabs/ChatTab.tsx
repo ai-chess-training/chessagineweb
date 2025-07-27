@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { grey } from "@mui/material/colors";
 import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
 import {

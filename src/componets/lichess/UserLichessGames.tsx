@@ -17,6 +17,7 @@ import TimerIcon from "@mui/icons-material/Timer";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import HistoryIcon from "@mui/icons-material/History";
 import CasinoIcon from "@mui/icons-material/Casino";
+import { purpleTheme } from "./UserGameSelect";
 
 interface UserGameProp {
   loadPGN: (pgn: string) => void;
@@ -49,15 +50,15 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
   const getSpeedIcon = (speed: string) => {
     switch (speed) {
       case "bullet":
-        return <FlashOnIcon fontSize="small" sx={{ mr: 1 }} />;
+        return <FlashOnIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
       case "blitz":
-        return <TimerIcon fontSize="small" sx={{ mr: 1 }} />;
+        return <TimerIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
       case "rapid":
-        return <RocketLaunchIcon fontSize="small" sx={{ mr: 1 }} />;
+        return <RocketLaunchIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
       case "classical":
-        return <HistoryIcon fontSize="small" sx={{ mr: 1 }} />;
+        return <HistoryIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
       default:
-        return <CasinoIcon fontSize="small" sx={{ mr: 1 }} />;
+        return <CasinoIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
     }
   };
 
@@ -66,8 +67,8 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
       elevation={3}
       sx={{
         p: 3,
-        backgroundColor: "#2e2e2e",
-        color: "#f5deb3",
+        backgroundColor: purpleTheme.background.paper,
+        color: purpleTheme.text.primary,
       }}
     >
       <Box display="flex" justifyContent="center" mb={2}>
@@ -77,11 +78,26 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
             variant="outlined"
             value={lichessUsername}
             onChange={(e) => setLichessUsername(e.target.value)}
-            InputLabelProps={{ style: { color: "#f5deb3" } }}
+            InputLabelProps={{ 
+              style: { color: purpleTheme.text.secondary } 
+            }}
             InputProps={{
               style: {
-                color: "#f5deb3",
-                borderColor: "#f5deb3",
+                color: purpleTheme.text.primary,
+                backgroundColor: purpleTheme.background.input,
+              },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: purpleTheme.secondary,
+                },
+                '&:hover fieldset': {
+                  borderColor: purpleTheme.primary,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: purpleTheme.primary,
+                },
               },
             }}
           />
@@ -89,12 +105,12 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
       </Box>
 
       {!lichessUsername ? (
-        <Typography textAlign="center" color="#d2b48c">
+        <Typography textAlign="center" color={purpleTheme.text.secondary}>
           Enter a username to load recent games
         </Typography>
       ) : games.length === 0 ? (
         <Box display="flex" justifyContent="center" mt={4}>
-          <CircularProgress sx={{ color: "#f5deb3" }} />
+          <CircularProgress sx={{ color: purpleTheme.primary }} />
         </Box>
       ) : (
         <List sx={{ maxHeight: 400, overflowY: "auto" }}>
@@ -107,11 +123,11 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
               }}
               sx={{
                 mb: 1,
-                backgroundColor: "#3a3a3a",
-                color: "#f5deb3",
+                backgroundColor: purpleTheme.background.card,
+                color: purpleTheme.text.primary,
                 borderRadius: "8px",
                 "&:hover": {
-                  backgroundColor: "#4a4a4a",
+                  backgroundColor: purpleTheme.primaryDark,
                 },
               }}
             >
@@ -132,11 +148,11 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
                 primaryTypographyProps={{
                   fontWeight: "bold",
                   noWrap: true,
-                  color: "#f5deb3",
+                  color: purpleTheme.text.primary,
                 }}
                 secondaryTypographyProps={{
                   noWrap: true,
-                  color: "#d2b48c",
+                  color: purpleTheme.text.secondary,
                 }}
               />
             </ListItemButton>
@@ -146,4 +162,3 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
     </Paper>
   );
 }
-

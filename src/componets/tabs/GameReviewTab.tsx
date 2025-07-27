@@ -13,7 +13,6 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Divider,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import { grey, purple } from "@mui/material/colors";
@@ -29,8 +28,6 @@ import {
   BookA,
   Pen,
   Sparkles,
-  TrendingUp,
-  Crown,
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";
 import { Person } from "@mui/icons-material";

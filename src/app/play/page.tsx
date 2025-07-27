@@ -25,6 +25,7 @@ import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/componets/agine/useAgine";
 import { useSession } from "@clerk/nextjs";
+import { purpleTheme } from "@/componets/lichess/UserGameSelect";
 import { PositionEval } from "@/stockfish/engine/engine";
 
 export default function PlayStockfishPage() {
@@ -228,7 +229,7 @@ export default function PlayStockfishPage() {
       sx={{
         p: { xs: 2, md: 4 },
         minHeight: "90vh",
-        backgroundColor: grey[900],
+        backgroundColor: purpleTheme.background.main,
         color: "white",
         display: "flex",
         justifyContent: "center", // horizontally center stack horizontally in viewport
@@ -302,6 +303,7 @@ export default function PlayStockfishPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                backgroundColor: purpleTheme.background.paper
               }}
             >
               <AiChessboardPanel
@@ -339,7 +341,7 @@ export default function PlayStockfishPage() {
             display: "flex",
             flexDirection: "column",
             height: "100%",
-            backgroundColor: grey[900],
+            backgroundColor: purpleTheme.background.paper,
             borderRadius: 2,
             color: "white",
             overflow: "hidden",

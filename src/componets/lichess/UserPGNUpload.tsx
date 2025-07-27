@@ -15,7 +15,6 @@ interface PGNUploaderProps {
 }
 
 const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
-    const [pgnContent, setPgnContent] = useState("");
     const [fileName, setFileName] = useState("");
     const [error, setError] = useState("");
 
@@ -34,7 +33,6 @@ const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
         reader.onload = (event) => {
             const content = event.target?.result as string;
             if (content.trim()) {
-                setPgnContent(content);
                 setFileName(file.name);
                 loadPGN(content);
             } else {

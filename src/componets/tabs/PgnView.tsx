@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Box, Typography, Button } from '@mui/material';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { 
   Target, 
   ThumbsUp, 
@@ -98,10 +99,48 @@ const PGNView: React.FC<PGNViewProps> = ({
   goToMove,
   currentMoveIndex,
 }) => {
+  const [dimensions, setDimensions] = useState({ width: 550, height: 100 });
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
+  const startDimensionsRef = useRef({ width: 0, height: 0 });
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    startDimensionsRef.current = { ...dimensions };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startPosRef.current.x;
+      const deltaY = e.clientY - startPosRef.current.y;
+      
+      
+      const minWidth = 550;
+      const maxWidth = 715;
+      const minHeight = 80;
+      const maxHeight = 715;
+      
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startDimensionsRef.current.width + deltaX));
+      const newHeight = Math.min(maxHeight, Math.max(minHeight, startDimensionsRef.current.height + deltaY));
+      
+      setDimensions({ width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [dimensions]);
+
   const getMoveAnalysis = (moveIndex: number): MoveAnalysis | undefined => {
     if (!moveAnalysis) return undefined;
     // plyNumber is 1-indexed, moveIndex is 0-indexed
-    return moveAnalysis.find(analysis => analysis.plyNumber === moveIndex + 1);
+    return moveAnalysis[moveIndex];
   };
 
   const renderPGNText = () => {
@@ -151,25 +190,15 @@ const PGNView: React.FC<PGNViewProps> = ({
             fontFamily: 'monospace',
             fontSize: '12px',
             height: '20px',
-            backgroundColor: isWhiteSelected 
-              ? '#555' 
-              : whiteStyle?.bgColor || 'transparent',
-            color: isWhiteSelected 
-              ? '#fff' 
-              : whiteStyle?.color || '#ccc',
-            border: whiteStyle?.color 
-              ? `1px solid ${whiteStyle.color}40` 
-              : 'none',
+            backgroundColor: isWhiteSelected ? '#555' : 'transparent',
+            color: isWhiteSelected ? '#fff' : '#ccc',
             '&:hover': {
-              backgroundColor: isWhiteSelected 
-                ? '#666' 
-                : whiteStyle?.bgColor 
-                  ? `${whiteStyle.color}30` 
-                  : '#333',
+              backgroundColor: isWhiteSelected ? '#666' : '#333',
             },
             '& .MuiButton-startIcon': {
               marginRight: '2px',
               marginLeft: 0,
+              color: whiteStyle?.color || 'inherit', // Apply classification color to icon only
             },
           }}
         >
@@ -200,25 +229,15 @@ const PGNView: React.FC<PGNViewProps> = ({
               fontFamily: 'monospace',
               fontSize: '12px',
               height: '20px',
-              backgroundColor: isBlackSelected 
-                ? '#555' 
-                : blackStyle?.bgColor || 'transparent',
-              color: isBlackSelected 
-                ? '#fff' 
-                : blackStyle?.color || '#ccc',
-              border: blackStyle?.color 
-                ? `1px solid ${blackStyle.color}40` 
-                : 'none',
+              backgroundColor: isBlackSelected ? '#555' : 'transparent',
+              color: isBlackSelected ? '#fff' : '#ccc',
               '&:hover': {
-                backgroundColor: isBlackSelected 
-                  ? '#666' 
-                  : blackStyle?.bgColor 
-                    ? `${blackStyle.color}30` 
-                    : '#333',
+                backgroundColor: isBlackSelected ? '#666' : '#333',
               },
               '& .MuiButton-startIcon': {
                 marginRight: '2px',
                 marginLeft: 0,
+                color: blackStyle?.color || 'inherit', // Apply classification color to icon only
               },
             }}
           >
@@ -227,7 +246,7 @@ const PGNView: React.FC<PGNViewProps> = ({
         );
       }
       
-      // Add minimal space after each move pair
+      
       elements.push(
         <Box key={`space-${moveNumber}`} component="span" sx={{ width: '4px', flexShrink: 0 }} />
       );
@@ -238,10 +257,10 @@ const PGNView: React.FC<PGNViewProps> = ({
 
   return (
     <Box 
+      ref={containerRef}
       sx={{ 
-        width: '100%',
-        maxWidth: '550px',
-        height: '100px',
+        width: `${dimensions.width}px`,
+        height: `${dimensions.height}px`,
         overflowY: 'auto',
         overflowX: 'hidden',
         backgroundColor: '#2a2a2a',
@@ -250,6 +269,8 @@ const PGNView: React.FC<PGNViewProps> = ({
         px: 1,
         py: 0.5,
         mt: 1,
+        position: 'relative',
+        userSelect: isResizing ? 'none' : 'auto',
         '&::-webkit-scrollbar': {
           width: '6px',
         },
@@ -280,6 +301,37 @@ const PGNView: React.FC<PGNViewProps> = ({
             No moves to display
           </Typography>
         )}
+      </Box>
+      
+      {/* Resize Handle */}
+      <Box
+        onMouseDown={handleMouseDown}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '16px',
+          height: '16px',
+          cursor: 'nw-resize',
+          backgroundColor: '#555',
+          borderTopRightRadius: '3px',
+          opacity: 0.7,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': {
+            opacity: 1,
+            backgroundColor: '#666',
+          },
+        }}
+      >
+        <OpenInFullIcon 
+          sx={{ 
+            fontSize: '10px', 
+            color: '#ccc',
+            transform: 'rotate(180deg)' // Rotate to indicate resize direction
+          }} 
+        />
       </Box>
     </Box>
   );

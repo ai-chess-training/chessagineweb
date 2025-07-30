@@ -259,54 +259,7 @@ export default function PlayStockfishPage() {
           }}
         >
           {/* Chessboard and engine thinking overlay */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              width: "100%",
-              maxWidth: { xs: "100%", md: 600, lg: 700 },
-              height: { xs: "60vw", sm: "50vw", md: "70vh" },
-              maxHeight: "80vh",
-              position: "relative",
-              borderRadius: 2,
-              overflow: "hidden",
-              boxShadow: `0 0 10px ${purple[700]}`,
-              backgroundColor: grey[900],
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mt: 1,
-            }}
-          >
-            {engineThinking && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  bgcolor: "rgba(0, 0, 0, 0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  zIndex: 10,
-                  pointerEvents: "none",
-                }}
-              >
-                <CircularProgress color="inherit" />
-              </Box>
-            )}
-            <Box
-              sx={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: purpleTheme.background.paper
-              }}
-            >
-              <AiChessboardPanel
+          <AiChessboardPanel
                 game={game}
                 fen={fen}
                 moveSquares={moveSquares}
@@ -328,8 +281,6 @@ export default function PlayStockfishPage() {
                 gameStatus={gameStatus}
                 playMode={true}
               />
-            </Box>
-          </Box>
         </Box>
 
         {/* Right Panel: Chat and Analysis */}

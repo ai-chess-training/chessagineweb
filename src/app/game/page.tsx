@@ -18,19 +18,15 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { 
-  deepPurple, 
-  purple, 
-  indigo 
-} from "@mui/material/colors";
-import { 
+import { deepPurple, purple, indigo } from "@mui/material/colors";
+import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
   Chat as ChatIcon,
   Info as InfoIcon,
   Upload as UploadIcon,
   Refresh as RefreshIcon,
-  PlayArrow as PlayIcon
+  PlayArrow as PlayIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/componets/agine/useAgine";
@@ -42,7 +38,7 @@ import ChatTab from "@/componets/tabs/ChatTab";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
-import UserPGNUploader from "@/componets/lichess/UserPGNUpload"
+import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
 import GameInfoTab from "@/componets/tabs/GameInfoTab";
 import PGNView from "@/componets/tabs/PgnView";
 
@@ -53,16 +49,16 @@ const purpleTheme = {
   secondary: purple[400],
   accent: indigo[300],
   background: {
-    main: '#1a0d2e',
-    paper: '#2d1b3d',
-    card: '#3e2463',
-    input: '#4a2c5a'
+    main: "#1a0d2e",
+    paper: "#2d1b3d",
+    card: "#3e2463",
+    input: "#4a2c5a",
   },
   text: {
-    primary: '#e1d5f0',
-    secondary: '#b39ddb',
-    accent: '#ce93d8'
-  }
+    primary: "#e1d5f0",
+    secondary: "#b39ddb",
+    accent: "#ce93d8",
+  },
 };
 
 function parsePgnChapters(pgnText: string) {
@@ -250,13 +246,13 @@ export default function PGNUploaderPage() {
 
   if (!session.isLoaded) {
     return (
-      <Box 
-        sx={{ 
-          p: 4, 
-          display: "flex", 
+      <Box
+        sx={{
+          p: 4,
+          display: "flex",
           justifyContent: "center",
           backgroundColor: purpleTheme.background.main,
-          minHeight: "100vh"
+          minHeight: "100vh",
         }}
       >
         <CircularProgress sx={{ color: purpleTheme.accent }} />
@@ -266,13 +262,13 @@ export default function PGNUploaderPage() {
 
   if (!session.isSignedIn) {
     return (
-      <Box 
-        sx={{ 
-          p: 4, 
-          display: "flex", 
+      <Box
+        sx={{
+          p: 4,
+          display: "flex",
           justifyContent: "center",
           backgroundColor: purpleTheme.background.main,
-          minHeight: "100vh"
+          minHeight: "100vh",
         }}
       >
         <Typography variant="h6" sx={{ color: purpleTheme.text.primary }}>
@@ -411,51 +407,64 @@ export default function PGNUploaderPage() {
   };
 
   return (
-    <Box sx={{ 
-      p: 4, 
-      backgroundColor: purpleTheme.background.main,
-      minHeight: "100vh"
-    }}>
+    <Box
+      sx={{
+        p: 4,
+        backgroundColor: purpleTheme.background.main,
+        minHeight: "100vh",
+      }}
+    >
       {inputsVisible && (
-        <Card sx={{ 
-          mb: 4, 
-          backgroundColor: purpleTheme.background.paper,
-          borderRadius: 3,
-          boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`
-        }}>
+        <Card
+          sx={{
+            mb: 4,
+            backgroundColor: purpleTheme.background.paper,
+            borderRadius: 3,
+            boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
+          }}
+        >
           <CardContent sx={{ p: 4 }}>
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Typography 
-                variant="h3" 
-                gutterBottom 
-                sx={{ 
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <Typography
+                variant="h3"
+                gutterBottom
+                sx={{
                   color: purpleTheme.text.primary,
                   fontWeight: 700,
                   background: `linear-gradient(45deg, ${purpleTheme.accent}, ${purpleTheme.secondary})`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
                 }}
               >
                 Chess Analysis with Agine
               </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: purpleTheme.text.secondary, 
+              <Typography
+                variant="h6"
+                sx={{
+                  color: purpleTheme.text.secondary,
                   mb: 3,
                   maxWidth: 600,
-                  mx: 'auto'
+                  mx: "auto",
                 }}
               >
-                Get detailed AI insights on your games! Paste your PGN, Lichess game URL, or study URL to begin analysis.
+                Get detailed AI insights on your games! Paste your PGN, Lichess
+                game URL, or study URL to begin analysis.
               </Typography>
             </Box>
 
             <Stack spacing={3}>
               {/* Lichess Study Section */}
               <Box>
-                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2, display: 'flex', alignItems: 'center' }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.accent,
+                    mb: 2,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
                   <AnalyticsIcon sx={{ mr: 1 }} />
                   Lichess Study
                 </Typography>
@@ -465,21 +474,21 @@ export default function PGNUploaderPage() {
                   value={studyUrl}
                   onChange={(e) => setStudyUrl(e.target.value)}
                   placeholder="https://lichess.org/study/GuglnqGD"
-                  sx={{ 
+                  sx={{
                     backgroundColor: purpleTheme.background.input,
                     borderRadius: 2,
                     mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
                         borderColor: purpleTheme.secondary,
                       },
-                      '&:hover fieldset': {
+                      "&:hover fieldset": {
                         borderColor: purpleTheme.accent,
                       },
-                      '&.Mui-focused fieldset': {
+                      "&.Mui-focused fieldset": {
                         borderColor: purpleTheme.accent,
                       },
-                    }
+                    },
                   }}
                   slotProps={{
                     inputLabel: { sx: { color: purpleTheme.text.secondary } },
@@ -491,11 +500,11 @@ export default function PGNUploaderPage() {
                   fullWidth
                   sx={{
                     backgroundColor: purpleTheme.primary,
-                    '&:hover': { backgroundColor: purpleTheme.primaryDark },
+                    "&:hover": { backgroundColor: purpleTheme.primaryDark },
                     borderRadius: 2,
                     py: 1.5,
-                    textTransform: 'none',
-                    fontSize: '1rem'
+                    textTransform: "none",
+                    fontSize: "1rem",
                   }}
                   onClick={async () => {
                     const idMatch = studyUrl.match(/study\/([a-zA-Z0-9]+)/);
@@ -522,7 +531,15 @@ export default function PGNUploaderPage() {
 
               {/* Lichess Game Section */}
               <Box>
-                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2, display: 'flex', alignItems: 'center' }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.accent,
+                    mb: 2,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
                   <PlayIcon sx={{ mr: 1 }} />
                   Lichess Game
                 </Typography>
@@ -532,21 +549,21 @@ export default function PGNUploaderPage() {
                   value={gameUrl}
                   onChange={(e) => setGameUrl(e.target.value)}
                   placeholder="https://lichess.org/abcdefgh or https://lichess.org/abcdefgh1234"
-                  sx={{ 
+                  sx={{
                     backgroundColor: purpleTheme.background.input,
                     borderRadius: 2,
                     mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
                         borderColor: purpleTheme.secondary,
                       },
-                      '&:hover fieldset': {
+                      "&:hover fieldset": {
                         borderColor: purpleTheme.accent,
                       },
-                      '&.Mui-focused fieldset': {
+                      "&.Mui-focused fieldset": {
                         borderColor: purpleTheme.accent,
                       },
-                    }
+                    },
                   }}
                   slotProps={{
                     inputLabel: { sx: { color: purpleTheme.text.secondary } },
@@ -558,14 +575,16 @@ export default function PGNUploaderPage() {
                   fullWidth
                   onClick={handleLoadLichessGame}
                   disabled={loadingGame}
-                  startIcon={loadingGame ? <CircularProgress size={20} /> : null}
+                  startIcon={
+                    loadingGame ? <CircularProgress size={20} /> : null
+                  }
                   sx={{
                     backgroundColor: purpleTheme.primary,
-                    '&:hover': { backgroundColor: purpleTheme.primaryDark },
+                    "&:hover": { backgroundColor: purpleTheme.primaryDark },
                     borderRadius: 2,
                     py: 1.5,
-                    textTransform: 'none',
-                    fontSize: '1rem'
+                    textTransform: "none",
+                    fontSize: "1rem",
                   }}
                 >
                   {loadingGame ? "Loading Game..." : "Load Game"}
@@ -576,7 +595,15 @@ export default function PGNUploaderPage() {
 
               {/* PGN Section */}
               <Box>
-                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2, display: 'flex', alignItems: 'center' }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.accent,
+                    mb: 2,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
                   <UploadIcon sx={{ mr: 1 }} />
                   Direct PGN Input
                 </Typography>
@@ -591,17 +618,17 @@ export default function PGNUploaderPage() {
                     backgroundColor: purpleTheme.background.input,
                     borderRadius: 2,
                     mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
                         borderColor: purpleTheme.secondary,
                       },
-                      '&:hover fieldset': {
+                      "&:hover fieldset": {
                         borderColor: purpleTheme.accent,
                       },
-                      '&.Mui-focused fieldset': {
+                      "&.Mui-focused fieldset": {
                         borderColor: purpleTheme.accent,
                       },
-                    }
+                    },
                   }}
                   placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6..."
                   slotProps={{
@@ -618,11 +645,11 @@ export default function PGNUploaderPage() {
                   }}
                   sx={{
                     backgroundColor: purpleTheme.primary,
-                    '&:hover': { backgroundColor: purpleTheme.primaryDark },
+                    "&:hover": { backgroundColor: purpleTheme.primaryDark },
                     borderRadius: 2,
                     py: 1.5,
-                    textTransform: 'none',
-                    fontSize: '1rem'
+                    textTransform: "none",
+                    fontSize: "1rem",
                   }}
                 >
                   Load PGN
@@ -633,7 +660,10 @@ export default function PGNUploaderPage() {
 
               {/* User Games Section */}
               <Box>
-                <Typography variant="h6" sx={{ color: purpleTheme.text.accent, mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ color: purpleTheme.text.accent, mb: 2 }}
+                >
                   Your Lichess Games
                 </Typography>
                 <UserGameSelect loadPGN={loadUserPGN} />
@@ -648,7 +678,7 @@ export default function PGNUploaderPage() {
 
       <Stack direction={{ xs: "column", lg: "row" }} spacing={4}>
         {!inputsVisible && (
-          <Box sx={{ flex: '0 0 auto' }}>
+          <Box sx={{ flex: "0 0 auto" }}>
             <Stack spacing={3} alignItems="center">
               <AiChessboardPanel
                 game={game}
@@ -672,10 +702,10 @@ export default function PGNUploaderPage() {
               />
 
               <PGNView
-               moves={moves}
-               moveAnalysis={gameReview}
-               goToMove={goToMove}
-               currentMoveIndex={currentMoveIndex}
+                moves={moves}
+                moveAnalysis={gameReview}
+                goToMove={goToMove}
+                currentMoveIndex={currentMoveIndex}
               />
 
               <Button
@@ -697,14 +727,14 @@ export default function PGNUploaderPage() {
                 sx={{
                   borderColor: purpleTheme.secondary,
                   color: purpleTheme.text.primary,
-                  '&:hover': {
+                  "&:hover": {
                     borderColor: purpleTheme.accent,
-                    backgroundColor: `${purpleTheme.accent}20`
+                    backgroundColor: `${purpleTheme.accent}20`,
                   },
                   borderRadius: 2,
                   px: 3,
                   py: 1.5,
-                  textTransform: 'none'
+                  textTransform: "none",
                 }}
               >
                 Load New Game
@@ -721,14 +751,23 @@ export default function PGNUploaderPage() {
                   sx={{
                     backgroundColor: purpleTheme.background.paper,
                     borderRadius: 3,
-                    boxShadow: `0 4px 20px rgba(138, 43, 226, 0.1)`
+                    boxShadow: `0 4px 20px rgba(138, 43, 226, 0.1)`,
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom sx={{ color: purpleTheme.text.primary, mb: 2 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ color: purpleTheme.text.primary, mb: 2 }}
+                    >
                       Study Chapters
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
                       {chapters.map((ch, index) => (
                         <Chip
                           key={index}
@@ -740,11 +779,11 @@ export default function PGNUploaderPage() {
                           sx={{
                             backgroundColor: purpleTheme.background.card,
                             color: purpleTheme.text.primary,
-                            '&:hover': {
+                            "&:hover": {
                               backgroundColor: purpleTheme.secondary,
                             },
                             borderRadius: 2,
-                            mb: 1
+                            mb: 1,
                           }}
                         />
                       ))}
@@ -759,98 +798,161 @@ export default function PGNUploaderPage() {
                     backgroundColor: purpleTheme.background.paper,
                     borderRadius: 3,
                     boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
-                    minHeight: 500
+                    minHeight: 500,
                   }}
                 >
-                  <Box sx={{ 
-                    borderBottom: `1px solid ${purpleTheme.secondary}40`,
-                    px: 3,
-                    pt: 2
-                  }}>
+                  <Box
+                    sx={{
+                      borderBottom: `1px solid ${purpleTheme.secondary}40`,
+                      px: 3,
+                      pt: 2,
+                    }}
+                  >
                     <Tabs
                       value={analysisTab}
                       onChange={(_, newValue) => setAnalysisTab(newValue)}
                       sx={{
-                        "& .MuiTab-root": { 
+                        "& .MuiTab-root": {
                           color: purpleTheme.text.secondary,
-                          textTransform: 'none',
-                          fontSize: '1rem',
+                          textTransform: "none",
+                          fontSize: "1rem",
                           fontWeight: 500,
-                          minHeight: 48
+                          minHeight: 48,
                         },
-                        "& .Mui-selected": { 
+                        "& .Mui-selected": {
                           color: `${purpleTheme.accent} !important`,
-                          fontWeight: 600
+                          fontWeight: 600,
                         },
                         "& .MuiTabs-indicator": {
                           backgroundColor: purpleTheme.accent,
                           height: 3,
-                          borderRadius: 2
-                        }
+                          borderRadius: 2,
+                        },
                       }}
                     >
-                      <Tab 
-                        icon={<InfoIcon />} 
-                        iconPosition="start" 
-                        label="Game Info" 
+                      <Tab
+                        icon={<AnalyticsIcon />}
+                        iconPosition="start"
+                        label="Analysis"
                       />
-                      <Tab 
-                        icon={<ChatIcon />} 
-                        iconPosition="start" 
-                        label="AI Chat" 
+                      <Tab
+                        icon={<ChatIcon />}
+                        iconPosition="start"
+                        label="AI Chat"
                       />
-                      <Tab 
-                        icon={<AnalyticsIcon />} 
-                        iconPosition="start" 
-                        label="Analysis" 
-                      />
+                      
                     </Tabs>
                   </Box>
 
                   <Box sx={{ p: 3 }}>
                     <TabPanel value={analysisTab} index={0}>
-                      <GameInfoTab
-                        moves={moves}
-                        currentMoveIndex={currentMoveIndex}
-                        goToMove={goToMove}
-                        comment={comment}
-                        gameInfo={gameInfo}
-                        generateGameReview={generateGameReview}
-                        gameReviewLoading={gameReviewLoading}
-                        gameReviewProgress={gameReviewProgress}
-                        handleGameReviewClick={handleGameReviewSummaryClick}
-                        handleMoveAnnontateClick={handleMoveAnnontateClick}
-                        handleMoveCoachClick={handleMoveCoachClick}
-                        chatLoading={chatLoading}
-                        gameReview={gameReview}
-                      />
-                    </TabPanel>
-
-                    <TabPanel value={analysisTab} index={2}>
                       <Stack spacing={3}>
                         {/* Stockfish Analysis */}
-                        <Accordion 
+                        <Accordion
                           expanded={activeAnalysisTab === 0}
-                          onChange={() => setActiveAnalysisTab(activeAnalysisTab === 0 ? -1 : 0)}
+                          onChange={() =>
+                            setActiveAnalysisTab(
+                              activeAnalysisTab === 0 ? -1 : 0
+                            )
+                          }
                           sx={{
                             backgroundColor: purpleTheme.background.card,
-                            '&:before': { display: 'none' },
+                            "&:before": { display: "none" },
                             borderRadius: 2,
-                            overflow: 'hidden'
+                            overflow: "hidden",
                           }}
                         >
                           <AccordionSummary
-                            expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                            expandIcon={
+                              <ExpandMoreIcon
+                                sx={{ color: purpleTheme.text.primary }}
+                              />
+                            }
                             sx={{
                               backgroundColor: purpleTheme.background.card,
-                              '&:hover': { backgroundColor: `${purpleTheme.secondary}20` }
+                              "&:hover": {
+                                backgroundColor: `${purpleTheme.secondary}20`,
+                              },
                             }}
                           >
-                            <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                color: purpleTheme.text.primary,
+                                fontWeight: 600,
+                              }}
+                            >
+                              Game Review
+                            </Typography>
+                          </AccordionSummary>
+                          <AccordionDetails
+                            sx={{
+                              backgroundColor: purpleTheme.background.paper,
+                            }}
+                          >
+                            <GameInfoTab
+                              moves={moves}
+                              currentMoveIndex={currentMoveIndex}
+                              goToMove={goToMove}
+                              comment={comment}
+                              gameInfo={gameInfo}
+                              generateGameReview={generateGameReview}
+                              gameReviewLoading={gameReviewLoading}
+                              gameReviewProgress={gameReviewProgress}
+                              handleGameReviewClick={
+                                handleGameReviewSummaryClick
+                              }
+                              handleMoveAnnontateClick={
+                                handleMoveAnnontateClick
+                              }
+                              handleMoveCoachClick={handleMoveCoachClick}
+                              chatLoading={chatLoading}
+                              gameReview={gameReview}
+                            />
+                          </AccordionDetails>
+                        </Accordion>
+                        <Accordion
+                          expanded={activeAnalysisTab === 1}
+                          onChange={() =>
+                            setActiveAnalysisTab(
+                              activeAnalysisTab === 1 ? -1 : 1
+                            )
+                          }
+                          sx={{
+                            backgroundColor: purpleTheme.background.card,
+                            "&:before": { display: "none" },
+                            borderRadius: 2,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={
+                              <ExpandMoreIcon
+                                sx={{ color: purpleTheme.text.primary }}
+                              />
+                            }
+                            sx={{
+                              backgroundColor: purpleTheme.background.card,
+                              "&:hover": {
+                                backgroundColor: `${purpleTheme.secondary}20`,
+                              },
+                            }}
+                          >
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                color: purpleTheme.text.primary,
+                                fontWeight: 600,
+                              }}
+                            >
                               Stockfish 17 NNUE Analysis
                             </Typography>
                           </AccordionSummary>
-                          <AccordionDetails sx={{ backgroundColor: purpleTheme.background.paper }}>
+                          <AccordionDetails
+                            sx={{
+                              backgroundColor: purpleTheme.background.paper,
+                            }}
+                          >
                             <StockfishAnalysisTab
                               stockfishAnalysisResult={stockfishAnalysisResult}
                               stockfishLoading={stockfishLoading}
@@ -861,7 +963,9 @@ export default function PGNUploaderPage() {
                               llmLoading={llmLoading}
                               analyzeWithStockfish={analyzeWithStockfish}
                               formatEvaluation={formatEvaluation}
-                              formatPrincipalVariation={formatPrincipalVariation}
+                              formatPrincipalVariation={
+                                formatPrincipalVariation
+                              }
                               setEngineDepth={setEngineDepth}
                               setEngineLines={setEngineLines}
                             />
@@ -869,28 +973,48 @@ export default function PGNUploaderPage() {
                         </Accordion>
 
                         {/* Opening Explorer */}
-                        <Accordion 
-                          expanded={activeAnalysisTab === 1}
-                          onChange={() => setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)}
+                        <Accordion
+                          expanded={activeAnalysisTab === 2}
+                          onChange={() =>
+                            setActiveAnalysisTab(
+                              activeAnalysisTab === 2 ? -1 : 2
+                            )
+                          }
                           sx={{
                             backgroundColor: purpleTheme.background.card,
-                            '&:before': { display: 'none' },
+                            "&:before": { display: "none" },
                             borderRadius: 2,
-                            overflow: 'hidden'
+                            overflow: "hidden",
                           }}
                         >
                           <AccordionSummary
-                            expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                            expandIcon={
+                              <ExpandMoreIcon
+                                sx={{ color: purpleTheme.text.primary }}
+                              />
+                            }
                             sx={{
                               backgroundColor: purpleTheme.background.card,
-                              '&:hover': { backgroundColor: `${purpleTheme.secondary}20` }
+                              "&:hover": {
+                                backgroundColor: `${purpleTheme.secondary}20`,
+                              },
                             }}
                           >
-                            <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                color: purpleTheme.text.primary,
+                                fontWeight: 600,
+                              }}
+                            >
                               Opening Explorer
                             </Typography>
                           </AccordionSummary>
-                          <AccordionDetails sx={{ backgroundColor: purpleTheme.background.paper }}>
+                          <AccordionDetails
+                            sx={{
+                              backgroundColor: purpleTheme.background.paper,
+                            }}
+                          >
                             <OpeningExplorer
                               openingLoading={openingLoading}
                               openingData={openingData}
@@ -903,28 +1027,48 @@ export default function PGNUploaderPage() {
                         </Accordion>
 
                         {/* Chess DB */}
-                        <Accordion 
-                          expanded={activeAnalysisTab === 2}
-                          onChange={() => setActiveAnalysisTab(activeAnalysisTab === 2 ? -1 : 2)}
+                        <Accordion
+                          expanded={activeAnalysisTab === 3}
+                          onChange={() =>
+                            setActiveAnalysisTab(
+                              activeAnalysisTab === 3 ? -1 : 3
+                            )
+                          }
                           sx={{
                             backgroundColor: purpleTheme.background.card,
-                            '&:before': { display: 'none' },
+                            "&:before": { display: "none" },
                             borderRadius: 2,
-                            overflow: 'hidden'
+                            overflow: "hidden",
                           }}
                         >
                           <AccordionSummary
-                            expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                            expandIcon={
+                              <ExpandMoreIcon
+                                sx={{ color: purpleTheme.text.primary }}
+                              />
+                            }
                             sx={{
                               backgroundColor: purpleTheme.background.card,
-                              '&:hover': { backgroundColor: `${purpleTheme.secondary}20` }
+                              "&:hover": {
+                                backgroundColor: `${purpleTheme.secondary}20`,
+                              },
                             }}
                           >
-                            <Typography variant="h6" sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}>
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                color: purpleTheme.text.primary,
+                                fontWeight: 600,
+                              }}
+                            >
                               Chess Database
                             </Typography>
                           </AccordionSummary>
-                          <AccordionDetails sx={{ backgroundColor: purpleTheme.background.paper }}>
+                          <AccordionDetails
+                            sx={{
+                              backgroundColor: purpleTheme.background.paper,
+                            }}
+                          >
                             <ChessDBDisplay
                               data={chessdbdata}
                               analyzeMove={handleMoveClick}

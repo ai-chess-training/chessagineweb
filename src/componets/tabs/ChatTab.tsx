@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 
 import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon } from "@mui/icons-material";
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import ReactMarkdown from "react-markdown";
 import {
   Stack,
@@ -145,8 +146,49 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const [fontSize, setFontSize] = useState(14);
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [compactView, setCompactView] = useState(false);
+  
+  // Resize functionality
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
+  const startDimensionsRef = useRef({ width: 0, height: 0 });
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Resize handler
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    startDimensionsRef.current = { ...dimensions };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startPosRef.current.x;
+      const deltaY = e.clientY - startPosRef.current.y;
+      
+      // Set min and max limits
+      const minWidth = 350;
+      const maxWidth = 1200;
+      const minHeight = 400;
+      const maxHeight = 900;
+      
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startDimensionsRef.current.width + deltaX));
+      const newHeight = Math.min(maxHeight, Math.max(minHeight, startDimensionsRef.current.height + deltaY));
+      
+      setDimensions({ width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [dimensions]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -283,40 +325,46 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
   return (
     <Box
+      ref={containerRef}
       sx={{
-        height: "100vh",
+        width: `${dimensions.width}px`,
+        height: `${dimensions.height}px`,
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#1a1a1a",
         overflow: "hidden",
+        position: "relative",
+        border: "1px solid #444",
+        borderRadius: 1,
+        userSelect: isResizing ? 'none' : 'auto',
       }}
     >
       {/* Header */}
       <Paper
         sx={{
-          p: 2,
+          p: 1.5,
           backgroundColor: "#1a1a1a",
           borderRadius: 0,
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Avatar
               src="/static/images/agineowl.png"
               sx={{
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
               }}
             />
-            <Typography variant="subtitle1" sx={{ color: "white", fontWeight: 600 }}>
+            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
               AgineAI Chat
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
           
           {/* Action Buttons */}
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={0.5}>
             <Tooltip title="Quick Prompts" arrow>
               <IconButton
                 onClick={() => setDrawerOpen(true)}
@@ -353,13 +401,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
         {/* Mode Controls */}
         {!puzzleMode && !playMode && (
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
               Session Mode
             </Typography>
             <Switch
               checked={sessionMode}
               onChange={(e) => setSessionMode(e.target.checked)}
+              size="small"
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
                   color: '#9c27b0',
@@ -369,7 +418,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 },
               }}
             />
-            <Typography variant="caption" sx={{ color: "grey.400" }}>
+            <Typography variant="caption" sx={{ color: "grey.400", fontSize: '11px' }}>
               {sessionMode ? "Position context enabled" : "General chat mode"}
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
@@ -381,29 +430,34 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 sx={{ 
                   color: "white",
                   borderColor: "rgba(255,255,255,0.3)",
+                  fontSize: '11px',
+                  py: 0.5,
+                  px: 1,
                   "&:hover": {
                     borderColor: "#9c27b0",
                     backgroundColor: "rgba(156, 39, 176, 0.1)",
                   }
                 }}
               >
-                Clear Chat
+                Clear
               </Button>
             )}
           </Stack>
         )}
 
         {(puzzleMode || playMode) && (
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
             <Chip 
               label={modeTitle}
+              size="small"
               sx={{ 
                 backgroundColor: "#9c27b0", 
                 color: "white",
-                fontWeight: 500
+                fontWeight: 500,
+                fontSize: '11px'
               }} 
             />
-            <Typography variant="caption" sx={{ color: "grey.400" }}>
+            <Typography variant="caption" sx={{ color: "grey.400", fontSize: '10px' }}>
               {modeDescription}
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
@@ -415,6 +469,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 sx={{ 
                   color: "white",
                   borderColor: "rgba(255,255,255,0.3)",
+                  fontSize: '11px',
+                  py: 0.5,
+                  px: 1,
                   "&:hover": {
                     borderColor: "#9c27b0",
                     backgroundColor: "rgba(156, 39, 176, 0.1)",
@@ -436,8 +493,22 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           overflowY: "auto",
           backgroundColor: "#1a1a1a",
           position: "relative",
-          px: 2,
+          px: 1.5,
           py: 1,
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#2a2a2a',
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#555',
+            borderRadius: '3px',
+            '&:hover': {
+              background: '#666',
+            },
+          },
         }}
       >
         {chatMessages.length === 0 ? (
@@ -449,18 +520,18 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               justifyContent: "center",
               height: "100%",
               color: "white",
-              p: 4,
+              p: 2,
             }}
           >
             <Avatar
               src="/static/images/agineowl.png"
               sx={{
-                width: 80,
-                height: 80,
-                mb: 3,
+                width: 50,
+                height: 50,
+                mb: 2,
               }}
             />
-            <Typography variant="h5" sx={{ mb: 2, textAlign: "center", fontWeight: 500 }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, textAlign: "center", fontWeight: 500 }}>
               {playMode 
                 ? "Ready to help you win!" 
                 : puzzleMode 
@@ -468,7 +539,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 : "Let's talk chess!"
               }
             </Typography>
-            <Typography variant="body1" sx={{ mb: 4, textAlign: "center", color: "grey.300", maxWidth: 400 }}>
+            <Typography variant="caption" sx={{ mb: 3, textAlign: "center", color: "grey.300", maxWidth: 300 }}>
               {playMode 
                 ? "Ask me about your moves, tactics, and strategy during your game."
                 : puzzleMode 
@@ -480,10 +551,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </Typography>
 
             {/* Quick Start Prompts */}
-            <Box sx={{ width: "100%", maxWidth: 600 }}>
+            <Box sx={{ width: "100%" }}>
               <Typography
-                variant="body2"
-                sx={{ mb: 3, display: "block", opacity: 0.8, textAlign: "center", color: "grey.400" }}
+                variant="caption"
+                sx={{ mb: 2, display: "block", opacity: 0.8, textAlign: "center", color: "grey.400" }}
               >
                 Quick start - click any topic:
               </Typography>
@@ -491,20 +562,22 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 sx={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: 1.5,
+                  gap: 1,
                   justifyContent: "center",
                 }}
               >
-                {currentPrompts.slice(0, 6).map((prompt, index) => (
+                {currentPrompts.slice(0, 4).map((prompt, index) => (
                   <Chip
                     key={index}
                     label={prompt}
                     variant="outlined"
+                    size="small"
                     onClick={() => handlePromptSelect(prompt)}
                     sx={{
                       color: "white",
                       borderColor: "rgba(156, 39, 176, 0.5)",
                       cursor: "pointer",
+                      fontSize: '10px',
                       transition: "all 0.2s ease",
                       "&:hover": {
                         backgroundColor: "rgba(156, 39, 176, 0.2)",
@@ -515,12 +588,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   />
                 ))}
               </Box>
-              <Box sx={{ textAlign: "center", mt: 3 }}>
+              <Box sx={{ textAlign: "center", mt: 2 }}>
                 <Button
                   variant="text"
+                  size="small"
                   onClick={() => setDrawerOpen(true)}
                   sx={{ 
                     color: "#9c27b0",
+                    fontSize: '11px',
                     "&:hover": {
                       backgroundColor: "rgba(156, 39, 176, 0.1)",
                     },
@@ -532,7 +607,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </Box>
           </Box>
         ) : (
-          <Stack spacing={compactView ? 1 : 2}>
+          <Stack spacing={compactView ? 0.5 : 1}>
             {chatMessages.map((message) => (
               <Box
                 key={message.id}
@@ -547,8 +622,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   <Avatar
                     src="/static/images/agineowl.png"
                     sx={{
-                      width: compactView ? 28 : 32,
-                      height: compactView ? 28 : 32,
+                      width: compactView ? 24 : 28,
+                      height: compactView ? 24 : 28,
                       mr: 1,
                       mt: 0.5,
                       flexShrink: 0,
@@ -558,7 +633,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
                 <Paper
                   sx={{
-                    p: compactView ? 1.5 : 2,
+                    p: compactView ? 1 : 1.5,
                     maxWidth: "85%",
                     backgroundColor: message.role === "user" ? "#1976d2" : "#7b1fa2",
                     color: "white",
@@ -576,8 +651,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         onClick={() => copyMessage(message.content)}
                         sx={{
                           position: "absolute",
-                          top: 4,
-                          right: 4,
+                          top: 2,
+                          right: 2,
                           opacity: 0,
                           transition: "opacity 0.2s",
                           color: "rgba(255, 255, 255, 0.7)",
@@ -589,7 +664,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         }}
                         size="small"
                       >
-                        <ContentCopy fontSize="small" />
+                        <ContentCopy fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -601,17 +676,17 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                             variant="body2" 
                             component="p" 
                             sx={{ 
-                              mb: 1, 
+                              mb: 0.5, 
                               "&:last-child": { mb: 0 },
                               fontSize: `${fontSize}px`,
-                              lineHeight: compactView ? 1.3 : 1.5
+                              lineHeight: compactView ? 1.2 : 1.4
                             }}
                           >
                             {children}
                           </Typography>
                         ),
                         ul: ({ children }) => (
-                          <Box component="ul" sx={{ pl: 2, mb: 1 }}>
+                          <Box component="ul" sx={{ pl: 2, mb: 0.5 }}>
                             {children}
                           </Box>
                         ),
@@ -620,7 +695,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                             component="li" 
                             variant="body2" 
                             sx={{ 
-                              mb: 0.5,
+                              mb: 0.25,
                               fontSize: `${fontSize}px`,
                             }}
                           >
@@ -636,7 +711,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       variant="body2" 
                       sx={{ 
                         fontSize: `${fontSize}px`,
-                        lineHeight: compactView ? 1.3 : 1.5
+                        lineHeight: compactView ? 1.2 : 1.4
                       }}
                     >
                       {message.content}
@@ -648,7 +723,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       sx={{ 
                         opacity: 0.7, 
                         display: "block", 
-                        mt: 1,
+                        mt: 0.5,
                         fontSize: `${fontSize - 2}px`
                       }}
                     >
@@ -669,8 +744,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 <Avatar
                   src="/static/images/agineowl.png"
                   sx={{
-                    width: compactView ? 28 : 32,
-                    height: compactView ? 28 : 32,
+                    width: compactView ? 24 : 28,
+                    height: compactView ? 24 : 28,
                     mr: 1,
                     mt: 0.5,
                     flexShrink: 0,
@@ -678,7 +753,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 />
                 <Paper
                   sx={{
-                    p: compactView ? 1.5 : 2,
+                    p: compactView ? 1 : 1.5,
                     backgroundColor: "#7b1fa2",
                     display: "flex",
                     alignItems: "center",
@@ -686,8 +761,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     borderRadius: 2,
                   }}
                 >
-                  <CircularProgress size={16} sx={{ color: "white" }} />
-                  <Typography variant="body2" sx={{ color: "white", fontSize: `${fontSize}px` }}>
+                  <CircularProgress size={14} sx={{ color: "white" }} />
+                  <Typography variant="caption" sx={{ color: "white", fontSize: `${fontSize}px` }}>
                     Agine is thinking...
                   </Typography>
                   {abortChatMessage && (
@@ -697,7 +772,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         size="small"
                         sx={{
                           color: "white",
-                          ml: 1,
+                          ml: 0.5,
                           "&:hover": {
                             backgroundColor: "rgba(255, 255, 255, 0.1)",
                           },
@@ -719,7 +794,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       {/* Chat Input */}
       <Paper
         sx={{
-          p: 2,
+          p: 1.5,
           backgroundColor: "#1a1a1a",
           borderRadius: 0,
           borderTop: "1px solid rgba(255,255,255,0.1)",
@@ -729,7 +804,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           <TextField
             fullWidth
             multiline
-            maxRows={4}
+            maxRows={3}
             placeholder={
               playMode 
                 ? "Ask for game advice..." 
@@ -743,6 +818,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={handleChatKeyPress}
             disabled={chatLoading}
+            size="small"
             sx={{
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "rgba(255,255,255,0.05)",
@@ -768,11 +844,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           />
           <Button
             variant="contained"
+            size="small"
             onClick={() => sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode)}
             disabled={chatLoading || !chatInput.trim()}
             sx={{
               minWidth: "auto",
-              px: 2,
+              px: 1.5,
               backgroundColor: "#9c27b0",
               "&:hover": {
                 backgroundColor: "#7b1fa2",
@@ -782,10 +859,41 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }
             }}
           >
-            <Send />
+            <Send fontSize="small" />
           </Button>
         </Stack>
       </Paper>
+
+      {/* Resize Handle */}
+      <Box
+        onMouseDown={handleMouseDown}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '16px',
+          height: '16px',
+          cursor: 'nw-resize',
+          backgroundColor: '#555',
+          borderTopRightRadius: '3px',
+          opacity: 0.7,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': {
+            opacity: 1,
+            backgroundColor: '#666',
+          },
+        }}
+      >
+        <OpenInFullIcon 
+          sx={{ 
+            fontSize: '10px', 
+            color: '#ccc',
+            transform: 'rotate(180deg)'
+          }} 
+        />
+      </Box>
 
       {/* Settings Dialog */}
       <Dialog

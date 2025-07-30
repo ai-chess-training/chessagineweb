@@ -24,9 +24,10 @@ import {
   Upload,
   Gamepad,
 } from "@mui/icons-material";
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../opening/helper";
@@ -110,6 +111,50 @@ export default function AiChessboardPanel({
   const [showCoordinates, setShowCoordinates] = useState(true);
   const [animationDuration, setAnimationDuration] = useState(300);
   const [showFen, setShowFen] = useState(false); // Default to false (hidden)
+
+  // Resize functionality
+  const [panelDimensions, setPanelDimensions] = useState({ width: 600, height: 800 });
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
+  const startDimensionsRef = useRef({ width: 0, height: 0 });
+
+  // Resize handler
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    startDimensionsRef.current = { ...panelDimensions };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startPosRef.current.x;
+      const deltaY = e.clientY - startPosRef.current.y;
+      
+      // Set min and max limits
+      const minWidth = 400;
+      const maxWidth = 800;
+      const minHeight = 500;
+      const maxHeight = 800;
+      
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startDimensionsRef.current.width + deltaX));
+      const newHeight = Math.min(maxHeight, Math.max(minHeight, startDimensionsRef.current.height + deltaY));
+      
+      // Auto-adjust board size based on panel width
+      const newBoardSize = Math.min(800, Math.max(300, newWidth - 70));
+      setBoardSize(newBoardSize);
+      
+      setPanelDimensions({ width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [panelDimensions]);
 
   // Memoize the initial game setup to avoid recalculation
   const gameHistory = useMemo(() => {
@@ -556,166 +601,237 @@ export default function AiChessboardPanel({
   const shouldShowPGN = !gameReviewMode && !puzzleMode && !playMode;
 
   return (
-    <Box>
-      {/* Header */}
-      <Paper
+    <Box
+      ref={containerRef}
+      sx={{
+        width: `${panelDimensions.width}px`,
+        height: `${panelDimensions.height}px`,
+        position: 'relative',
+        border: '1px solid #444',
+        borderRadius: 2,
+        backgroundColor: '#1a1a1a',
+        overflow: 'hidden',
+        userSelect: isResizing ? 'none' : 'auto',
+      }}
+    >
+      <Box
         sx={{
+          height: '100%',
+          overflowY: 'auto',
+          overflowX: 'hidden',
           p: 2,
-          backgroundColor: "#1a1a1a",
-          borderRadius: 2,
-          mb: 2,
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#2a2a2a',
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#555',
+            borderRadius: '3px',
+            '&:hover': {
+              background: '#666',
+            },
+          },
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Gamepad sx={{ color: modeInfo.color }} />
-            <Typography
-              variant="subtitle2"
-              sx={{ color: "white", fontWeight: 600 }}
-            >
-              Chessboard
-            </Typography>
-          </Box>
-          <Chip
-            label={modeInfo.label}
-            size="small"
-            sx={{
-              backgroundColor: `${modeInfo.color}20`,
-              color: modeInfo.color,
-              fontSize: "0.7rem",
-              fontWeight: 600,
-            }}
-          />
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton
-            onClick={() => setSettingsOpen(true)}
-            sx={{ color: "white", p: 0.5 }}
-            size="small"
-          >
-            <SettingsIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-
-        {/* Board Info */}
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
-            Board Size: {boardSize}px
-          </Typography>
-          {(puzzleMode || playMode) && (
-            <Typography variant="caption" sx={{ color: "grey.400" }}>
-              Orientation: {getBoardOrientation()}
-            </Typography>
-          )}
-        </Stack>
-      </Paper>
-
-      {/* Chessboard */}
-      <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-        <Chessboard
-          position={fen}
-          onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
-          onSquareClick={
-            puzzleMode ? handleSquarePuzzleClick : handleSquareClick
-          }
-          allowDragOutsideBoard={false}
-          animationDuration={animationDuration}
-          showBoardNotation={showCoordinates}
-          customSquareStyles={
-            puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
-          }
-          customArrows={customArrows}
-          boardWidth={boardSize}
-          boardOrientation={getBoardOrientation()}
-        />
-      </Box>
-
-      {/* Navigation Controls */}
-      {!playMode && !gameReviewMode && !puzzleMode && (
-        <Stack spacing={2}>
-          {/* Navigation buttons */}
-          <Stack direction="row" spacing={2}>
-            <Button
-              onClick={goToPreviousMove}
-              variant="contained"
-              disabled={isPreviousDisabled}
-              startIcon={<NavigateBefore />}
-              fullWidth
-              sx={{
-                backgroundColor: "#9c27b0",
-                "&:hover": {
-                  backgroundColor: "#7b1fa2",
-                },
-                "&:disabled": {
-                  backgroundColor: "rgba(156, 39, 176, 0.3)",
-                },
-              }}
-            >
-              Previous
-            </Button>
-            <Button
-              onClick={goToNextMove}
-              variant="contained"
-              disabled={isNextDisabled}
-              endIcon={<NavigateNext />}
-              fullWidth
-              sx={{
-                backgroundColor: "#9c27b0",
-                "&:hover": {
-                  backgroundColor: "#7b1fa2",
-                },
-                "&:disabled": {
-                  backgroundColor: "rgba(156, 39, 176, 0.3)",
-                },
-              }}
-            >
-              Next
-            </Button>
-          </Stack>
-        </Stack>
-      )}
-
-      {!puzzleMode && !playMode && (
-        <Stack spacing={2} sx={{ mt: 2 }}>
-          {/* Current FEN Display - Only show if showFen is true */}
-          {showFen && (
-            <Paper
-              sx={{
-                p: 2,
-                backgroundColor: "#1a1a1a",
-                borderRadius: 2,
-              }}
-            >
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-                Current Position (FEN)
-              </Typography>
+        {/* Header */}
+        <Paper
+          sx={{
+            p: 1.5,
+            backgroundColor: "#1a1a1a",
+            borderRadius: 2,
+            mb: 2,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Gamepad sx={{ color: modeInfo.color, fontSize: '20px' }} />
               <Typography
-                variant="body2"
+                variant="subtitle2"
+                sx={{ color: "white", fontWeight: 600 }}
+              >
+                Chessboard
+              </Typography>
+            </Box>
+            <Chip
+              label={modeInfo.label}
+              size="small"
+              sx={{
+                backgroundColor: `${modeInfo.color}20`,
+                color: modeInfo.color,
+                fontSize: "0.65rem",
+                fontWeight: 600,
+              }}
+            />
+            <Box sx={{ flexGrow: 1 }} />
+            <IconButton
+              onClick={() => setSettingsOpen(true)}
+              sx={{ color: "white", p: 0.5 }}
+              size="small"
+            >
+              <SettingsIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+
+          {/* Board Info */}
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
+              Board Size: {boardSize}px
+            </Typography>
+            {(puzzleMode || playMode) && (
+              <Typography variant="caption" sx={{ color: "grey.400" }}>
+                Orientation: {getBoardOrientation()}
+              </Typography>
+            )}
+          </Stack>
+        </Paper>
+
+        {/* Chessboard */}
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+          <Chessboard
+            position={fen}
+            onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
+            onSquareClick={
+              puzzleMode ? handleSquarePuzzleClick : handleSquareClick
+            }
+            allowDragOutsideBoard={false}
+            animationDuration={animationDuration}
+            showBoardNotation={showCoordinates}
+            customSquareStyles={
+              puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
+            }
+            customArrows={customArrows}
+            boardWidth={boardSize}
+            boardOrientation={getBoardOrientation()}
+          />
+        </Box>
+
+        {/* Navigation Controls */}
+        {!playMode && !gameReviewMode && !puzzleMode && (
+          <Stack spacing={2}>
+            {/* Navigation buttons */}
+            <Stack direction="row" spacing={2}>
+              <Button
+                onClick={goToPreviousMove}
+                variant="contained"
+                disabled={isPreviousDisabled}
+                startIcon={<NavigateBefore fontSize="small" />}
+                fullWidth
+                size="small"
                 sx={{
-                  color: "white",
-                  fontFamily: "monospace",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  p: 1,
-                  borderRadius: 1,
-                  wordBreak: "break-all",
-                  fontSize: "0.8rem",
+                  backgroundColor: "#9c27b0",
+                  "&:hover": {
+                    backgroundColor: "#7b1fa2",
+                  },
+                  "&:disabled": {
+                    backgroundColor: "rgba(156, 39, 176, 0.3)",
+                  },
                 }}
               >
-                {fen}
-              </Typography>
-            </Paper>
-          )}
+                Previous
+              </Button>
+              <Button
+                onClick={goToNextMove}
+                variant="contained"
+                disabled={isNextDisabled}
+                endIcon={<NavigateNext fontSize="small" />}
+                fullWidth
+                size="small"
+                sx={{
+                  backgroundColor: "#9c27b0",
+                  "&:hover": {
+                    backgroundColor: "#7b1fa2",
+                  },
+                  "&:disabled": {
+                    backgroundColor: "rgba(156, 39, 176, 0.3)",
+                  },
+                }}
+              >
+                Next
+              </Button>
+            </Stack>
+          </Stack>
+        )}
 
-          {/* PGN View */}
-          {shouldShowPGN && pgnMoves.length > 0 && (
-            <PGNView
-              moves={pgnMoves}
-              moveAnalysis={null}
-              goToMove={goToMoveFromPGN}
-              currentMoveIndex={currentMoveIndex} // This should match the chessboard's current position
-            />
-          )}
-        </Stack>
-      )}
+        {!puzzleMode && !playMode && (
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            {/* Current FEN Display - Only show if showFen is true */}
+            {showFen && (
+              <Paper
+                sx={{
+                  p: 1.5,
+                  backgroundColor: "#1a1a1a",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="caption" sx={{ color: "grey.300", mb: 1 }}>
+                  Current Position (FEN)
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "white",
+                    fontFamily: "monospace",
+                    backgroundColor: "rgba(255,255,255,0.05)",
+                    p: 1,
+                    borderRadius: 1,
+                    wordBreak: "break-all",
+                    fontSize: "0.75rem",
+                    display: "block",
+                  }}
+                >
+                  {fen}
+                </Typography>
+              </Paper>
+            )}
+
+            {/* PGN View */}
+            {shouldShowPGN && pgnMoves.length > 0 && (
+              <PGNView
+                moves={pgnMoves}
+                moveAnalysis={null}
+                goToMove={goToMoveFromPGN}
+                currentMoveIndex={currentMoveIndex}
+              />
+            )}
+          </Stack>
+        )}
+
+        {(puzzleMode || playMode) && <Divider sx={{ mt: 2 }} />}
+      </Box>
+
+      {/* Resize Handle */}
+      <Box
+        onMouseDown={handleMouseDown}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '16px',
+          height: '16px',
+          cursor: 'nw-resize',
+          backgroundColor: '#555',
+          borderTopRightRadius: '3px',
+          opacity: 0.7,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': {
+            opacity: 1,
+            backgroundColor: '#666',
+          },
+        }}
+      >
+        <OpenInFullIcon 
+          sx={{ 
+            fontSize: '10px', 
+            color: '#ccc',
+            transform: 'rotate(180deg)'
+          }} 
+        />
+      </Box>
 
       {/* Settings Dialog */}
       <Dialog
@@ -740,7 +856,7 @@ export default function AiChessboardPanel({
                 value={boardSize}
                 onChange={handleBoardSizeChange}
                 min={300}
-                max={650}
+                max={800}
                 step={25}
                 sx={{
                   color: "#9c27b0",
@@ -933,8 +1049,6 @@ export default function AiChessboardPanel({
           </Button>
         </DialogActions>
       </Dialog>
-
-      {(puzzleMode || playMode) && <Divider sx={{ mt: 2 }} />}
     </Box>
   );
 }

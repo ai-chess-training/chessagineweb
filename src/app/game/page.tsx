@@ -659,7 +659,6 @@ export default function PGNUploaderPage() {
                 setFen={setFen}
                 setGame={setGame}
                 reviewMove={gameReview[currentMoveIndex]}
-                gameReviewMoveIndex={currentMoveIndex}
                 gameReviewMode={true}
                 setLlmAnalysisResult={setLlmAnalysisResult}
                 setOpeningData={setOpeningData}

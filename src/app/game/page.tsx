@@ -23,7 +23,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
   Chat as ChatIcon,
-  Info as InfoIcon,
   Upload as UploadIcon,
   Refresh as RefreshIcon,
   PlayArrow as PlayIcon,

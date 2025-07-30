@@ -51,7 +51,6 @@ interface AiChessboardPanelProps {
   setFen: (fen: string) => void;
   setLlmAnalysisResult: (result: string | null) => void;
   setStockfishAnalysisResult: (result: PositionEval | null) => void;
-  gameReviewMoveIndex?: number;
   setOpeningData: (result: MasterGames | null) => void;
   puzzleMode?: boolean;
   playMode?: boolean;
@@ -90,7 +89,6 @@ export default function AiChessboardPanel({
   setMoveSquares,
   puzzleCustomSquareStyle,
   reviewMove,
-  gameReviewMoveIndex,
   side,
   playMode,
   gameStatus = "waiting",

@@ -16,13 +16,13 @@ import {
   DialogActions,
   Chip,
 } from "@mui/material";
-import { 
+import {
   Settings as SettingsIcon,
   NavigateBefore,
   NavigateNext,
   RotateLeft,
   Upload,
-  Gamepad
+  Gamepad,
 } from "@mui/icons-material";
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
@@ -36,6 +36,7 @@ import {
 } from "react-chessboard/dist/chessboard/types";
 import { MoveAnalysis } from "../agine/useGameReview";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
+import PGNView from "../tabs/PgnView";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -110,6 +111,7 @@ export default function AiChessboardPanel({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showCoordinates, setShowCoordinates] = useState(true);
   const [animationDuration, setAnimationDuration] = useState(300);
+  const [showFen, setShowFen] = useState(false); // Default to false (hidden)
 
   // Memoize the initial game setup to avoid recalculation
   const gameHistory = useMemo(() => {
@@ -152,7 +154,7 @@ export default function AiChessboardPanel({
       modify(newGame);
 
       const newFen = newGame.fen();
-      
+
       const newHistory = [
         ...moveHistory.slice(0, currentMoveIndex + 1),
         newFen,
@@ -177,12 +179,13 @@ export default function AiChessboardPanel({
   // Check if player can move in play mode
   const canPlayerMove = useCallback(() => {
     if (!playMode || gameStatus !== "playing") return true;
-    
+
     const currentTurn = game.turn();
     return (
-      (side === "white" && currentTurn === "w") ||
-      (side === "black" && currentTurn === "b")
-    ) && !engineThinking;
+      ((side === "white" && currentTurn === "w") ||
+        (side === "black" && currentTurn === "b")) &&
+      !engineThinking
+    );
   }, [playMode, gameStatus, game, playerSide, engineThinking]);
 
   // Custom onDrop handler for gameplay
@@ -214,7 +217,11 @@ export default function AiChessboardPanel({
       } else {
         let moveMade = false;
         safeGameMutate((gameInstance) => {
-          const move = gameInstance.move({ from: source, to: target, promotion: "q" });
+          const move = gameInstance.move({
+            from: source,
+            to: target,
+            promotion: "q",
+          });
           if (move) {
             moveMade = true;
             clearAnalysis();
@@ -224,7 +231,66 @@ export default function AiChessboardPanel({
         return moveMade;
       }
     },
-    [playMode, canPlayerMove, game, setGame, setFen, setMoveSquares, safeGameMutate, clearAnalysis]
+    [
+      playMode,
+      canPlayerMove,
+      game,
+      setGame,
+      setFen,
+      setMoveSquares,
+      safeGameMutate,
+      clearAnalysis,
+    ]
+  );
+
+  const pgnMoves = useMemo(() => {
+    if (moveHistory.length <= 1) return [];
+
+    const moves: string[] = [];
+    const tempGame = new Chess();
+
+    // Start from the initial position and replay each move
+    for (let i = 1; i < moveHistory.length; i++) {
+      const prevFen = moveHistory[i - 1];
+      const currentFen = moveHistory[i];
+
+      tempGame.load(prevFen);
+      const possibleMoves = tempGame.moves({ verbose: true });
+
+      // Find which move leads to the current FEN
+      for (const move of possibleMoves) {
+        const testGame = new Chess(prevFen);
+        testGame.move(move);
+
+        if (testGame.fen() === currentFen) {
+          moves.push(move.san);
+          break;
+        }
+      }
+    }
+
+    return moves;
+  }, [moveHistory]);
+
+  const goToMoveFromPGN = useCallback(
+    (moveNumber: number) => {
+      // moveNumber is 1-based from PGN component
+      // Convert to moveHistory index (moveHistory[0] is starting position)
+      const historyIndex = moveNumber;
+
+      if (historyIndex >= 0 && historyIndex < moveHistory.length) {
+        const newFen = moveHistory[historyIndex];
+        const newGame = new Chess(newFen);
+
+        setGame(newGame);
+        setFen(newFen);
+        setCurrentMoveIndex(historyIndex);
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        clearAnalysis();
+      }
+    },
+    [moveHistory, setGame, setFen, clearAnalysis]
   );
 
   // Optimized square click handler
@@ -312,7 +378,6 @@ export default function AiChessboardPanel({
     ]
   );
 
-  // Memoized arrows calculation
   const customArrows = useMemo((): Arrow[] => {
     if (!showArrows) {
       return [];
@@ -320,7 +385,7 @@ export default function AiChessboardPanel({
 
     const arrows: Arrow[] = [];
 
-    // Add review move arrow if present
+    // Only show review arrow if reviewMove exists and corresponds to current position
     if (reviewMove) {
       const reviewArrow: Arrow = [
         reviewMove.arrowMove.from,
@@ -337,16 +402,23 @@ export default function AiChessboardPanel({
           if (move && move.length >= 4) {
             const from = move.substring(0, 2);
             const to = move.substring(2, 4);
-            const engineArrow: Arrow = [
-              from as Square,
-              to as Square,
-              "#4caf50",
-            ];
-            arrows.push(engineArrow);
+
+            // Avoid duplicate arrows
+            const arrowKey = `${from}-${to}`;
+            const reviewArrowKey = `${reviewMove.arrowMove.from}-${reviewMove.arrowMove.to}`;
+
+            if (arrowKey !== reviewArrowKey) {
+              const engineArrow: Arrow = [
+                from as Square,
+                to as Square,
+                "#4caf50",
+              ];
+              arrows.push(engineArrow);
+            }
           }
         }
       }
-    } else if (stockfishAnalysisResult?.lines) {
+    } else if (!reviewMove && stockfishAnalysisResult?.lines) {
       // Only show engine arrow if no reviewMove is present
       const bestLine = stockfishAnalysisResult.lines[0]?.pv;
       if (bestLine && bestLine.length > 0) {
@@ -361,7 +433,7 @@ export default function AiChessboardPanel({
     }
 
     return arrows;
-  }, [showArrows, reviewMove, stockfishAnalysisResult, gameReviewMoveIndex]);
+  }, [showArrows, reviewMove, stockfishAnalysisResult, currentMoveIndex]);
 
   // Memoized custom square styles
   const customSquareStyles = useMemo(() => {
@@ -482,6 +554,9 @@ export default function AiChessboardPanel({
 
   const modeInfo = getModeInfo();
 
+  // Determine if PGN should be shown
+  const shouldShowPGN = !gameReviewMode && !puzzleMode && !playMode;
+
   return (
     <Box>
       {/* Header */}
@@ -490,25 +565,28 @@ export default function AiChessboardPanel({
           p: 2,
           backgroundColor: "#1a1a1a",
           borderRadius: 2,
-          mb: 2
+          mb: 2,
         }}
       >
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Gamepad sx={{ color: modeInfo.color }} />
-            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ color: "white", fontWeight: 600 }}
+            >
               Chessboard
             </Typography>
           </Box>
-          <Chip 
+          <Chip
             label={modeInfo.label}
-            size="small" 
-            sx={{ 
-              backgroundColor: `${modeInfo.color}20`, 
+            size="small"
+            sx={{
+              backgroundColor: `${modeInfo.color}20`,
               color: modeInfo.color,
               fontSize: "0.7rem",
-              fontWeight: 600
-            }} 
+              fontWeight: 600,
+            }}
           />
           <Box sx={{ flexGrow: 1 }} />
           <IconButton
@@ -525,7 +603,7 @@ export default function AiChessboardPanel({
           <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
             Board Size: {boardSize}px
           </Typography>
-          {(puzzleMode || playMode ) && (
+          {(puzzleMode || playMode) && (
             <Typography variant="caption" sx={{ color: "grey.400" }}>
               Orientation: {getBoardOrientation()}
             </Typography>
@@ -571,7 +649,7 @@ export default function AiChessboardPanel({
                 },
                 "&:disabled": {
                   backgroundColor: "rgba(156, 39, 176, 0.3)",
-                }
+                },
               }}
             >
               Previous
@@ -589,7 +667,7 @@ export default function AiChessboardPanel({
                 },
                 "&:disabled": {
                   backgroundColor: "rgba(156, 39, 176, 0.3)",
-                }
+                },
               }}
             >
               Next
@@ -600,32 +678,44 @@ export default function AiChessboardPanel({
 
       {!puzzleMode && !playMode && (
         <Stack spacing={2} sx={{ mt: 2 }}>
-          {/* Current FEN Display */}
-          <Paper
-            sx={{
-              p: 2,
-              backgroundColor: "#1a1a1a",
-              borderRadius: 2,
-            }}
-          >
-            <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-              Current Position (FEN)
-            </Typography>
-            <Typography
-              variant="body2"
+          {/* Current FEN Display - Only show if showFen is true */}
+          {showFen && (
+            <Paper
               sx={{
-                color: "white",
-                fontFamily: "monospace",
-                backgroundColor: "rgba(255,255,255,0.05)",
-                p: 1,
-                borderRadius: 1,
-                wordBreak: "break-all",
-                fontSize: "0.8rem",
+                p: 2,
+                backgroundColor: "#1a1a1a",
+                borderRadius: 2,
               }}
             >
-              {fen}
-            </Typography>
-          </Paper>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                Current Position (FEN)
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "white",
+                  fontFamily: "monospace",
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                  p: 1,
+                  borderRadius: 1,
+                  wordBreak: "break-all",
+                  fontSize: "0.8rem",
+                }}
+              >
+                {fen}
+              </Typography>
+            </Paper>
+          )}
+
+          {/* PGN View */}
+          {shouldShowPGN && pgnMoves.length > 0 && (
+            <PGNView
+              moves={pgnMoves}
+              moveAnalysis={null}
+              goToMove={goToMoveFromPGN}
+              currentMoveIndex={currentMoveIndex} // This should match the chessboard's current position
+            />
+          )}
         </Stack>
       )}
 
@@ -637,8 +727,8 @@ export default function AiChessboardPanel({
           sx: {
             backgroundColor: "#1a1a1a",
             color: "white",
-            minWidth: 400
-          }
+            minWidth: 400,
+          },
         }}
       >
         <DialogTitle>Chessboard Settings</DialogTitle>
@@ -659,7 +749,7 @@ export default function AiChessboardPanel({
                 }}
               />
             </Box>
-            
+
             <Box>
               <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
                 Animation Speed: {animationDuration}ms
@@ -681,7 +771,11 @@ export default function AiChessboardPanel({
                 Display Options
               </Typography>
               <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Typography variant="body2" sx={{ color: "grey.300" }}>
                     Show Coordinates
                   </Typography>
@@ -689,18 +783,46 @@ export default function AiChessboardPanel({
                     checked={showCoordinates}
                     onChange={(e) => setShowCoordinates(e.target.checked)}
                     sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#9c27b0',
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#9c27b0",
                       },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#9c27b0',
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#9c27b0",
+                        },
                     }}
                   />
                 </Stack>
-                
+
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    Show FEN String
+                  </Typography>
+                  <Switch
+                    checked={showFen}
+                    onChange={(e) => setShowFen(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#9c27b0",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#9c27b0",
+                        },
+                    }}
+                  />
+                </Stack>
+
                 {!puzzleMode && !playMode && (
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
                     <Typography variant="body2" sx={{ color: "grey.300" }}>
                       Show Analysis Arrows
                     </Typography>
@@ -708,12 +830,13 @@ export default function AiChessboardPanel({
                       checked={showArrows}
                       onChange={(e) => setShowArrows(e.target.checked)}
                       sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: '#9c27b0',
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: "#9c27b0",
                         },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor: '#9c27b0',
-                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: "#9c27b0",
+                          },
                       }}
                     />
                   </Stack>
@@ -724,12 +847,12 @@ export default function AiChessboardPanel({
             {!puzzleMode && !playMode && (
               <>
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
-                
+
                 <Box>
                   <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
                     Board Controls
                   </Typography>
-                  
+
                   <Stack spacing={2}>
                     {/* Flip Board Button */}
                     <Button
@@ -781,7 +904,7 @@ export default function AiChessboardPanel({
                       }}
                       placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                     />
-                    
+
                     <Button
                       variant="contained"
                       onClick={loadCustomFen}
@@ -795,7 +918,7 @@ export default function AiChessboardPanel({
                         },
                         "&:disabled": {
                           backgroundColor: "rgba(156, 39, 176, 0.3)",
-                        }
+                        },
                       }}
                     >
                       Load FEN

@@ -44,6 +44,7 @@ import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
 import UserPGNUploader from "@/componets/lichess/UserPGNUpload"
 import GameInfoTab from "@/componets/tabs/GameInfoTab";
+import PGNView from "@/componets/tabs/PgnView";
 
 // Custom theme colors
 const purpleTheme = {
@@ -343,6 +344,7 @@ export default function PGNUploaderPage() {
     setCurrentMoveIndex(index);
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
     setLlmAnalysisResult(null);
+    setStockfishAnalysisResult(null);
   };
 
   const handleLoadLichessGame = async () => {
@@ -668,6 +670,13 @@ export default function PGNUploaderPage() {
                 llmLoading={llmLoading}
                 stockfishLoading={stockfishLoading}
                 openingLoading={openingLoading}
+              />
+
+              <PGNView
+               moves={moves}
+               moveAnalysis={gameReview}
+               goToMove={goToMove}
+               currentMoveIndex={currentMoveIndex}
               />
 
               <Button

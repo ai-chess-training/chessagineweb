@@ -67,7 +67,15 @@ export default function useAgine(fen: string) {
   const { data, loading, error, queueing, refetch, requestAnalysis } =
     useChessDB(fen);
   const chessdbdata = data;
-  const legalMoves = new Chess(fen).moves();
+
+  const isValidFEN = (fen: string): boolean => {
+  if (!fen || typeof fen !== 'string') return false;
+  const parts = fen.trim().split(' ');
+  return parts.length === 6;
+};
+
+
+  const legalMoves = isValidFEN(fen) ? new Chess(fen).moves() : [];
 
   // Use ref to track current analysis to avoid stale closures
   const currentFenRef = useRef(fen);

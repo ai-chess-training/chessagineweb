@@ -41,7 +41,7 @@ export interface MasterGames {
 // Opening Explorer Functions
 export const getOpeningStats = async (fen: string): Promise<MasterGames | null> => {
   try {
-    const masterEndpoint = `https://explorer.lichess.ovh/masters?fen=${fen}&moves=5&topGames=5`;
+    const masterEndpoint = `https://explorer.lichess.ovh/masters?fen=${fen}&moves=12&topGames=15`;
     const response = await fetch(masterEndpoint);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -56,7 +56,7 @@ export const getOpeningStats = async (fen: string): Promise<MasterGames | null> 
 
 export const getLichessOpeningStats = async (fen: string): Promise<MasterGames | null> => {
   try {
-    const masterEndpoint = `https://explorer.lichess.ovh/lichess?fen=${fen}&moves=5&topGames=4`;
+    const masterEndpoint = `https://explorer.lichess.ovh/lichess?fen=${fen}&moves=12&topGames=4`;
     const response = await fetch(masterEndpoint);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -88,7 +88,7 @@ export const getOpeningStatSpeech = (masterData: MasterGames): string => {
 
   if (moves?.length) {
     speech += "The most common next moves are: ";
-    moves.slice(0, 3).forEach((move, index) => {
+    moves.forEach((move, index) => {
       const moveTotal =
         (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
       const moveWhite = ((move.white / moveTotal) * 100 || 0).toFixed(2);

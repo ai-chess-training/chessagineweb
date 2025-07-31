@@ -40,6 +40,7 @@ import UserGameSelect from "@/componets/lichess/UserGameSelect";
 import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
 import GameInfoTab from "@/componets/tabs/GameInfoTab";
 import PGNView from "@/componets/tabs/PgnView";
+import LegalMoveTab from "@/componets/tabs/LegalMoveTab";
 
 // Custom theme colors
 const purpleTheme = {
@@ -228,6 +229,13 @@ export default function PGNUploaderPage() {
     handleMoveCoachClick,
     handleGameReviewSummaryClick,
     chessdbdata,
+    loading,
+    queueing,
+    error,
+    refetch,
+    requestAnalysis,
+    legalMoves,
+    handleFutureMoveLegalClick,
   } = useAgine(fen);
 
   useEffect(() => {
@@ -277,10 +285,53 @@ export default function PGNUploaderPage() {
     );
   }
 
+  // Function to clean PGN by removing advanced annotations
+const cleanPGN = (pgnText: string) => {
+  let cleaned = pgnText;
+  
+  // Remove all content within curly braces (annotations like {[%clk 1:00:00]})
+  cleaned = cleaned.replace(/\{[^}]*\}/g, '');
+  
+  // Remove extra whitespace that might be left behind
+  cleaned = cleaned.replace(/\s+/g, ' ');
+  
+  // Clean up any double spaces around moves
+  cleaned = cleaned.replace(/\s+(\d+\.)/g, ' $1');
+  
+  // Remove any trailing whitespace from lines
+  cleaned = cleaned.split('\n').map((line: string) => line.trim()).join('\n');
+  
+  // Remove empty lines between moves (but keep header spacing)
+  const lines = cleaned.split('\n');
+  let inHeader = true;
+  const result = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Check if we're still in the header section
+    if (line.startsWith('[') && line.endsWith(']')) {
+      result.push(line);
+      inHeader = true;
+    } else if (line.trim() === '' && inHeader) {
+      // Keep empty lines in header section
+      result.push(line);
+    } else if (line.trim() !== '') {
+      // We're in the moves section now
+      inHeader = false;
+      result.push(line);
+    }
+    // Skip empty lines in moves section
+  }
+  
+  return result.join('\n').trim();
+};
+
   const loadPGN = () => {
     try {
       const tempGame = new Chess();
-      tempGame.loadPgn(pgnText);
+      const cleanedPGN = cleanPGN(pgnText);
+      tempGame.loadPgn(cleanedPGN);
       const moveList = tempGame.history();
       const parsed = extractMovesWithComments(pgnText);
       const info = extractGameInfo(pgnText);
@@ -704,6 +755,7 @@ export default function PGNUploaderPage() {
                 moves={moves}
                 moveAnalysis={gameReview}
                 goToMove={goToMove}
+                gameResult={gameInfo.Result}
                 currentMoveIndex={currentMoveIndex}
               />
 
@@ -839,7 +891,6 @@ export default function PGNUploaderPage() {
                         iconPosition="start"
                         label="AI Chat"
                       />
-                      
                     </Tabs>
                   </Box>
 
@@ -1071,6 +1122,63 @@ export default function PGNUploaderPage() {
                             <ChessDBDisplay
                               data={chessdbdata}
                               analyzeMove={handleMoveClick}
+                              queueing={queueing}
+                              error={error}
+                              loading={loading}
+                              onRefresh={refetch}
+                              onRequestAnalysis={requestAnalysis}
+                            />
+                          </AccordionDetails>
+                        </Accordion>
+                        <Accordion
+                          expanded={activeAnalysisTab === 4}
+                          onChange={() =>
+                            setActiveAnalysisTab(
+                              activeAnalysisTab === 4 ? -1 : 4
+                            )
+                          }
+                          sx={{
+                            backgroundColor: purpleTheme.background.card,
+                            "&:before": { display: "none" },
+                            borderRadius: 2,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={
+                              <ExpandMoreIcon
+                                sx={{ color: purpleTheme.text.primary }}
+                              />
+                            }
+                            sx={{
+                              backgroundColor: purpleTheme.background.card,
+                              "&:hover": {
+                                backgroundColor: `${purpleTheme.secondary}20`,
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  color: purpleTheme.text.primary,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Legal Move Analysis
+                              </Typography>
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails
+                            sx={{
+                              backgroundColor: purpleTheme.background.paper,
+                            }}
+                          >
+                            <LegalMoveTab
+                              legalMoves={legalMoves}
+                              handleFutureMoveLegalClick={
+                                handleFutureMoveLegalClick
+                              }
                             />
                           </AccordionDetails>
                         </Accordion>

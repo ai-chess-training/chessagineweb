@@ -41,6 +41,7 @@ export interface MoveAnalysis {
 
 interface PGNViewProps {
   moves: string[];
+  gameResult?: string;
   moveAnalysis: MoveAnalysis[] | null;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
@@ -97,6 +98,7 @@ const PGNView: React.FC<PGNViewProps> = ({
   moves,
   moveAnalysis,
   goToMove,
+  gameResult,
   currentMoveIndex,
 }) => {
   const [dimensions, setDimensions] = useState({ width: 550, height: 100 });
@@ -249,6 +251,30 @@ const PGNView: React.FC<PGNViewProps> = ({
       
       elements.push(
         <Box key={`space-${moveNumber}`} component="span" sx={{ width: '4px', flexShrink: 0 }} />
+      );
+    }
+    
+    // Add game result at the end if present
+    if (gameResult) {
+      elements.push(
+        <Typography
+          key="game-result"
+          component="span"
+          sx={{ 
+            color: '#FFD700', // Gold color for the result
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            ml: 1,
+            px: 1,
+            py: 0.5,
+            backgroundColor: '#333',
+            borderRadius: '3px',
+            flexShrink: 0
+          }}
+        >
+          {gameResult}
+        </Typography>
       );
     }
     

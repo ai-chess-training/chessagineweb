@@ -677,9 +677,6 @@ export default function AiChessboardPanel({
 
           {/* Board Info */}
           <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
-              Board Size: {boardSize}px
-            </Typography>
             {(puzzleMode || playMode) && (
               <Typography variant="caption" sx={{ color: "grey.400" }}>
                 Orientation: {getBoardOrientation()}

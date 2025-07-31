@@ -14,14 +14,16 @@ import {
   Button,
   Chip,
 } from "@mui/material";
-import { Settings as SettingsIcon, Storage } from "@mui/icons-material";
-import { Chess, validateFen } from "chess.js";
+import { Settings as SettingsIcon, Storage, Refresh, Queue } from "@mui/icons-material";
+import { validateFen } from "chess.js";
 
 export interface CandidateMove {
   uci: string;
   san: string;
   score: string;
   winrate: string;
+  rank: string;
+  note: string;
 }
 
 // Custom hook for fetching ChessDB data
@@ -29,6 +31,7 @@ export function useChessDB(fen: string) {
   const [data, setData] = useState<CandidateMove[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [queueing, setQueueing] = useState<boolean>(false);
 
   const fetchChessDBData = useCallback(async (fenString: string) => {
     if (!fenString.trim()) {
@@ -69,14 +72,12 @@ export function useChessDB(fen: string) {
         throw new Error("Invalid response format: moves not found");
       }
 
-      const maxMoveSize = new Chess(fenString).moves().length;
-
       if (moves.length === 0) {
         setData([]);
         return;
       }
 
-      const processedMoves = moves.slice(0, maxMoveSize).map((move: CandidateMove) => {
+      const processedMoves = moves.map((move: CandidateMove) => {
         const scoreNum = Number(move.score);
         // Convert centipawns to pawns and format to 2 decimal places
         const scoreStr = isNaN(scoreNum) ? "N/A" : (scoreNum / 100).toFixed(2);
@@ -85,6 +86,8 @@ export function useChessDB(fen: string) {
           san: move.san || "N/A",
           score: scoreStr,
           winrate: move.winrate || "N/A",
+          rank: move.rank,
+          note: getChessDbNoteWord(move.note.split(" ")[0]),
         };
       });
 
@@ -92,8 +95,42 @@ export function useChessDB(fen: string) {
     } catch (err) {
       console.log('error!', err)
       setData([]);
+      setError(err instanceof Error ? err.message : "Failed to fetch data");
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const queueAnalysis = useCallback(async (fenString: string) => {
+    if (!fenString.trim() || !validateFen(fenString)) {
+      return;
+    }
+
+    setQueueing(true);
+    try {
+      const encodedFen = encodeURIComponent(fenString);
+      const queueUrl = `https://www.chessdb.cn/cdb.php?action=queue&board=${encodedFen}&json=1`;
+
+      const response = await fetch(queueUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to queue analysis`);
+      }
+
+      const responseData = await response.json();
+      
+      if (responseData.status !== "ok") {
+        throw new Error(`Failed to queue position: ${responseData.status}`);
+      }
+
+      // Optionally show success message or handle response
+      console.log('Position queued successfully');
+      
+    } catch (err) {
+      console.error('Failed to queue analysis:', err);
+      setError(err instanceof Error ? err.message : "Failed to queue analysis");
+    } finally {
+      setQueueing(false);
     }
   }, []);
 
@@ -105,11 +142,17 @@ export function useChessDB(fen: string) {
     fetchChessDBData(fen);
   }, [fen, fetchChessDBData]);
 
+  const requestAnalysis = useCallback(() => {
+    queueAnalysis(fen);
+  }, [fen, queueAnalysis]);
+
   return {
     data,
     loading,
     error,
+    queueing,
     refetch,
+    requestAnalysis,
   };
 }
 
@@ -117,18 +160,34 @@ export function useChessDB(fen: string) {
 interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
   loading?: boolean;
-  fen?: string; // Add FEN to calculate max legal moves
   title?: string;
   showTitle?: boolean;
   analyzeMove: (move: CandidateMove) => void;
   llmLoading?: boolean;
+  error?: string | null;
+  queueing?: boolean;
+  onRefresh?: () => void;
+  onRequestAnalysis?: () => void;
+}
+
+function getChessDbNoteWord(note: string): string {
+  switch(note){
+    case "!":
+      return "Best";
+    case "*": 
+      return "Good";
+    case "?": 
+      return "Bad"; 
+    default:
+      return "unknown";     
+  }
 }
 
 export function getChessDBSpeech(data: CandidateMove[]): string {
    let query = 'Candidate Moves \n\n'
 
    for(let i = 0; i < data.length; i++){
-     query += `Move: ${data[i].san} Score ${data[i].score} WinRate ${data[i].winrate}\n`;
+     query += `Move: ${data[i].san} Eval ${data[i].score} WinRate ${data[i].winrate} Note: ${data[i].note}\n`;
    }
 
    return query;
@@ -138,30 +197,21 @@ export function getChessDBSpeech(data: CandidateMove[]): string {
 export function ChessDBDisplay({
   data,
   loading = false,
-  fen = "",
   analyzeMove,
   llmLoading = false,
+  error = null,
+  queueing = false,
+  onRefresh,
+  onRequestAnalysis,
 }: ChessDBDisplayProps) {
   const [chessDBEnabled, setChessDBEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [maxMoves, setMaxMoves] = useState(5);
   const [showScores, setShowScores] = useState(true);
   const [showWinrates, setShowWinrates] = useState(true);
 
   // Calculate maximum possible moves from current position
-  const getMaxLegalMoves = () => {
-    if (!fen || !validateFen(fen)) return 20; // Fallback
-    try {
-      const chess = new Chess(fen);
-      return chess.moves().length;
-    } catch {
-      return 20; // Fallback
-    }
-  };
-
-  const maxLegalMoves = getMaxLegalMoves();
   const availableMoves = data ? data.length : 0;
-  const actualMaxMoves = Math.min(maxLegalMoves, availableMoves);
+  const actualMaxMoves = availableMoves;
 
   const handleChessDBToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
     setChessDBEnabled(event.target.checked);
@@ -249,28 +299,11 @@ export function ChessDBDisplay({
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-                  Max Moves to Display: {maxMoves}
-                </Typography>
+             
                 <Typography variant="caption" sx={{ color: "grey.400", mb: 1, display: "block" }}>
                   Available moves in this position: {actualMaxMoves}
                 </Typography>
-                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
-                  Set how many candidate moves to show
-                </Typography>
-                <Box sx={{ px: 1 }}>
-                  <input
-                    type="range"
-                    min={1}
-                    max={Math.max(actualMaxMoves, 1)}
-                    value={Math.min(maxMoves, actualMaxMoves)}
-                    onChange={(e) => setMaxMoves(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      accentColor: '#9c27b0'
-                    }}
-                  />
-                </Box>
+
               </Box>
               <Box>
                 <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
@@ -397,28 +430,12 @@ export function ChessDBDisplay({
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-                  Max Moves to Display: {maxMoves}
-                </Typography>
+                
                 <Typography variant="caption" sx={{ color: "grey.400", mb: 1, display: "block" }}>
                   Available moves in this position: {actualMaxMoves}
                 </Typography>
-                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
-                  Set how many candidate moves to show
-                </Typography>
-                <Box sx={{ px: 1 }}>
-                  <input
-                    type="range"
-                    min={1}
-                    max={Math.max(actualMaxMoves, 1)}
-                    value={Math.min(maxMoves, actualMaxMoves)}
-                    onChange={(e) => setMaxMoves(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      accentColor: '#9c27b0'
-                    }}
-                  />
-                </Box>
+            
+                
               </Box>
               <Box>
                 <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
@@ -466,7 +483,7 @@ export function ChessDBDisplay({
     );
   }
 
-  // Show no data state
+  // Show no data state with request analysis and refresh buttons
   if (!data || data.length === 0) {
     return (
       <Box>
@@ -516,12 +533,61 @@ export function ChessDBDisplay({
           </Stack>
         </Paper>
 
-        {/* No Data State */}
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <Typography variant="body2" sx={{ color: "grey.400", textAlign: "center" }}>
-            No ChessDB data found for this position.
+        {/* No Data State with Action Buttons */}
+        <Paper
+          sx={{
+            p: 4,
+            backgroundColor: "#1a1a1a",
+            borderRadius: 2,
+            textAlign: "center"
+          }}
+        >
+          <Typography variant="body2" sx={{ color: "grey.400", mb: 3 }}>
+            {error ? `Error: ${error}` : "No ChessDB data found for this position."}
           </Typography>
-        </Box>
+          
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              startIcon={queueing ? <CircularProgress size={16} /> : <Queue />}
+              onClick={onRequestAnalysis}
+              disabled={queueing}
+              sx={{
+                borderColor: "#9c27b0",
+                color: "#9c27b0",
+                "&:hover": {
+                  borderColor: "#7b1fa2",
+                  backgroundColor: "rgba(156, 39, 176, 0.1)",
+                },
+                "&:disabled": {
+                  borderColor: "grey.600",
+                  color: "grey.600",
+                },
+              }}
+            >
+              {queueing ? "Queueing..." : "Request Analysis"}
+            </Button>
+            
+            <Button
+              variant="contained"
+              startIcon={<Refresh />}
+              onClick={onRefresh}
+              sx={{
+                backgroundColor: "#9c27b0",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#7b1fa2",
+                },
+              }}
+            >
+              Refresh
+            </Button>
+          </Stack>
+          
+          <Typography variant="caption" sx={{ color: "grey.500", mt: 2, display: "block" }}>
+            Request analysis to queue this position for evaluation, then refresh to check for results.
+          </Typography>
+        </Paper>
       </Box>
     );
   }
@@ -565,6 +631,14 @@ export function ChessDBDisplay({
           />
           <Box sx={{ flexGrow: 1 }} />
           <IconButton
+            onClick={onRefresh}
+            sx={{ color: "white", p: 0.5, mr: 1 }}
+            size="small"
+            title="Refresh data"
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+          <IconButton
             onClick={() => setSettingsOpen(true)}
             sx={{ color: "white", p: 0.5 }}
             size="small"
@@ -588,8 +662,8 @@ export function ChessDBDisplay({
               fontWeight: 600
             }} 
           />
-          <Typography variant="caption" sx={{ color: "grey.400" }}>
-            of {maxLegalMoves} legal moves
+          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+            Moves present
           </Typography>
         </Stack>
 
@@ -609,14 +683,17 @@ export function ChessDBDisplay({
             </Typography>
           )}
           <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
-            UCI
+            Rank
+          </Typography>
+          <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
+            Note
           </Typography>
         </Stack>
       </Paper>
 
       {/* Moves List */}
       <Stack spacing={0}>
-        {data.slice(0, maxMoves).map((move, index) => (
+        {data.map((move, index) => (
           <Paper
             key={`${move.uci}-${index}`}
             onClick={() => analyzeMove(move)}
@@ -624,7 +701,6 @@ export function ChessDBDisplay({
               p: 2,
               backgroundColor: "#1a1a1a",
               borderRadius: 0,
-              borderBottom: index < data.slice(0, maxMoves).length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none",
               borderLeft: index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
               cursor: llmLoading ? "not-allowed" : "pointer",
               transition: "background-color 0.2s ease",
@@ -681,7 +757,7 @@ export function ChessDBDisplay({
                 </Typography>
               )}
 
-              {/* UCI */}
+              {/* Rank */}
               <Typography
                 variant="body2"
                 sx={{
@@ -691,7 +767,20 @@ export function ChessDBDisplay({
                   flex: 1
                 }}
               >
-                {move.uci}
+                {move.rank}
+              </Typography>
+
+              {/* Note */}
+               <Typography
+                variant="body2"
+                sx={{
+                  color: "grey.400",
+                  fontFamily: "monospace",
+                  fontSize: "0.8rem",
+                  flex: 1
+                }}
+              >
+                {move.note}
               </Typography>
             </Stack>
           </Paper>
@@ -715,7 +804,7 @@ export function ChessDBDisplay({
             </Typography>
           </Stack>
           <Typography variant="caption" sx={{ color: "grey.400" }}>
-            Showing {Math.min(maxMoves, data.length)} of {data.length} moves
+            Showing {data.length} moves
           </Typography>
         </Stack>
       </Paper>
@@ -736,28 +825,9 @@ export function ChessDBDisplay({
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-                Max Moves to Display: {Math.min(maxMoves, actualMaxMoves)}
-              </Typography>
               <Typography variant="caption" sx={{ color: "grey.400", mb: 1, display: "block" }}>
                 Available moves in this position: {actualMaxMoves}
               </Typography>
-              <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
-                Set how many candidate moves to show
-              </Typography>
-              <Box sx={{ px: 1 }}>
-                <input
-                  type="range"
-                  min={1}
-                  max={Math.max(actualMaxMoves, 1)}
-                  value={Math.min(maxMoves, actualMaxMoves)}
-                  onChange={(e) => setMaxMoves(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    accentColor: '#9c27b0'
-                  }}
-                />
-              </Box>
             </Box>
             <Box>
               <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>

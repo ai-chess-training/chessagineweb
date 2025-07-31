@@ -849,7 +849,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
                 <input
                   type="range"
                   min={5}
-                  max={15}
+                  max={12}
                   value={maxMoves}
                   onChange={(e) => setMaxMoves(Number(e.target.value))}
                   style={{

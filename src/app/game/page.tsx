@@ -13,7 +13,6 @@ import {
   Divider,
   Card,
   CardContent,
-  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,

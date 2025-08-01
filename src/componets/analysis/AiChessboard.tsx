@@ -39,6 +39,8 @@ import { MoveAnalysis } from "../agine/useGameReview";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
 
+import { Board } from "./board";
+
 interface AiChessboardPanelProps {
   fen: string;
   moveSquares: { [square: string]: string };
@@ -112,12 +114,62 @@ export default function AiChessboardPanel({
   const [animationDuration, setAnimationDuration] = useState(300);
   const [showFen, setShowFen] = useState(false); // Default to false (hidden)
 
+  // Piece highlighting settings
+  const [showHangingPieces, setShowHangingPieces] = useState(false);
+  const [showSemiProtectedPieces, setShowSemiProtectedPieces] = useState(false);
+
   // Resize functionality
   const [panelDimensions, setPanelDimensions] = useState({ width: 600, height: 800 });
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
   const startDimensionsRef = useRef({ width: 0, height: 0 });
+
+  // Memoized Board analysis
+  const boardAnalysis = useMemo(() => {
+    if (!fen || (!showHangingPieces && !showSemiProtectedPieces)) {
+      return null;
+    }
+    try {
+      return new Board(fen);
+    } catch (error) {
+      console.error("Error analyzing board:", error);
+      return null;
+    }
+  }, [fen, showHangingPieces, showSemiProtectedPieces]);
+
+  // Memoized piece highlighting styles
+  const pieceHighlightStyles = useMemo(() => {
+    const styles: { [square: string]: React.CSSProperties } = {};
+    
+    if (!boardAnalysis) return styles;
+
+    // Hanging pieces - Critical (red)
+    if (showHangingPieces) {
+      boardAnalysis.HangingPieceCoordinates.forEach(coord => {
+        styles[coord] = {
+          backgroundColor: "rgba(244, 67, 54, 0.6)", // Red with transparency
+          boxShadow: "inset 0 0 0 3px rgba(244, 67, 54, 0.8)",
+        };
+      });
+    }
+
+   
+    // Semi-protected pieces - Medium priority (yellow)
+    if (showSemiProtectedPieces) {
+      boardAnalysis.SemiProtectedPieceCoordinates.forEach(coord => {
+        // Don't override hanging or unprotected pieces
+        if (!styles[coord]) {
+          styles[coord] = {
+            backgroundColor: "rgba(255, 235, 59, 0.6)", // Yellow with transparency
+            boxShadow: "inset 0 0 0 3px rgba(255, 235, 59, 0.8)",
+          };
+        }
+      });
+    }
+
+    return styles;
+  }, [boardAnalysis, showHangingPieces, showSemiProtectedPieces]);
 
   // Resize handler
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -478,14 +530,24 @@ export default function AiChessboardPanel({
     return arrows;
   }, [showArrows, reviewMove, stockfishAnalysisResult, currentMoveIndex]);
 
-  // Memoized custom square styles
+  // Memoized custom square styles with piece highlighting
   const customSquareStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
 
-    Object.entries(moveSquares).forEach(([square, color]) => {
-      styles[square] = { backgroundColor: color };
+    // First apply piece highlighting styles
+    Object.entries(pieceHighlightStyles).forEach(([square, style]) => {
+      styles[square] = { ...style };
     });
 
+    // Then apply move squares
+    Object.entries(moveSquares).forEach(([square, color]) => {
+      styles[square] = { 
+        ...styles[square],
+        backgroundColor: color,
+      };
+    });
+
+    // Selected square highlighting
     if (selectedSquare) {
       styles[selectedSquare] = {
         backgroundColor: "rgba(156, 39, 176, 0.6)",
@@ -493,6 +555,7 @@ export default function AiChessboardPanel({
       };
     }
 
+    // Legal moves highlighting
     legalMoves.forEach((square) => {
       const piece = game.get(square as Square);
       const background = piece
@@ -506,7 +569,7 @@ export default function AiChessboardPanel({
     });
 
     return styles;
-  }, [moveSquares, selectedSquare, legalMoves, game]);
+  }, [pieceHighlightStyles, moveSquares, selectedSquare, legalMoves, game]);
 
   // Navigation callbacks
   const goToPreviousMove = useCallback(() => {
@@ -784,6 +847,102 @@ export default function AiChessboardPanel({
               </Paper>
             )}
 
+            {/* Piece Analysis Display */}
+            {(showHangingPieces || showSemiProtectedPieces) && boardAnalysis && (
+              <Paper
+                sx={{
+                  p: 1.5,
+                  backgroundColor: "#1a1a1a",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="caption" sx={{ color: "grey.300", mb: 1.5, display: "block" }}>
+                  Piece Analysis
+                </Typography>
+                
+                {showHangingPieces && boardAnalysis.HangingPieceDescriptions.length > 0 && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: "#f44336", fontWeight: 600, fontSize: "0.7rem" }}>
+                      Hanging Pieces (Critical):
+                    </Typography>
+                    {boardAnalysis.HangingPieceDescriptions.map((desc, index) => (
+                      <Typography 
+                        key={index} 
+                        variant="caption" 
+                        sx={{ 
+                          color: "white", 
+                          fontSize: "0.65rem", 
+                          display: "block",
+                          ml: 1
+                        }}
+                      >
+                        • {desc} at {boardAnalysis.HangingPieceCoordinates[index]}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+
+
+                {showSemiProtectedPieces && boardAnalysis.SemiProtectedPieceDescriptions.length > 0 && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: "#ffeb3b", fontWeight: 600, fontSize: "0.7rem" }}>
+                      Semi-Protected Pieces (Contested):
+                    </Typography>
+                    {boardAnalysis.SemiProtectedPieceDescriptions.map((desc, index) => (
+                      <Typography 
+                        key={index} 
+                        variant="caption" 
+                        sx={{ 
+                          color: "white", 
+                          fontSize: "0.65rem", 
+                          display: "block",
+                          ml: 1
+                        }}
+                      >
+                        • {desc} at {boardAnalysis.SemiProtectedPieceCoordinates[index]}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+
+                {/* Legend */}
+                <Box sx={{ mt: 1.5, pt: 1, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Typography variant="caption" sx={{ color: "grey.400", fontSize: "0.6rem", display: "block" }}>
+                    Legend:
+                  </Typography>
+                  <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
+                    {showHangingPieces && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Box sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          backgroundColor: "#f44336", 
+                          borderRadius: 0.5 
+                        }} />
+                        <Typography variant="caption" sx={{ color: "grey.400", fontSize: "0.6rem" }}>
+                          Critical
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    {showSemiProtectedPieces && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Box sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          backgroundColor: "#ffeb3b", 
+                          borderRadius: 0.5 
+                        }} />
+                        <Typography variant="caption" sx={{ color: "grey.400", fontSize: "0.6rem" }}>
+                          Contested
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
+              </Paper>
+            )}
+
             {/* PGN View */}
             {shouldShowPGN && pgnMoves.length > 0 && (
               <PGNView
@@ -952,6 +1111,72 @@ export default function AiChessboardPanel({
                     />
                   </Stack>
                 )}
+              </Stack>
+            </Box>
+
+            {/* Piece Highlighting Options */}
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                Piece Highlighting
+              </Typography>
+              <Stack spacing={2}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Box>
+                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                      Hanging Pieces
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.7rem" }}>
+                      Critical threats - undefended pieces
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={showHangingPieces}
+                    onChange={(e) => setShowHangingPieces(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#f44336",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#f44336",
+                        },
+                    }}
+                  />
+                </Stack>
+
+               
+
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Box>
+                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                      Semi-Protected Pieces
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.7rem" }}>
+                      Equal attackers and defenders
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={showSemiProtectedPieces}
+                    onChange={(e) => setShowSemiProtectedPieces(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#ffeb3b",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#ffeb3b",
+                        },
+                    }}
+                  />
+                </Stack>
               </Stack>
             </Box>
 

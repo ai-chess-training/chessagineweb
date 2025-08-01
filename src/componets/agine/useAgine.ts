@@ -13,6 +13,7 @@ import { Chess } from "chess.js";
 import { CandidateMove, getChessDBSpeech, useChessDB } from "../tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
+import { Board } from "../analysis/board";
 
 export default function useAgine(fen: string) {
   // Analysis Results State
@@ -237,7 +238,7 @@ export default function useAgine(fen: string) {
 
   const makeApiRequest = useCallback(
     async (fen: string, query: string, mode: string): Promise<string> => {
-      // Cancel previous request if still pending
+     
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -444,9 +445,13 @@ export default function useAgine(fen: string) {
 
           if (chessdbdata) {
             const candiateMoves = getChessDBSpeech(chessdbdata);
-            query += `${candiateMoves}`;
+            query += `\n\n ${candiateMoves}`;
           }
         }
+
+        const board = new Board(currentFen);
+
+        query += `\n\n ${board.toString()}`
 
         const mode =
           puzzleMode === true || puzzleQuery

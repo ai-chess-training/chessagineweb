@@ -41,6 +41,7 @@ import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
 import GameInfoTab from "@/componets/tabs/GameInfoTab";
 import PGNView from "@/componets/tabs/PgnView";
 import LegalMoveTab from "@/componets/tabs/LegalMoveTab";
+import ResizableChapterSelector from "@/componets/tabs/ChaptersTab";
 
 // Custom theme colors
 const purpleTheme = {
@@ -286,46 +287,49 @@ export default function PGNUploaderPage() {
   }
 
   // Function to clean PGN by removing advanced annotations
-const cleanPGN = (pgnText: string) => {
-  let cleaned = pgnText;
-  
-  // Remove all content within curly braces (annotations like {[%clk 1:00:00]})
-  cleaned = cleaned.replace(/\{[^}]*\}/g, '');
-  
-  // Remove extra whitespace that might be left behind
-  cleaned = cleaned.replace(/\s+/g, ' ');
-  
-  // Clean up any double spaces around moves
-  cleaned = cleaned.replace(/\s+(\d+\.)/g, ' $1');
-  
-  // Remove any trailing whitespace from lines
-  cleaned = cleaned.split('\n').map((line: string) => line.trim()).join('\n');
-  
-  // Remove empty lines between moves (but keep header spacing)
-  const lines = cleaned.split('\n');
-  let inHeader = true;
-  const result = [];
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if we're still in the header section
-    if (line.startsWith('[') && line.endsWith(']')) {
-      result.push(line);
-      inHeader = true;
-    } else if (line.trim() === '' && inHeader) {
-      // Keep empty lines in header section
-      result.push(line);
-    } else if (line.trim() !== '') {
-      // We're in the moves section now
-      inHeader = false;
-      result.push(line);
+  const cleanPGN = (pgnText: string) => {
+    let cleaned = pgnText;
+
+    // Remove all content within curly braces (annotations like {[%clk 1:00:00]})
+    cleaned = cleaned.replace(/\{[^}]*\}/g, "");
+
+    // Remove extra whitespace that might be left behind
+    cleaned = cleaned.replace(/\s+/g, " ");
+
+    // Clean up any double spaces around moves
+    cleaned = cleaned.replace(/\s+(\d+\.)/g, " $1");
+
+    // Remove any trailing whitespace from lines
+    cleaned = cleaned
+      .split("\n")
+      .map((line: string) => line.trim())
+      .join("\n");
+
+    // Remove empty lines between moves (but keep header spacing)
+    const lines = cleaned.split("\n");
+    let inHeader = true;
+    const result = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Check if we're still in the header section
+      if (line.startsWith("[") && line.endsWith("]")) {
+        result.push(line);
+        inHeader = true;
+      } else if (line.trim() === "" && inHeader) {
+        // Keep empty lines in header section
+        result.push(line);
+      } else if (line.trim() !== "") {
+        // We're in the moves section now
+        inHeader = false;
+        result.push(line);
+      }
+      // Skip empty lines in moves section
     }
-    // Skip empty lines in moves section
-  }
-  
-  return result.join('\n').trim();
-};
+
+    return result.join("\n").trim();
+  };
 
   const loadPGN = () => {
     try {
@@ -568,8 +572,7 @@ const cleanPGN = (pgnText: string) => {
                     if (parsed.length === 0) return alert("No chapters found");
 
                     setChapters(parsed);
-                    setPgnText(parsed[0].pgn);
-                    setTimeout(() => loadPGN(), 0);
+
                     setInputsVisible(false);
                   }}
                 >
@@ -797,51 +800,7 @@ const cleanPGN = (pgnText: string) => {
         {!inputsVisible && (
           <Box sx={{ flex: 1 }}>
             <Stack spacing={3}>
-              {chapters.length > 0 && (
-                <Card
-                  sx={{
-                    backgroundColor: purpleTheme.background.paper,
-                    borderRadius: 3,
-                    boxShadow: `0 4px 20px rgba(138, 43, 226, 0.1)`,
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ color: purpleTheme.text.primary, mb: 2 }}
-                    >
-                      Study Chapters
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      useFlexGap
-                    >
-                      {chapters.map((ch, index) => (
-                        <Chip
-                          key={index}
-                          label={ch.title}
-                          onClick={() => {
-                            setPgnText(ch.pgn);
-                            setTimeout(() => loadPGN(), 0);
-                          }}
-                          sx={{
-                            backgroundColor: purpleTheme.background.card,
-                            color: purpleTheme.text.primary,
-                            "&:hover": {
-                              backgroundColor: purpleTheme.secondary,
-                            },
-                            borderRadius: 2,
-                            mb: 1,
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              )}
+            
 
               {moves.length > 0 && (
                 <Card
@@ -1205,10 +1164,21 @@ const cleanPGN = (pgnText: string) => {
                   </Box>
                 </Card>
               )}
+              {chapters.length > 0 && (
+                <ResizableChapterSelector
+                  chapters={chapters}
+                  onChapterSelect={(pgn) => {
+                    setPgnText(pgn);
+                    setTimeout(() => loadPGN(), 0);
+                  }}
+                />
+              )}
             </Stack>
           </Box>
         )}
+          
       </Stack>
+      
     </Box>
   );
 }

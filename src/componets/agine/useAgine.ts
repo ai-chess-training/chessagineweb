@@ -362,46 +362,89 @@ export default function useAgine(fen: string) {
       try {
         const chessInstance = new Chess(currentFen);
         const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-        let query = `USER PROMPT: ${currentInput}\n\n Current FEN: ${currentFen}\n Side to Move: ${sideToMove}`;
+        
+        // Build structured query with clear sections
+        let query = `<chess_coaching_request>
 
+<user_query>
+${currentInput}
+</user_query>
+
+<position_context>
+Current FEN: ${currentFen}
+Side to Move: ${sideToMove}
+</position_context>`;
+
+        // Add mode-specific instructions
         if (puzzleMode === true) {
-          query += `\n\n Puzzle Mode: Active
-          1. Act as an interactive chess puzzle coach.
-          2. Do not reveal the solution immediately.
-          3. Guide the user through the puzzle one step at a time.
-          4. If the user asks for a hint, provide a subtle clue about the best move or tactical idea.
-          5. If the user requests the solution directly, explain the correct sequence of moves and the reasoning behind them.
-          6. Encourage the user to consider candidate moves, threats, and tactical motifs in the position.
-          7. Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution.
-          `;
+          query += `
+
+<mode>
+Type: Puzzle Mode
+Instructions: 
+- Act as an interactive chess puzzle coach
+- Do not reveal the solution immediately
+- Guide the user through the puzzle one step at a time
+- If the user asks for a hint, provide a subtle clue about the best move or tactical idea
+- If the user requests the solution directly, explain the correct sequence of moves and the reasoning behind them
+- Encourage the user to consider candidate moves, threats, and tactical motifs in the position
+- Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution
+</mode>`;
         } else if (playMode === true) {
-          query += `\n\n Play Mode: Active
-          1. Act as a supportive chess coach during live gameplay.
-          2. Provide real-time strategic advice and tactical guidance.
-          3. Help identify threats and opportunities in the current position.
-          4. Suggest candidate moves and explain their benefits.
-          5. Focus on practical, actionable advice for the current game situation.
-          6. Be encouraging and supportive while providing accurate analysis.
-          `;
+          query += `
+
+<mode>
+Type: Play Mode
+Instructions:
+- Act as a supportive chess coach during live gameplay
+- Provide real-time strategic advice and tactical guidance
+- Help identify threats and opportunities in the current position
+- Suggest candidate moves and explain their benefits
+- Focus on practical, actionable advice for the current game situation
+- Be encouraging and supportive while providing accurate analysis
+</mode>`;
         } else {
-          query += `\n\n
-          `;
+          query += `
+
+<mode>
+Type: Analysis Mode
+Instructions:
+- Provide detailed position analysis
+- Explain strategic and tactical elements
+- Suggest candidate moves with reasoning
+</mode>`;
         }
 
+        // Add puzzle-specific information
         if (puzzleQuery) {
-          query += `\n\n Puzzle Info: ${puzzleQuery}`;
+          query += `
+
+<puzzle_information>
+${puzzleQuery}
+</puzzle_information>`;
         }
 
+        // Add game history if available
         if (gameInfo) {
-          query += `\n\n Game PGN \n ${gameInfo}`;
+          query += `
+
+<game_history>
+PGN:
+${gameInfo}
+</game_history>`;
         }
 
+        // Add current move context
         if (currentMove) {
-          query += `\n Current Game Move: \n ${currentMove}`;
+          query += `
+
+<current_move>
+${currentMove}
+</current_move>`;
         }
 
+        // Add engine analysis and database information for non-play modes
         if (sessionMode && !playMode) {
-          // Don't auto-add engine analysis in play mode to keep responses faster
           // Get engine analysis if not available
           let engineResult = stockfishAnalysisResult;
           if (!engineResult && engine) {
@@ -416,42 +459,64 @@ export default function useAgine(fen: string) {
             }
           }
 
-          // Add engine analysis
+          // Add engine analysis with structured formatting
           if (engineResult) {
             const formattedEngineLines = engineResult.lines
               .map((line, index) => {
                 const evaluation = formatEvaluation(line);
                 const moves = formatPrincipalVariation(line.pv, line.fen);
-                let formattedLine = `Line ${
-                  index + 1
-                }: ${evaluation} - ${moves}`;
+                let formattedLine = `  Line ${index + 1}: ${evaluation}
+    Moves: ${moves}`;
 
                 if (line.resultPercentages) {
-                  formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+                  formattedLine += `
+    Win Rate: ${line.resultPercentages.win}% | Draw: ${line.resultPercentages.draw}% | Loss: ${line.resultPercentages.loss}%`;
                 }
 
                 return formattedLine;
               })
-              .join("\n");
+              .join("\n\n");
 
-            query += `\nEngine Analysis:\n${formattedEngineLines}`;
+            query += `
+
+<engine_analysis>
+Depth: ${engineDepth}
+${formattedEngineLines}
+</engine_analysis>`;
           }
 
-          // Add opening data
+          // Add opening information
           if (openingData) {
             const openingSpeech = getOpeningStatSpeech(openingData);
-            query += `\n\nOpening Information:\n${openingSpeech}`;
+            query += `
+
+<opening_information>
+${openingSpeech}
+</opening_information>`;
           }
 
+          // Add chess database information
           if (chessdbdata) {
-            const candiateMoves = getChessDBSpeech(chessdbdata);
-            query += `\n\n ${candiateMoves}`;
+            const candidateMoves = getChessDBSpeech(chessdbdata);
+            query += `
+
+<database_analysis>
+${candidateMoves}
+</database_analysis>`;
           }
         }
 
+        // Add visual board representation
         const board = new Board(currentFen);
+        query += `
 
-        query += `\n\n ${board.toString()}`
+<board_tactics>
+${board.toString()}
+</board_tactics>
+
+</chess_coaching_request>`;
+
+        console.log(query);
 
         const mode =
           puzzleMode === true || puzzleQuery

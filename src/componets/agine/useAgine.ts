@@ -358,6 +358,7 @@ export default function useAgine(fen: string) {
       setChatLoading(true);
 
       const currentFen = currentFenRef.current;
+      
 
       try {
         const chessInstance = new Chess(currentFen);
@@ -404,15 +405,19 @@ Instructions:
 - Be encouraging and supportive while providing accurate analysis
 </mode>`;
         } else {
-          query += `
+          if(sessionMode){
+            query += `
 
 <mode>
 Type: Analysis Mode
-Instructions:
-- Provide detailed position analysis
-- Explain strategic and tactical elements
-- Suggest candidate moves with reasoning
 </mode>`;
+          }else{
+            query += `
+
+<mode>
+Type: Chat Mode
+</mode>`;
+          }
         }
 
         // Add puzzle-specific information
@@ -515,6 +520,7 @@ ${board.toString()}
 </board_tactics>
 
 </chess_coaching_request>`;
+
         const mode =
           puzzleMode === true || puzzleQuery
             ? "puzzle"

@@ -65,6 +65,7 @@ interface ChatTabProps {
 
 const sessionPrompts = [
   "What's the best move in this position?",
+  "What does Agine Engine think about this position?",
   "Analyze the current position for me",
   "What are the key weaknesses in this position?",
   "Suggest a strategic plan",
@@ -104,6 +105,7 @@ const playPrompts = [
 
 const chatPrompts = [
   "Explain chess fundamentals",
+  "What does Agine Engine think about this position?",
   "How do I improve my chess rating?",
   "What are common chess tactics?",
   "Tell me about famous chess games",

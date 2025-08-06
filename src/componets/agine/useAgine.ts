@@ -515,8 +515,6 @@ ${board.toString()}
 </board_tactics>
 
 </chess_coaching_request>`;
-
-
         const mode =
           puzzleMode === true || puzzleQuery
             ? "puzzle"

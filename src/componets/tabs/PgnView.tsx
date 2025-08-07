@@ -227,7 +227,6 @@ const PGNView: React.FC<PGNViewProps> = ({
     // Split PGN into header and moves sections
     const lines = gamePgn.split('\n');
     const headerLines: string[] = [];
-    let moveText = '';
     let inHeader = true;
 
     for (const line of lines) {
@@ -239,13 +238,10 @@ const PGNView: React.FC<PGNViewProps> = ({
       } else if (line.startsWith('[') && inHeader) {
         headerLines.push(line);
       } else {
-        moveText += line + ' ';
         inHeader = false;
       }
     }
 
-    // Clean up move text - remove extra spaces and get just the moves
-    moveText = moveText.trim();
     
     // Create annotated moves string with comments
     let annotatedMoves = '';

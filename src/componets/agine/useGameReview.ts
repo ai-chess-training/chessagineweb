@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import { Chess, Move, validateFen } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { openings } from "./opening";
 import { LineEval} from "@/stockfish/engine/engine";
 import { Color } from "chess.js";
 import { CandidateMove } from "../tabs/Chessdb";
+import { isFenInAllDatabases } from "./ecoDatabase";
 
 export type MoveQuality =
   | "Best"
@@ -238,11 +238,9 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           let secondBestWinRate: number | undefined = 0;
           let bestMove; 
 
-          // Check opening book
-          const boardPosition = postMovefen.split(" ")[0];
-          const openingMatch = openings.find(
-            (entry) => entry.fen.trim() === boardPosition.trim()
-          );
+          
+          const openingMatch = isFenInAllDatabases(postMovefen);
+          console.log(openingMatch)
 
           if(openingMatch){
             gameStates.push({

@@ -1369,6 +1369,107 @@ Be concise but thorough, and use clear chess language.
     ]
   );
 
+  const handleMovePGNAnnotateClick = useCallback(
+  async (review: MoveAnalysis, customQuery?: string): Promise<string | null> => {
+    if (!makeApiRequest || !currentFenRef) {
+      console.warn("API request functionality not properly configured");
+      return null;
+    }
+
+    const currentFen = currentFenRef.current;
+    const pastFen = review.fen;
+    const sideToMove = review.player === "w" ? "White" : "Black";
+
+    let query = `As a chess buddy, annotate this move from the game review:
+
+Move: ${review.notation}
+Classification: ${review.quality}
+Side: ${sideToMove}
+Position FEN: ${pastFen}
+Current FEN: ${currentFen}
+
+Please provide annotation about this move:
+1. Talk about how/why the move is ${review.quality} based on the NEXT ply engine analysis
+2. Talk about candidates in this position using the CURRENT ply engine analysis
+3. How the move can impact the game
+4. Keep the response in paragraph format
+
+Start the response with Agine Annotation:
+
+`;
+
+    if (customQuery) {
+      query += `\n Consider user thoughts/comments ${customQuery}`;
+    }
+
+    if (engine) {
+      const engineResult = await engine.evaluatePositionWithUpdate({
+        fen: pastFen,
+        depth: engineDepth,
+        multiPv: engineLines,
+        setPartialEval: () => {},
+      });
+
+      if (engineResult) {
+        const formattedEngineLines = engineResult.lines
+          .map((line, index) => {
+            const evaluation = formatEvaluation(line);
+            const moves = formatPrincipalVariation(line.pv, line.fen);
+            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+            if (line.resultPercentages) {
+              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+            }
+
+            return formattedLine;
+          })
+          .join("\n");
+
+        query += `\n\nStockfish Analysis For CURRENT Ply:\n${formattedEngineLines}`;
+      }
+    }
+
+    if (engine) {
+      const engineResult = await engine.evaluatePositionWithUpdate({
+        fen: currentFen,
+        depth: engineDepth,
+        multiPv: engineLines,
+        setPartialEval: () => {},
+      });
+
+      if (engineResult) {
+        const formattedEngineLines = engineResult.lines
+          .map((line, index) => {
+            const evaluation = formatEvaluation(line);
+            const moves = formatPrincipalVariation(line.pv, line.fen);
+            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+
+            if (line.resultPercentages) {
+              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+            }
+
+            return formattedLine;
+          })
+          .join("\n");
+
+        query += `\n\nStockfish Analysis For NEXT Ply:\n${formattedEngineLines}`;
+      }
+    }
+
+    try {
+      const result = await makeApiRequest(pastFen, query, "annotation");
+      return result;
+    } catch (error) {
+      console.error("Error getting coach analysis:", error);
+      if (!(error instanceof Error && error.message === "Request cancelled")) {
+        return "Sorry, I couldn't annotate that move right now. Please try again later.";
+      }
+      return null;
+    }
+  },
+  [makeApiRequest, currentFenRef, engine, engineDepth, engineLines]
+);
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -1453,6 +1554,7 @@ Be concise but thorough, and use clear chess language.
       handleMoveCoachClick,
       handleMoveAnnontateClick,
       handleGameReviewSummaryClick,
+      handleMovePGNAnnotateClick,
 
       // Utility Functions
       formatEvaluation,
@@ -1502,6 +1604,7 @@ Be concise but thorough, and use clear chess language.
       handleMoveClick,
       handleMoveCoachClick,
       handleFutureMoveLegalClick,
+      handleMovePGNAnnotateClick,
       handleGameReviewSummaryClick,
       formatEvaluation,
       formatPrincipalVariation,

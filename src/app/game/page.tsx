@@ -228,6 +228,7 @@ export default function PGNUploaderPage() {
     abortChatMessage,
     handleMoveCoachClick,
     handleGameReviewSummaryClick,
+    handleMovePGNAnnotateClick,
     chessdbdata,
     loading,
     queueing,
@@ -756,6 +757,8 @@ export default function PGNUploaderPage() {
               <PGNView
                 moves={moves}
                 moveAnalysis={gameReview}
+                onAnnotateMove={handleMovePGNAnnotateClick}
+                gamePgn={pgnText}
                 goToMove={goToMove}
                 gameResult={gameInfo.Result}
                 currentMoveIndex={currentMoveIndex}

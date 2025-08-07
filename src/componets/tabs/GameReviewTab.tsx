@@ -210,7 +210,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     
     // Use direct array access since gameReview is ordered by moves
     // currentMoveIndex is 1-based, so subtract 1 for 0-based array access
-    return gameReview[currentMoveIndex];
+    return gameReview[currentMoveIndex - 1];
   }, [gameReview, currentMoveIndex]);
 
   if (!gameReview || gameReview.length === 0) {

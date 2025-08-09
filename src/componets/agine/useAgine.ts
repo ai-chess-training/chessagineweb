@@ -40,6 +40,23 @@ interface AgineState {
   sessionMode: boolean;
 }
 
+// Analysis data types
+interface EngineLineData {
+  line: LineEval;
+  lineIndex: number;
+}
+
+interface MoveCoachData {
+  fen: string;
+  notation: string;
+  quality: MoveQuality;
+  player: "w" | "b";
+  plyNumber: number;
+  sanNotation?: string;
+}
+
+type AnalysisData = EngineLineData | Moves | CandidateMove | MoveCoachData | MoveAnalysis;
+
 // Constants
 const ANALYSIS_DELAY = 300;
 const DEFAULT_ENGINE_DEPTH = 15;
@@ -186,6 +203,11 @@ export default function useAgine(fen: string) {
     });
   }, [state.chatMessages, updateState]);
 
+  const addChatMessages = useCallback((messages: ChatMessage[]) => {
+    updateState({ 
+      chatMessages: [...state.chatMessages, ...messages] 
+    });
+  }, [state.chatMessages, updateState]);
 
   // ==================== API FUNCTIONS ====================
   const makeApiRequest = useCallback(
@@ -523,8 +545,6 @@ ${board.toString()}
 
 </chess_coaching_request>`;
 
-
-
       return query;
     },
     [state.sessionMode, state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
@@ -613,7 +633,7 @@ ${board.toString()}
 
   // ==================== CLICK HANDLERS ====================
   const createAnalysisHandler = useCallback(
-    (analysisType: string) => async (data: any, customQuery?: string): Promise<void | string> => {
+    (analysisType: string) => async (data: AnalysisData, customQuery?: string): Promise<void | string> => {
       if (state.llmLoading || state.chatLoading) return;
 
       updateState({ chatLoading: true, analysisTab: 1 });
@@ -625,111 +645,202 @@ ${board.toString()}
 
         switch (analysisType) {
           case "engineLine":
-            const { line, lineIndex } = data;
-            const formattedLine = formatLineForLLM(line, lineIndex);
-            query = `Analyze this chess position and explain the following engine line in detail:
-<information>
-Position: ${currentFen}
-Engine Line: ${formattedLine}
-Side To Move: ${new Chess(currentFen).turn() === "w" ? "White" : "Black"}
-</information>
+            const engineData = data as EngineLineData;
+            const formattedLine = formatLineForLLM(engineData.line, engineData.lineIndex);
+            const chessInstance = new Chess(currentFen);
+            const sideToMovew = chessInstance.turn() === "w" ? "White" : "Black";
+            
+            query = `<chess_analysis_request>
 
-<instructions>
+<analysis_type>Engine Line Analysis</analysis_type>
+
+<position_context>
+Current FEN: ${currentFen}
+Side to Move: ${sideToMovew}
+</position_context>
+
+<engine_line>
+${formattedLine}
+</engine_line>
+
+<analysis_instructions>
 Please follow this structure in your analysis:
-1. First, describe the board state and key features of the position before the move
+1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
 2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
 3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
 4. Take account of 1, 2, 3 and provide the analysis for this engine line.
 
-  
 Be concise but thorough, and use clear chess language.
-</instructions>
-`;
+</analysis_instructions>`;
             break;
 
           case "openingMove":
-            const move = data;
+            const move = data as Moves;
             const totalGames = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
             const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
             const drawRate = ((move.draws / totalGames) * 100 || 0).toFixed(1);
             const blackWinRate = ((move.black / totalGames) * 100 || 0).toFixed(1);
+            const chessMoveInstance = new Chess(currentFen);
+            const moveSideToMove = chessMoveInstance.turn() === "w" ? "White" : "Black";
 
-            query = `Analyze the chess move ${move.san} in this position:
-<information>
-Position: ${currentFen}
+            query = `<chess_analysis_request>
+
+<analysis_type>Opening Move Analysis</analysis_type>
+
+<position_context>
+Current FEN: ${currentFen}
 Opening: ${state.openingData?.opening?.name || "Unknown"} (${state.openingData?.opening?.eco || "N/A"})
-Side To Move: ${new Chess(currentFen).turn() === "w" ? "White" : "Black"}
-</information>
+Side to Move: ${moveSideToMove}
+</position_context>
 
-<move_stats>
-Move Statistics from Master Games:
-- Move: ${move.san}
-- Games played: ${totalGames}
-- Average rating: ${move.averageRating}
-- White wins: ${whiteWinRate}%
-- Draws: ${drawRate}%
-- Black wins: ${blackWinRate}%
-</move_stats>
+<move_information>
+Move: ${move.san}
+Games played: ${totalGames}
+Average rating: ${move.averageRating}
+White wins: ${whiteWinRate}%
+Draws: ${drawRate}%
+Black wins: ${blackWinRate}%
+</move_information>
 
-
-<instruction>
+<analysis_instructions>
 Please follow this structure in your analysis:
-1. First, describe the board state and key features of the position before the move
-2. Next, analyze the move itself: what does it change in the position
-3. Then, understand the opening stats, the win, draw, loss rates and amount of games that were played by masters
-4. Then, consider the engine lines and candidate moves: what alternatives were available
+1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+3. Then, understand the opening stats, the win, draw, loss rates and amount of games that were played by masters.
+4. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
 5. Take account of 1, 2, 3, 4 and provide the analysis for this move.
 
-  
 Be concise but thorough, and use clear chess language.
-</instruction>
-`;
+</analysis_instructions>`;
             break;
 
           case "candidateMove":
-            const candidateMove = data;
-            query = `Analyze the chess move ${candidateMove.san} (${candidateMove.uci}) in this position:
+            const candidateMove = data as CandidateMove;
+            const candidateChessInstance = new Chess(currentFen);
+            const candidateSideToMove = candidateChessInstance.turn() === "w" ? "White" : "Black";
 
-Position: ${currentFen}
-Side To Move: ${new Chess(currentFen).turn() === "w" ? "White" : "Black"}
-ChessDb Score For Move ${candidateMove.score}
+            query = `<chess_analysis_request>
+
+<analysis_type>Candidate Move Analysis</analysis_type>
+
+<position_context>
+Current FEN: ${currentFen}
+Side to Move: ${candidateSideToMove}
+</position_context>
+
+<move_information>
+Move: ${candidateMove.san} (${candidateMove.uci})
+ChessDb Score: ${candidateMove.score}
 ChessDb Winrate: ${candidateMove.winrate}
+</move_information>
 
+<analysis_instructions>
 Please follow this structure in your analysis:
-1. First, understand and describe the board state and key features of the position before the move
-2. Next, analyze the move itself: what does it change in the position
-3. Then, consider the engine lines and candidate moves: what alternatives were available
-4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position
+1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position.
 
-Be concise but thorough, and use clear chess language.`;
+Be concise but thorough, and use clear chess language.
+</analysis_instructions>`;
             break;
 
           case "moveCoach":
-            const review = data;
+            const coachReview = data as MoveAnalysis;
+            const coachPastFen = coachReview.fen;
+            const coachSideToMove = coachReview.player === "w" ? "White" : "Black";
+            const coachMoveNumber = Math.floor(coachReview.plyNumber / 2) + 1;
+            const coachIsWhiteMove = coachReview.plyNumber % 2 === 0;
+            const coachMoveNotation = coachIsWhiteMove ? `${coachMoveNumber}.` : `${coachMoveNumber}...`;
+
+            query = `<chess_analysis_request>
+
+<analysis_type>Move Coach Analysis</analysis_type>
+
+<position_context>
+Position FEN: ${coachPastFen}
+Side: ${coachSideToMove}
+</position_context>
+
+<move_information>
+Move: ${coachMoveNotation} ${coachReview.notation}
+Classification: ${coachReview.quality}
+Player: ${coachSideToMove}
+Ply Number: ${coachReview.plyNumber}
+</move_information>
+
+<analysis_instructions>
+As a chess buddy, please follow this structure in your analysis:
+1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+4. Take account of 1, 2, 3 and explain why this move is classified as a ${coachReview.quality} move.
+
+Be concise but thorough, and use clear chess language.
+</analysis_instructions>`;
+            currentFen = coachPastFen;
+            break;
+
+          case "annotation":
+            const review = data as MoveAnalysis;
             const pastFen = review.fen;
             const sideToMove = review.player === "w" ? "White" : "Black";
             const moveNumber = Math.floor(review.plyNumber / 2) + 1;
             const isWhiteMove = review.plyNumber % 2 === 0;
             const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
 
-            query = `As a chess buddy, analyze this move from the game review:
+            if (analysisType === "annotation") {
+              query = `<chess_annotation_request>
+
+<analysis_type>Move Annotation</analysis_type>
+
+<position_context>
+Position FEN: ${pastFen}
+Current FEN: ${currentFen}
+Side: ${sideToMove}
+</position_context>
+
+<move_information>
+Move: ${review.notation}
+Classification: ${review.quality}
+Move Number: ${moveNotation}
+</move_information>
+
+<annotation_instructions>
+Please provide annotation about this move:
+1. Talk about how/why the move is ${review.quality} based on the NEXT ply engine analysis
+2. Talk about candidates in this position using the CURRENT ply engine analysis
+3. How the move can impact the game
+4. Keep the response in paragraph format
+
+Start the response with "Agine Annotation:"
+</annotation_instructions>`;
+            } else {
+              query = `<chess_analysis_request>
+
+<analysis_type>Move Coach Analysis</analysis_type>
+
+<position_context>
+Position FEN: ${pastFen}
+Side: ${sideToMove}
+</position_context>
+
 <move_information>
 Move: ${moveNotation} ${review.notation}
 Classification: ${review.quality}
-Side: ${sideToMove}
-Position FEN: ${pastFen}
+Player: ${sideToMove}
 </move_information>
 
-<instructions>
+<analysis_instructions>
 Please follow this structure in your analysis:
-1. First, understand and describe the board state and key features of the position before the move
-2. Next, analyze the move itself: what does it change in the position
-3. Then, consider the engine lines and candidate moves: what alternatives were available
+1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
+2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
 4. Take account of 1, 2, 3 and explain why this move is classified as a ${review.quality} move.
 
 Be concise but thorough, and use clear chess language.
-</instructions>
-`;
+</analysis_instructions>`;
+            }
             currentFen = pastFen;
             break;
         }
@@ -737,12 +848,20 @@ Be concise but thorough, and use clear chess language.
         // Add contextual information
         if (state.openingData) {
           const openingSpeech = getOpeningStatSpeech(state.openingData);
-          query += `\n\nOpening Information:\n${openingSpeech}`;
+          query += `
+
+<opening_information>
+${openingSpeech}
+</opening_information>`;
         }
 
         if (chessdbdata) {
           const candidateMoves = getChessDBSpeech(chessdbdata);
-          query += `\n\n${candidateMoves}`;
+          query += `
+
+<database_analysis>
+${candidateMoves}
+</database_analysis>`;
         }
 
         // Add engine analysis if needed
@@ -762,43 +881,75 @@ Be concise but thorough, and use clear chess language.
               .map((line, index) => {
                 const evaluation = formatEvaluation(line);
                 const moves = formatPrincipalVariation(line.pv, line.fen);
-                let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
+                let formattedLine = `  Line ${index + 1}: ${evaluation}
+    Moves: ${moves}`;
 
                 if (line.resultPercentages) {
-                  formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
+                  formattedLine += `
+    Win Rate: ${line.resultPercentages.win}% | Draw: ${line.resultPercentages.draw}% | Loss: ${line.resultPercentages.loss}%`;
                 }
 
                 return formattedLine;
               })
-              .join("\n");
+              .join("\n\n");
 
-            query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+            query += `
+
+<engine_analysis>
+Depth: ${engineDepth}
+${formattedEngineLines}
+</engine_analysis>`;
           }
         }
 
         if (customQuery) {
-          query += `\n\nAdditional considerations: ${customQuery}`;
+          query += `
+
+<additional_considerations>
+${customQuery}
+</additional_considerations>`;
         }
 
-        query += `\n\nAnalyze this from different points of view.`;
+        // Add visual board representation
+        const board = new Board(currentFen);
+        query += `
+
+<board_tactics>
+${board.toString()}
+</board_tactics>
+
+</chess_analysis_request>`;
+
+        if (analysisType === "annotation") {
+          query = query.replace("</chess_analysis_request>", "</chess_annotation_request>");
+        }
 
         // Determine message content based on analysis type
         let messageContent = "";
         switch (analysisType) {
           case "engineLine":
-            messageContent = `Analyze engine line: ${formatLineForLLM(data.line, data.lineIndex)}`;
+            const engineLineData = data as EngineLineData;
+            messageContent = `Analyze engine line: ${formatLineForLLM(engineLineData.line, engineLineData.lineIndex)}`;
             break;
           case "openingMove":
-            messageContent = `Analyze opening move: ${data.san}`;
+            const openingMove = data as Moves;
+            messageContent = `Analyze opening move: ${openingMove.san}`;
             break;
           case "candidateMove":
-            messageContent = `Analyze move: ${data.san}`;
+            const candidateMoveData = data as CandidateMove;
+            messageContent = `Analyze move: ${candidateMoveData.san}`;
             break;
           case "moveCoach":
-            const moveNotation = data.plyNumber % 2 === 0 ? 
-              `${Math.floor(data.plyNumber / 2) + 1}.` : 
-              `${Math.floor(data.plyNumber / 2) + 1}...`;
-            messageContent = `Agine, analyze move: ${moveNotation} ${data.notation} (${data.quality}) for ${data.player === "w" ? "White" : "Black"}`;
+            const coachMove = data as MoveAnalysis
+            messageContent = `Agine, analyze move: ${coachMove.sanNotation}`
+          case "annotation":
+            const reviewData = data as MoveAnalysis;
+            const moveNotationDisplay = reviewData.plyNumber % 2 === 0 ? 
+              `${Math.floor(reviewData.plyNumber / 2) + 1}.` : 
+              `${Math.floor(reviewData.plyNumber / 2) + 1}...`;
+            messageContent = analysisType === "annotation" 
+              ? `Agine, annotate this move: ${reviewData.notation} (${reviewData.quality})`
+              : `Agine, analyze move: ${moveNotationDisplay} ${reviewData.notation} (${reviewData.quality}) for ${reviewData.player === "w" ? "White" : "Black"}`;
             break;
         }
 
@@ -849,7 +1000,7 @@ Be concise but thorough, and use clear chess language.
   // Specific handlers using the generic analysis handler
   const handleEngineLineClick = useCallback(
     (line: LineEval, lineIndex: number) => 
-      createAnalysisHandler("engineLine")({ line, lineIndex }),
+      createAnalysisHandler("engineLine")({ line, lineIndex } as EngineLineData),
     [createAnalysisHandler]
   );
 
@@ -885,21 +1036,16 @@ Be concise but thorough, and use clear chess language.
 
         let query = `Analyze the chess move ${move} in this position:
 
-<information>        
 Position: ${futureFen}
 Side To Move: ${sideToMove}
-</information>
 
-<instructions>
 Please follow this structure in your analysis:
 1. First, understand and describe the board state and key features of the position before the move
 2. Next, analyze the move itself: what does it change in the position
 3. Then, consider the engine lines and candidate moves: what alternatives were available
 4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position
 
-Be concise but thorough, and use clear chess language.
-</instructions>
-`;
+Be concise but thorough, and use clear chess language.`;
 
         if (newOpeningData) {
           const openingSpeech = getOpeningStatSpeech(newOpeningData);

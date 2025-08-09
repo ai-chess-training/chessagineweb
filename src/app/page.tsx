@@ -14,7 +14,6 @@ import {
 import ChatIcon from '@mui/icons-material/Chat';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import SchoolIcon from '@mui/icons-material/School';
-import { FaRobot } from 'react-icons/fa6';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ViewBoardIcon from '@mui/icons-material/Bolt';
 import { useClerk, useUser } from '@clerk/nextjs';

@@ -523,7 +523,7 @@ ${board.toString()}
 
 </chess_coaching_request>`;
 
-console.log(query);
+
 
       return query;
     },

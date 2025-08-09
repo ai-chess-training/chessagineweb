@@ -15,70 +15,98 @@ import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { Board } from "../analysis/board";
 
-export default function useAgine(fen: string) {
-  // Analysis Results State
-  const [llmAnalysisResult, setLlmAnalysisResult] = useState<string | null>(
-    null
-  );
-  const [stockfishAnalysisResult, setStockfishAnalysisResult] =
-    useState<PositionEval | null>(null);
-  const [openingData, setOpeningData] = useState<MasterGames | null>(null);
-  const [lichessOpeningData, setLichessOpeningData] =
-    useState<MasterGames | null>(null);
+// Types
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
-  // Loading States
-  const [llmLoading, setLlmLoading] = useState(false);
-  const [stockfishLoading, setStockfishLoading] = useState(false);
-  const [openingLoading, setOpeningLoading] = useState(false);
-  const [lichessOpeningLoading, setLichessOpeningLoading] = useState(false);
+interface AgineState {
+  llmAnalysisResult: string | null;
+  stockfishAnalysisResult: PositionEval | null;
+  openingData: MasterGames | null;
+  lichessOpeningData: MasterGames | null;
+  llmLoading: boolean;
+  stockfishLoading: boolean;
+  openingLoading: boolean;
+  lichessOpeningLoading: boolean;
+  moveSquares: { [square: string]: string };
+  analysisTab: number;
+  chatMessages: ChatMessage[];
+  chatInput: string;
+  chatLoading: boolean;
+  sessionMode: boolean;
+}
 
-  // UI State
-  const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>(
-    {}
-  );
-  const [analysisTab, setAnalysisTab] = useState(0);
+// Constants
+const ANALYSIS_DELAY = 300;
+const DEFAULT_ENGINE_DEPTH = 15;
+const DEFAULT_ENGINE_LINES = 3;
+const MAX_PV_MOVES = 6;
 
-  // Chat State
-  const [chatMessages, setChatMessages] = useState<
-    Array<{
-      id: string;
-      role: "user" | "assistant";
-      content: string;
-      timestamp: Date;
-    }>
-  >([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const [sessionMode, setSessionMode] = useState(true);
-
-  // Engine Settings (using usehooks-ts for localStorage)
-  const [engineDepth, setEngineDepth] = useLocalStorage<number>(
-    "engineDepth",
-    15
-  );
-  const [engineLines, setEngineLines] = useLocalStorage<number>(
-    "engineLines",
-    3
-  );
-
-  // Hooks
-  const { session } = useSession();
-  const engine = useEngine(true, EngineName.Stockfish16);
-
-  const { data, loading, error, queueing, refetch, requestAnalysis } =
-    useChessDB(fen);
-  const chessdbdata = data;
-
-  const isValidFEN = (fen: string): boolean => {
+// Utility functions
+const isValidFEN = (fen: string): boolean => {
   if (!fen || typeof fen !== 'string') return false;
   const parts = fen.trim().split(' ');
   return parts.length === 6;
 };
 
+const createChatMessage = (
+  role: "user" | "assistant", 
+  content: string, 
+  id?: string
+): ChatMessage => ({
+  id: id || Date.now().toString(),
+  role,
+  content,
+  timestamp: new Date(),
+});
 
-  const legalMoves = isValidFEN(fen) ? new Chess(fen).moves() : [];
+export default function useAgine(fen: string) {
+  // ==================== STATE MANAGEMENT ====================
+  const [state, setState] = useState<AgineState>({
+    llmAnalysisResult: null,
+    stockfishAnalysisResult: null,
+    openingData: null,
+    lichessOpeningData: null,
+    llmLoading: false,
+    stockfishLoading: false,
+    openingLoading: false,
+    lichessOpeningLoading: false,
+    moveSquares: {},
+    analysisTab: 0,
+    chatMessages: [],
+    chatInput: "",
+    chatLoading: false,
+    sessionMode: true,
+  });
 
-  // Use ref to track current analysis to avoid stale closures
+  // Engine settings with localStorage
+  const [engineDepth, setEngineDepth] = useLocalStorage<number>(
+    "engineDepth",
+    DEFAULT_ENGINE_DEPTH
+  );
+  const [engineLines, setEngineLines] = useLocalStorage<number>(
+    "engineLines", 
+    DEFAULT_ENGINE_LINES
+  );
+
+  // Hooks
+  const { session } = useSession();
+  const engine = useEngine(true, EngineName.Stockfish16);
+  const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
+  const {
+    gameReview,
+    setGameReview,
+    gameReviewLoading,
+    gameReviewProgress,
+    setGameReviewLoading,
+    generateGameReview,
+  } = useGameReview(engine, engineDepth);
+
+  // Refs
   const currentFenRef = useRef(fen);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -87,8 +115,12 @@ export default function useAgine(fen: string) {
     currentFenRef.current = fen;
   }, [fen]);
 
-  // ==================== MEMOIZED UTILITY FUNCTIONS ====================
+  // ==================== COMPUTED VALUES ====================
+  const legalMoves = useMemo(() => {
+    return isValidFEN(fen) ? new Chess(fen).moves() : [];
+  }, [fen]);
 
+  // ==================== UTILITY FUNCTIONS ====================
   const formatEvaluation = useCallback((line: LineEval): string => {
     if (line.mate !== undefined) {
       return `M${line.mate}`;
@@ -105,7 +137,7 @@ export default function useAgine(fen: string) {
       const tempGame = new Chess(startFen);
       const moves: string[] = [];
 
-      for (const uciMove of pv.slice(0, 6)) {
+      for (const uciMove of pv.slice(0, MAX_PV_MOVES)) {
         try {
           const move = tempGame.move({
             from: uciMove.slice(0, 2),
@@ -143,102 +175,21 @@ export default function useAgine(fen: string) {
     [formatEvaluation, formatPrincipalVariation]
   );
 
-  // ==================== MEMOIZED API FUNCTIONS ====================
-
-  const fetchOpeningData = useCallback(async (): Promise<void> => {
-    const currentFen = currentFenRef.current;
-    setOpeningLoading(true);
-
-    try {
-      const data = await getOpeningStats(currentFen);
-      // Only update if we're still analyzing the same position
-      if (currentFenRef.current === currentFen) {
-        setOpeningData(data);
-      }
-    } catch (error) {
-      console.error("Error fetching opening data:", error);
-      if (currentFenRef.current === currentFen) {
-        setOpeningData(null);
-      }
-    } finally {
-      if (currentFenRef.current === currentFen) {
-        setOpeningLoading(false);
-      }
-    }
+  // ==================== STATE UPDATERS ====================
+  const updateState = useCallback((updates: Partial<AgineState>) => {
+    setState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  const fetchLichessOpeningData = useCallback(async (): Promise<void> => {
-    const currentFen = currentFenRef.current;
-    setLichessOpeningLoading(true);
+  const addChatMessage = useCallback((message: ChatMessage) => {
+    updateState({ 
+      chatMessages: [...state.chatMessages, message] 
+    });
+  }, [state.chatMessages, updateState]);
 
-    try {
-      const data = await getLichessOpeningStats(currentFen);
-      // Only update if we're still analyzing the same position
-      if (currentFenRef.current === currentFen) {
-        setLichessOpeningData(data);
-      }
-    } catch (error) {
-      console.error("Error fetching opening data:", error);
-      if (currentFenRef.current === currentFen) {
-        setLichessOpeningData(null);
-      }
-    } finally {
-      if (currentFenRef.current === currentFen) {
-        setLichessOpeningLoading(false);
-      }
-    }
-  }, []);
 
-  const analyzeWithStockfish = useCallback(async (): Promise<void> => {
-    if (!engine) {
-      console.warn("Stockfish engine not ready");
-      return;
-    }
-
-    const currentFen = currentFenRef.current;
-    setStockfishLoading(true);
-
-    try {
-      const result = await engine.evaluatePositionWithUpdate({
-        fen: currentFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: (partialEval: PositionEval) => {
-          // Only update if we're still analyzing the same position
-          if (currentFenRef.current === currentFen) {
-            setStockfishAnalysisResult(partialEval);
-          }
-        },
-      });
-
-      // Only update if we're still analyzing the same position
-      if (currentFenRef.current === currentFen) {
-        setStockfishAnalysisResult(result);
-      }
-    } catch (error) {
-      console.error("Error analyzing position with Stockfish:", error);
-      if (currentFenRef.current === currentFen) {
-        setStockfishAnalysisResult(null);
-      }
-    } finally {
-      if (currentFenRef.current === currentFen) {
-        setStockfishLoading(false);
-      }
-    }
-  }, [engine, engineDepth, engineLines]);
-
-  const {
-    gameReview,
-    setGameReview,
-    gameReviewLoading,
-    gameReviewProgress,
-    setGameReviewLoading,
-    generateGameReview,
-  } = useGameReview(engine, engineDepth);
-
+  // ==================== API FUNCTIONS ====================
   const makeApiRequest = useCallback(
     async (fen: string, query: string, mode: string): Promise<string> => {
-     
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -274,98 +225,96 @@ export default function useAgine(fen: string) {
     [session]
   );
 
-  // ==================== ABORT CHAT MESSAGE FUNCTION ====================
+  const fetchOpeningData = useCallback(async (): Promise<void> => {
+    const currentFen = currentFenRef.current;
+    updateState({ openingLoading: true });
 
+    try {
+      const data = await getOpeningStats(currentFen);
+      if (currentFenRef.current === currentFen) {
+        updateState({ openingData: data, openingLoading: false });
+      }
+    } catch (error) {
+      console.error("Error fetching opening data:", error);
+      if (currentFenRef.current === currentFen) {
+        updateState({ openingData: null, openingLoading: false });
+      }
+    }
+  }, [updateState]);
+
+  const fetchLichessOpeningData = useCallback(async (): Promise<void> => {
+    const currentFen = currentFenRef.current;
+    updateState({ lichessOpeningLoading: true });
+
+    try {
+      const data = await getLichessOpeningStats(currentFen);
+      if (currentFenRef.current === currentFen) {
+        updateState({ lichessOpeningData: data, lichessOpeningLoading: false });
+      }
+    } catch (error) {
+      console.error("Error fetching Lichess opening data:", error);
+      if (currentFenRef.current === currentFen) {
+        updateState({ lichessOpeningData: null, lichessOpeningLoading: false });
+      }
+    }
+  }, [updateState]);
+
+  const analyzeWithStockfish = useCallback(async (): Promise<void> => {
+    if (!engine) {
+      console.warn("Stockfish engine not ready");
+      return;
+    }
+
+    const currentFen = currentFenRef.current;
+    updateState({ stockfishLoading: true });
+
+    try {
+      const result = await engine.evaluatePositionWithUpdate({
+        fen: currentFen,
+        depth: engineDepth,
+        multiPv: engineLines,
+        setPartialEval: (partialEval: PositionEval) => {
+          if (currentFenRef.current === currentFen) {
+            updateState({ stockfishAnalysisResult: partialEval });
+          }
+        },
+      });
+
+      if (currentFenRef.current === currentFen) {
+        updateState({ stockfishAnalysisResult: result, stockfishLoading: false });
+      }
+    } catch (error) {
+      console.error("Error analyzing position with Stockfish:", error);
+      if (currentFenRef.current === currentFen) {
+        updateState({ stockfishAnalysisResult: null, stockfishLoading: false });
+      }
+    }
+  }, [engine, engineDepth, engineLines, updateState]);
+
+  // ==================== CHAT FUNCTIONS ====================
   const abortChatMessage = useCallback((): void => {
     if (abortControllerRef.current) {
       console.log("Aborting chat message...");
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
 
-      // Reset loading state
-      setChatLoading(false);
-
-      // Optionally add a message indicating the request was cancelled
-      const cancelMessage = {
-        id: Date.now().toString(),
-        role: "assistant" as const,
-        content: "Message generation was cancelled.",
-        timestamp: new Date(),
-      };
-
-      setChatMessages((prev) => [...prev, cancelMessage]);
+      updateState({ chatLoading: false });
+      addChatMessage(createChatMessage("assistant", "Message generation was cancelled."));
     }
-  }, []);
+  }, [updateState, addChatMessage]);
 
-  // Auto-recalculate engine results when FEN changes
-  useEffect(() => {
-    if (!engine || !fen) return;
-
-    // Clear previous results
-    setStockfishAnalysisResult(null);
-    setLlmAnalysisResult(null);
-    setOpeningData(null);
-
-    // Cancel any pending API requests
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Auto-analyze with slight delay to avoid rapid fire requests
-    const timeoutId = setTimeout(() => {
-      // Double-check that we're still analyzing the same position
-      if (currentFenRef.current === fen) {
-        analyzeWithStockfish();
-        fetchOpeningData();
-        fetchLichessOpeningData();
-      }
-    }, 300);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [
-    fen,
-    engine,
-    engineDepth,
-    engineLines,
-    analyzeWithStockfish,
-    fetchOpeningData,
-  ]);
-
-  // ==================== OPTIMIZED CHAT FUNCTIONS ====================
-
-  const sendChatMessage = useCallback(
-    async (
+  const buildChatQuery = useCallback(
+    (
+      currentInput: string,
+      currentFen: string,
+      sideToMove: string,
       gameInfo?: string,
       currentMove?: string,
       puzzleMode?: boolean,
       puzzleQuery?: string,
       playMode?: boolean
-    ): Promise<void> => {
-      if (!chatInput.trim()) return;
-
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: chatInput,
-        timestamp: new Date(),
-      };
-
-      setChatMessages((prev) => [...prev, userMessage]);
-      const currentInput = chatInput;
-      setChatInput("");
-      setChatLoading(true);
-
-      const currentFen = currentFenRef.current;
-      
-
-      try {
-        const chessInstance = new Chess(currentFen);
-        const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-        
-        // Build structured query with clear sections
-        let query = `<chess_coaching_request>
+    ): string => {
+      let query = `<chess_coaching_request>
 
 <user_query>
 ${currentInput}
@@ -376,9 +325,9 @@ Current FEN: ${currentFen}
 Side to Move: ${sideToMove}
 </position_context>`;
 
-        // Add mode-specific instructions
-        if (puzzleMode === true) {
-          query += `
+      // Add mode-specific instructions
+      if (puzzleMode === true) {
+        query += `
 
 <mode>
 Type: Puzzle Mode
@@ -391,8 +340,8 @@ Instructions:
 - Encourage the user to consider candidate moves, threats, and tactical motifs in the position
 - Always wait for the user's input before revealing the next step or answer, unless the user explicitly asks for the solution
 </mode>`;
-        } else if (playMode === true) {
-          query += `
+      } else if (playMode === true) {
+        query += `
 
 <mode>
 Type: Play Mode
@@ -404,116 +353,169 @@ Instructions:
 - Focus on practical, actionable advice for the current game situation
 - Be encouraging and supportive while providing accurate analysis
 </mode>`;
-        } else {
-          if(sessionMode){
-            query += `
+      } else {
+        query += `
 
 <mode>
-Type: Analysis Mode
+Type: ${state.sessionMode ? 'Analysis Mode' : 'Chat Mode'}
 </mode>`;
-          }else{
-            query += `
+      }
 
-<mode>
-Type: Chat Mode
-</mode>`;
-          }
-        }
-
-        // Add puzzle-specific information
-        if (puzzleQuery) {
-          query += `
+      // Add additional context
+      if (puzzleQuery) {
+        query += `
 
 <puzzle_information>
 ${puzzleQuery}
 </puzzle_information>`;
-        }
+      }
 
-        // Add game history if available
-        if (gameInfo) {
-          query += `
+      if (gameInfo) {
+        query += `
 
 <game_history>
 PGN:
 ${gameInfo}
 </game_history>`;
-        }
+      }
 
-        // Add current move context
-        if (currentMove) {
-          query += `
+      if (currentMove) {
+        query += `
 
 <current_move>
 ${currentMove}
 </current_move>`;
-        }
+      }
 
-        // Add engine analysis and database information for non-play modes
-        if (sessionMode && !playMode) {
-          // Get engine analysis if not available
-          let engineResult = stockfishAnalysisResult;
-          if (!engineResult && engine) {
-            engineResult = await engine.evaluatePositionWithUpdate({
-              fen: currentFen,
-              depth: engineDepth,
-              multiPv: engineLines,
-              setPartialEval: () => {},
-            });
-            if (currentFenRef.current === currentFen) {
-              setStockfishAnalysisResult(engineResult);
-            }
+      // Add game review if available
+      if (gameReview && gameReview.length > 0) {
+        const generateGameReviewSummary = (moves: MoveAnalysis[]): string => {
+          const movesByQuality: Record<MoveQuality, MoveAnalysis[]> = {
+            "Best": [], "Very Good": [], "Good": [], "Dubious": [], 
+            "Mistake": [], "Blunder": [], "Book": []
+          };
+
+          moves.forEach(move => {
+            movesByQuality[move.quality].push(move);
+          });
+
+          const whiteMoves = moves.filter(move => move.player === 'w');
+          const blackMoves = moves.filter(move => move.player === 'b');
+
+          const formatMoveList = (moveList: MoveAnalysis[]): string => {
+            return moveList
+              .map(move => `Move ${Math.ceil(move.plyNumber / 2)}${move.player === 'w' ? '' : '...'} ${move.sanNotation || move.notation}`)
+              .join(', ');
+          };
+
+          let summary = `Game Review Summary:\n\n`;
+
+          if (whiteMoves.length > 0) {
+            const whiteBlunders = whiteMoves.filter(m => m.quality === "Blunder");
+            const whiteMistakes = whiteMoves.filter(m => m.quality === "Mistake");
+            const whiteDubious = whiteMoves.filter(m => m.quality === "Dubious");
+            
+            summary += `White's Performance:
+- Blunders: ${whiteBlunders.length}${whiteBlunders.length > 0 ? ` (${formatMoveList(whiteBlunders)})` : ''}
+- Mistakes: ${whiteMistakes.length}${whiteMistakes.length > 0 ? ` (${formatMoveList(whiteMistakes)})` : ''}
+- Dubious moves: ${whiteDubious.length}${whiteDubious.length > 0 ? ` (${formatMoveList(whiteDubious)})` : ''}\n\n`;
           }
 
-          // Add engine analysis with structured formatting
-          if (engineResult) {
-            const formattedEngineLines = engineResult.lines
-              .map((line, index) => {
-                const evaluation = formatEvaluation(line);
-                const moves = formatPrincipalVariation(line.pv, line.fen);
-                let formattedLine = `  Line ${index + 1}: ${evaluation}
+          if (blackMoves.length > 0) {
+            const blackBlunders = blackMoves.filter(m => m.quality === "Blunder");
+            const blackMistakes = blackMoves.filter(m => m.quality === "Mistake");
+            const blackDubious = blackMoves.filter(m => m.quality === "Dubious");
+            
+            summary += `Black's Performance:
+- Blunders: ${blackBlunders.length}${blackBlunders.length > 0 ? ` (${formatMoveList(blackBlunders)})` : ''}
+- Mistakes: ${blackMistakes.length}${blackMistakes.length > 0 ? ` (${formatMoveList(blackMistakes)})` : ''}
+- Dubious moves: ${blackDubious.length}${blackDubious.length > 0 ? ` (${formatMoveList(blackDubious)})` : ''}\n\n`;
+          }
+
+          const criticalMoments = [
+            ...movesByQuality["Blunder"],
+            ...movesByQuality["Mistake"],
+            ...movesByQuality["Dubious"]
+          ].sort((a, b) => {
+            const qualityOrder = { "Blunder": 0, "Mistake": 1, "Dubious": 2, "Best": 3, "Good": 4, "Very Good": 5, "Book": 6 };
+            return qualityOrder[a.quality] - qualityOrder[b.quality];
+          });
+
+          if (criticalMoments.length > 0) {
+            summary += `Key Moments to Review:\n`;
+            criticalMoments.slice(0, 8).forEach((move, index) => {
+              const moveNumber = Math.ceil(move.plyNumber / 2);
+              const playerSymbol = move.player === 'w' ? '♔' : '♚';
+              summary += `${index + 1}. ${playerSymbol} Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.sanNotation || move.notation} - ${move.quality}\n`;
+            });
+          }
+
+          return summary;
+        };
+
+        query += `
+
+<game_review_analysis>
+${generateGameReviewSummary(gameReview)}
+
+Detailed Move Analysis:
+${gameReview.map(move => {
+  const moveNumber = Math.ceil(move.plyNumber / 2);
+  const playerName = move.player === 'w' ? 'White' : 'Black';
+  return `Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.sanNotation || move.notation} (${playerName}) - Quality: ${move.quality}`;
+}).join('\n')}
+</game_review_analysis>`;
+      }
+
+      // Add engine analysis for non-play modes
+      if (state.sessionMode && !playMode && state.stockfishAnalysisResult) {
+        const formattedEngineLines = state.stockfishAnalysisResult.lines
+          .map((line, index) => {
+            const evaluation = formatEvaluation(line);
+            const moves = formatPrincipalVariation(line.pv, line.fen);
+            let formattedLine = `  Line ${index + 1}: ${evaluation}
     Moves: ${moves}`;
 
-                if (line.resultPercentages) {
-                  formattedLine += `
+            if (line.resultPercentages) {
+              formattedLine += `
     Win Rate: ${line.resultPercentages.win}% | Draw: ${line.resultPercentages.draw}% | Loss: ${line.resultPercentages.loss}%`;
-                }
+            }
 
-                return formattedLine;
-              })
-              .join("\n\n");
+            return formattedLine;
+          })
+          .join("\n\n");
 
-            query += `
+        query += `
 
 <engine_analysis>
 Depth: ${engineDepth}
 ${formattedEngineLines}
 </engine_analysis>`;
-          }
+      }
 
-          // Add opening information
-          if (openingData) {
-            const openingSpeech = getOpeningStatSpeech(openingData);
-            query += `
+      // Add opening information
+      if (state.openingData) {
+        const openingSpeech = getOpeningStatSpeech(state.openingData);
+        query += `
 
 <opening_information>
 ${openingSpeech}
 </opening_information>`;
-          }
+      }
 
-          // Add chess database information
-          if (chessdbdata) {
-            const candidateMoves = getChessDBSpeech(chessdbdata);
-            query += `
+      // Add chess database information
+      if (chessdbdata) {
+        const candidateMoves = getChessDBSpeech(chessdbdata);
+        query += `
 
 <database_analysis>
 ${candidateMoves}
 </database_analysis>`;
-          }
-        }
+      }
 
-        // Add visual board representation
-        const board = new Board(currentFen);
-        query += `
+      // Add visual board representation
+      const board = new Board(currentFen);
+      query += `
 
 <board_tactics>
 ${board.toString()}
@@ -521,53 +523,78 @@ ${board.toString()}
 
 </chess_coaching_request>`;
 
-        const mode =
-          puzzleMode === true || puzzleQuery
-            ? "puzzle"
-            : playMode
-            ? "play"
-            : "position";
+console.log(query);
+
+      return query;
+    },
+    [state.sessionMode, state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
+  );
+
+  const sendChatMessage = useCallback(
+    async (
+      gameInfo?: string,
+      currentMove?: string,
+      puzzleMode?: boolean,
+      puzzleQuery?: string,
+      playMode?: boolean,
+    ): Promise<void> => {
+      if (!state.chatInput.trim()) return;
+
+      const userMessage = createChatMessage("user", state.chatInput);
+      const currentInput = state.chatInput;
+      
+      updateState({ 
+        chatMessages: [...state.chatMessages, userMessage],
+        chatInput: "",
+        chatLoading: true 
+      });
+
+      const currentFen = currentFenRef.current;
+
+      try {
+        const chessInstance = new Chess(currentFen);
+        const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+        
+        const query = buildChatQuery(
+          currentInput,
+          currentFen,
+          sideToMove,
+          gameInfo,
+          currentMove,
+          puzzleMode,
+          puzzleQuery,
+          playMode
+        );
+
+        const mode = puzzleMode === true || puzzleQuery
+          ? "puzzle"
+          : playMode
+          ? "play"
+          : "position";
+          
         const result = await makeApiRequest(currentFen, query, mode);
+        const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
 
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-
-        setChatMessages((prev) => [...prev, assistantMessage]);
+        updateState({ 
+          chatMessages: [...state.chatMessages, userMessage, assistantMessage],
+          chatLoading: false 
+        });
       } catch (error) {
         console.error("Error sending chat message:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, there was an error processing your message. Please try again.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
+        if (!(error instanceof Error && error.message === "Request cancelled")) {
+          const errorMessage = createChatMessage(
+            "assistant",
+            "Sorry, there was an error processing your message. Please try again.",
+            (Date.now() + 1).toString()
+          );
+          updateState({ 
+            chatMessages: [...state.chatMessages, userMessage, errorMessage],
+            chatLoading: false 
+          });
         }
-      } finally {
-        setChatLoading(false);
       }
     },
-    [
-      chatInput,
-      sessionMode,
-      stockfishAnalysisResult,
-      engine,
-      engineDepth,
-      engineLines,
-      openingData,
-      chessdbdata,
-      formatEvaluation,
-      formatPrincipalVariation,
-      makeApiRequest,
-    ]
+    [state.chatInput, state.chatMessages, buildChatQuery, makeApiRequest, updateState]
   );
 
   const handleChatKeyPress = useCallback(
@@ -581,117 +608,60 @@ ${board.toString()}
   );
 
   const clearChatHistory = useCallback((): void => {
-    setChatMessages([]);
-  }, []);
+    updateState({ chatMessages: [] });
+  }, [updateState]);
 
-  // ==================== OPTIMIZED CLICK HANDLERS ====================
+  // ==================== CLICK HANDLERS ====================
+  const createAnalysisHandler = useCallback(
+    (analysisType: string) => async (data: any, customQuery?: string): Promise<void | string> => {
+      if (state.llmLoading || state.chatLoading) return;
 
-  const handleEngineLineClick = useCallback(
-    async (line: LineEval, lineIndex: number): Promise<void> => {
-      if (llmLoading) return;
-
-      const currentFen = currentFenRef.current;
-      const chessInstance = new Chess(currentFen);
-      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-      const formattedLine = formatLineForLLM(line, lineIndex);
-
-      let query = `Analyze this chess position and explain the following engine line in detail:
-
-Position: ${currentFen}
-Engine Line: ${formattedLine}
-Side To Move ${sideToMove}
-
-Please follow this structure in your analysis:
- 1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
- 2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
- 3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
- 4. Take account of 1, 2, 3, 4 and provide the analysis for this engine line.
-  
- Be concise but thorough, and use clear chess language.
-
-
-`;
-
-      // Add opening data
-      if (openingData) {
-        const openingSpeech = getOpeningStatSpeech(openingData);
-        query += `\n\nOpening Information:\n${openingSpeech}`;
-      }
-
-      if (chessdbdata) {
-        const candiateMoves = getChessDBSpeech(chessdbdata);
-        query += `${candiateMoves}`;
-      }
-
-      query += `\n\n Analyze this from different point of views.`;
-
-      setAnalysisTab(1);
-
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Analyze engine line: ${formattedLine}`,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      setChatLoading(true);
+      updateState({ chatLoading: true, analysisTab: 1 });
 
       try {
-        const result = await makeApiRequest(currentFen, query, "position");
+        // Build query based on analysis type
+        let query = "";
+        let currentFen = currentFenRef.current;
 
-        // Add assistant response to chat
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error("Error analyzing engine line:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, there was an error analyzing the engine line. Please try again.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
-        }
-      } finally {
-        setChatLoading(false);
-      }
-    },
-    [llmLoading, formatLineForLLM, openingData, makeApiRequest]
-  );
-
-  const handleOpeningMoveClick = useCallback(
-    async (move: Moves): Promise<void> => {
-      if (llmLoading) return;
-
-      const currentFen = currentFenRef.current;
-      const chessInstance = new Chess(currentFen);
-      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-
-      const totalGames =
-        (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
-      const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
-      const drawRate = ((move.draws / totalGames) * 100 || 0).toFixed(1);
-      const blackWinRate = ((move.black / totalGames) * 100 || 0).toFixed(1);
-
-      const query = `Analyze the chess move ${move.san} in this position:
-
+        switch (analysisType) {
+          case "engineLine":
+            const { line, lineIndex } = data;
+            const formattedLine = formatLineForLLM(line, lineIndex);
+            query = `Analyze this chess position and explain the following engine line in detail:
+<information>
 Position: ${currentFen}
-Opening: ${openingData?.opening?.name || "Unknown"} (${
-        openingData?.opening?.eco || "N/A"
-      })
-Side To Move ${sideToMove}
+Engine Line: ${formattedLine}
+Side To Move: ${new Chess(currentFen).turn() === "w" ? "White" : "Black"}
+</information>
 
+<instructions>
+Please follow this structure in your analysis:
+1. First, describe the board state and key features of the position before the move
+2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
+3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+4. Take account of 1, 2, 3 and provide the analysis for this engine line.
+
+  
+Be concise but thorough, and use clear chess language.
+</instructions>
+`;
+            break;
+
+          case "openingMove":
+            const move = data;
+            const totalGames = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
+            const whiteWinRate = ((move.white / totalGames) * 100 || 0).toFixed(1);
+            const drawRate = ((move.draws / totalGames) * 100 || 0).toFixed(1);
+            const blackWinRate = ((move.black / totalGames) * 100 || 0).toFixed(1);
+
+            query = `Analyze the chess move ${move.san} in this position:
+<information>
+Position: ${currentFen}
+Opening: ${state.openingData?.opening?.name || "Unknown"} (${state.openingData?.opening?.eco || "N/A"})
+Side To Move: ${new Chess(currentFen).turn() === "w" ? "White" : "Black"}
+</information>
+
+<move_stats>
 Move Statistics from Master Games:
 - Move: ${move.san}
 - Games played: ${totalGames}
@@ -699,134 +669,100 @@ Move Statistics from Master Games:
 - White wins: ${whiteWinRate}%
 - Draws: ${drawRate}%
 - Black wins: ${blackWinRate}%
+</move_stats>
 
+
+<instruction>
 Please follow this structure in your analysis:
- 1. First, describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
- 2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
- 3. Then, understand the opening stats, the win, draw, loss rates and amount of games that were played by masters.
- 4. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
- 5. Take account of 1, 2, 3, 4 and provide the analysis for this move.
+1. First, describe the board state and key features of the position before the move
+2. Next, analyze the move itself: what does it change in the position
+3. Then, understand the opening stats, the win, draw, loss rates and amount of games that were played by masters
+4. Then, consider the engine lines and candidate moves: what alternatives were available
+5. Take account of 1, 2, 3, 4 and provide the analysis for this move.
+
   
- Be concise but thorough, and use clear chess language.
+Be concise but thorough, and use clear chess language.
+</instruction>
+`;
+            break;
 
-
- `;
-
-      setAnalysisTab(1);
-
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Analyze opening move: ${move.san}`,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      setChatLoading(true);
-
-      try {
-        const result = await makeApiRequest(currentFen, query, "position");
-
-        // Add assistant response to chat
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error("Error analyzing opening move:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, there was an error analyzing the opening move. Please try again.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
-        }
-      } finally {
-        setChatLoading(false);
-      }
-    },
-    [llmLoading, openingData, makeApiRequest]
-  );
-
-  const handleMoveClick = useCallback(
-    async (move: CandidateMove): Promise<void> => {
-      if (llmLoading) return;
-
-      setChatLoading(true);
-
-      const currentFen = currentFenRef.current;
-      const chessInstance = new Chess(currentFen);
-      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-
-      let query = `Analyze the chess move ${move.san} (${move.uci}) in this position:
+          case "candidateMove":
+            const candidateMove = data;
+            query = `Analyze the chess move ${candidateMove.san} (${candidateMove.uci}) in this position:
 
 Position: ${currentFen}
-Side To Move: ${sideToMove}
-ChessDb Score For Move ${move.score} the higher the postive score the better white is, the negative the score is better black is
-ChessDb Winrate: ${move.winrate}
+Side To Move: ${new Chess(currentFen).turn() === "w" ? "White" : "Black"}
+ChessDb Score For Move ${candidateMove.score}
+ChessDb Winrate: ${candidateMove.winrate}
 
 Please follow this structure in your analysis:
-1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
-2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
-3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
+1. First, understand and describe the board state and key features of the position before the move
+2. Next, analyze the move itself: what does it change in the position
+3. Then, consider the engine lines and candidate moves: what alternatives were available
 4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position
+
+Be concise but thorough, and use clear chess language.`;
+            break;
+
+          case "moveCoach":
+            const review = data;
+            const pastFen = review.fen;
+            const sideToMove = review.player === "w" ? "White" : "Black";
+            const moveNumber = Math.floor(review.plyNumber / 2) + 1;
+            const isWhiteMove = review.plyNumber % 2 === 0;
+            const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
+
+            query = `As a chess buddy, analyze this move from the game review:
+<move_information>
+Move: ${moveNotation} ${review.notation}
+Classification: ${review.quality}
+Side: ${sideToMove}
+Position FEN: ${pastFen}
+</move_information>
+
+<instructions>
+Please follow this structure in your analysis:
+1. First, understand and describe the board state and key features of the position before the move
+2. Next, analyze the move itself: what does it change in the position
+3. Then, consider the engine lines and candidate moves: what alternatives were available
+4. Take account of 1, 2, 3 and explain why this move is classified as a ${review.quality} move.
+
 Be concise but thorough, and use clear chess language.
-
+</instructions>
 `;
+            currentFen = pastFen;
+            break;
+        }
 
-      // Add opening data
-      if (openingData) {
-        const openingSpeech = getOpeningStatSpeech(openingData);
-        query += `\n\nOpening Information:\n${openingSpeech}`;
-      }
+        // Add contextual information
+        if (state.openingData) {
+          const openingSpeech = getOpeningStatSpeech(state.openingData);
+          query += `\n\nOpening Information:\n${openingSpeech}`;
+        }
 
-      if (chessdbdata) {
-        const candiateMoves = getChessDBSpeech(chessdbdata);
-        query += `${candiateMoves}`;
-      }
+        if (chessdbdata) {
+          const candidateMoves = getChessDBSpeech(chessdbdata);
+          query += `\n\n${candidateMoves}`;
+        }
 
-      if (stockfishAnalysisResult) {
-        const formattedEngineLines = stockfishAnalysisResult.lines
-          .map((line, index) => {
-            const evaluation = formatEvaluation(line);
-            const moves = formatPrincipalVariation(line.pv, line.fen);
-            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-            if (line.resultPercentages) {
-              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-            }
-
-            return formattedLine;
-          })
-          .join("\n");
-
-        query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
-      } else {
-        if (engine) {
-          const engineResult = await engine.evaluatePositionWithUpdate({
-            fen: currentFen,
-            depth: engineDepth,
-            multiPv: engineLines,
-            setPartialEval: () => {},
-          });
+        // Add engine analysis if needed
+        if (state.stockfishAnalysisResult || engine) {
+          let engineResult = state.stockfishAnalysisResult;
+          if (!engineResult && engine) {
+            engineResult = await engine.evaluatePositionWithUpdate({
+              fen: currentFen,
+              depth: engineDepth,
+              multiPv: engineLines,
+              setPartialEval: () => {},
+            });
+          }
 
           if (engineResult) {
             const formattedEngineLines = engineResult.lines
               .map((line, index) => {
                 const evaluation = formatEvaluation(line);
                 const moves = formatPrincipalVariation(line.pv, line.fen);
-                let formattedLine = `Line ${
-                  index + 1
-                }: ${evaluation} - ${moves}`;
+                let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
 
                 if (line.resultPercentages) {
                   formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
@@ -839,638 +775,289 @@ Be concise but thorough, and use clear chess language.
             query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
           }
         }
-      }
 
-      query += `\n\nAnalyze this move from different points of view.`;
+        if (customQuery) {
+          query += `\n\nAdditional considerations: ${customQuery}`;
+        }
 
-      setAnalysisTab(1);
+        query += `\n\nAnalyze this from different points of view.`;
 
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Analyze move: ${move.san}`,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, userMessage]);
+        // Determine message content based on analysis type
+        let messageContent = "";
+        switch (analysisType) {
+          case "engineLine":
+            messageContent = `Analyze engine line: ${formatLineForLLM(data.line, data.lineIndex)}`;
+            break;
+          case "openingMove":
+            messageContent = `Analyze opening move: ${data.san}`;
+            break;
+          case "candidateMove":
+            messageContent = `Analyze move: ${data.san}`;
+            break;
+          case "moveCoach":
+            const moveNotation = data.plyNumber % 2 === 0 ? 
+              `${Math.floor(data.plyNumber / 2) + 1}.` : 
+              `${Math.floor(data.plyNumber / 2) + 1}...`;
+            messageContent = `Agine, analyze move: ${moveNotation} ${data.notation} (${data.quality}) for ${data.player === "w" ? "White" : "Black"}`;
+            break;
+        }
 
-      try {
+        const userMessage = createChatMessage("user", messageContent);
         const result = await makeApiRequest(currentFen, query, "position");
+        const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
 
-        // Add assistant response to chat
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error("Error analyzing move:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, there was an error analyzing the move. Please try again.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
-        }
-      } finally {
-        setChatLoading(false);
-      }
-    },
-    [llmLoading, openingData, makeApiRequest]
-  );
-
-  const handleFutureMoveLegalClick = useCallback(
-    async (move: string): Promise<void> => {
-      if (llmLoading) return;
-
-      setChatLoading(true);
-
-      const currentFen = currentFenRef.current;
-      const chessInstance = new Chess(currentFen);
-      chessInstance.move(move);
-      const futureFen = chessInstance.fen();
-      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-      const newOpeningData = await getOpeningStats(futureFen);
-
-      let query = `Analyze the chess move ${move} in this position:
-
-Position: ${futureFen}
-Side To Move: ${sideToMove}
-
-Please follow this structure in your analysis:
-1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
-2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
-3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
-4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position
-Be concise but thorough, and use clear chess language.
-
-`;
-
-      // Add opening data
-      if (newOpeningData) {
-        const openingSpeech = getOpeningStatSpeech(newOpeningData);
-        query += `\n\nOpening Information:\n${openingSpeech}`;
-      }
-
-      if (engine) {
-        const engineResult = await engine.evaluatePositionWithUpdate({
-          fen: futureFen,
-          depth: engineDepth,
-          multiPv: engineLines,
-          setPartialEval: () => {},
+        updateState({ 
+          chatMessages: [...state.chatMessages, userMessage, assistantMessage],
+          chatLoading: false 
         });
 
-        if (engineResult) {
-          const formattedEngineLines = engineResult.lines
-            .map((line, index) => {
-              const evaluation = formatEvaluation(line);
-              const moves = formatPrincipalVariation(line.pv, line.fen);
-              let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-              if (line.resultPercentages) {
-                formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-              }
-
-              return formattedLine;
-            })
-            .join("\n");
-
-          query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
-        }
-      }
-
-      query += `\n\nAnalyze this move from different points of view.`;
-
-      setAnalysisTab(1);
-
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Analyze move: ${move}`,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      try {
-        const result = await makeApiRequest(futureFen, query, "position");
-
-        // Add assistant response to chat
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
+        return analysisType === "annotation" ? result : undefined;
       } catch (error) {
-        console.error("Error analyzing move:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, there was an error analyzing the move. Please try again.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
+        console.error(`Error in ${analysisType} analysis:`, error);
+        if (!(error instanceof Error && error.message === "Request cancelled")) {
+          const errorMessage = createChatMessage(
+            "assistant",
+            `Sorry, there was an error analyzing the ${analysisType}. Please try again.`,
+            (Date.now() + 1).toString()
+          );
+          updateState({ 
+            chatMessages: [...state.chatMessages, errorMessage],
+            chatLoading: false 
+          });
         }
-      } finally {
-        setChatLoading(false);
-      }
-    },
-    [llmLoading, makeApiRequest]
-  );
-
-  const handleMoveCoachClick = useCallback(
-    async (review: MoveAnalysis): Promise<void> => {
-      if (
-        !setChatMessages ||
-        !setChatLoading ||
-        !setAnalysisTab ||
-        !makeApiRequest ||
-        !currentFenRef
-      ) {
-        console.warn("Chat functionality not properly configured");
-        return;
-      }
-
-      if (chatLoading) return;
-
-      setChatLoading(true);
-
-      const pastFen = review.fen;
-      const sideToMove = review.player === "w" ? "White" : "Black";
-
-      const moveNumber = Math.floor(review.plyNumber / 2) + 1;
-      const isWhiteMove = review.plyNumber % 2 === 0;
-      const moveNotation = isWhiteMove ? `${moveNumber}.` : `${moveNumber}...`;
-
-      let query = `As a chess buddy, analyze this move from the game review:
-
-    Move: ${moveNotation} ${review.notation}
-    Classification: ${review.quality}
-    Side: ${sideToMove}
-    Position FEN: ${pastFen}
-
-    Please follow this structure in your analysis:
-    1. First, understand and describe the board state and key features of the position before the move (pawn structure, piece activity, king safety, imbalances, threats, etc).
-    2. Next, analyze the move itself: what does it change in the position, and what are its immediate tactical or strategic consequences?
-    3. Then, consider the engine lines and candidate moves: what alternatives were available, and how do they compare to the move played?
-    4. Take account of 1, 2, 3 and explain why this move is classified as a ${review.quality} move.
-  
-
-    Be concise but thorough, and use clear chess language.
-    `;
-      // Add opening data
-      if (openingData) {
-        const openingSpeech = getOpeningStatSpeech(openingData);
-        query += `\n\nOpening Information:\n${openingSpeech}`;
-      }
-
-      if (chessdbdata) {
-        const candiateMoves = getChessDBSpeech(chessdbdata);
-        query += `Candidate Moves:\n ${candiateMoves}`;
-      }
-
-      if (engine) {
-        const engineResult = await engine.evaluatePositionWithUpdate({
-          fen: pastFen,
-          depth: engineDepth,
-          multiPv: engineLines,
-          setPartialEval: () => {},
-        });
-
-        if (engineResult) {
-          const formattedEngineLines = engineResult.lines
-            .map((line, index) => {
-              const evaluation = formatEvaluation(line);
-              const moves = formatPrincipalVariation(line.pv, line.fen);
-              let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-              if (line.resultPercentages) {
-                formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-              }
-
-              return formattedLine;
-            })
-            .join("\n");
-
-          query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
-        }
-      }
-
-      // Switch to analysis tab (assuming tab 1 is for chat)
-      setAnalysisTab(1);
-
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Agine, analyze move: ${moveNotation} ${review.notation} (${review.quality}) for ${sideToMove}`,
-        timestamp: new Date(),
-      };
-
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      try {
-        const result = await makeApiRequest(pastFen, query, "position");
-
-        // Add assistant response to chat
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error("Error getting coach analysis:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, I couldn't analyze that move right now. Please try again.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
-        }
-      } finally {
-        setChatLoading(false);
+        return analysisType === "annotation" ? "" : undefined;
       }
     },
     [
-      chatLoading,
-      setChatMessages,
-      setChatLoading,
-      setAnalysisTab,
+      state.llmLoading, 
+      state.chatLoading, 
+      state.chatMessages, 
+      state.openingData, 
+      state.stockfishAnalysisResult,
+      chessdbdata, 
+      engine, 
+      engineDepth, 
+      engineLines,
+      formatLineForLLM,
+      formatEvaluation,
+      formatPrincipalVariation,
       makeApiRequest,
-      currentFenRef,
-      openingData,
+      updateState
     ]
+  );
+
+  // Specific handlers using the generic analysis handler
+  const handleEngineLineClick = useCallback(
+    (line: LineEval, lineIndex: number) => 
+      createAnalysisHandler("engineLine")({ line, lineIndex }),
+    [createAnalysisHandler]
+  );
+
+  const handleOpeningMoveClick = useCallback(
+    (move: Moves) => createAnalysisHandler("openingMove")(move),
+    [createAnalysisHandler]
+  );
+
+  const handleMoveClick = useCallback(
+    (move: CandidateMove) => createAnalysisHandler("candidateMove")(move),
+    [createAnalysisHandler]
+  );
+
+  const handleMoveCoachClick = useCallback(
+    (review: MoveAnalysis) => createAnalysisHandler("moveCoach")(review),
+    [createAnalysisHandler]
+  );
+
+  // ==================== SPECIALIZED HANDLERS ====================
+  const handleFutureMoveLegalClick = useCallback(
+    async (move: string): Promise<void> => {
+      if (state.llmLoading || state.chatLoading) return;
+
+      updateState({ chatLoading: true, analysisTab: 1 });
+
+      try {
+        const currentFen = currentFenRef.current;
+        const chessInstance = new Chess(currentFen);
+        chessInstance.move(move);
+        const futureFen = chessInstance.fen();
+        const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+        const newOpeningData = await getOpeningStats(futureFen);
+
+        let query = `Analyze the chess move ${move} in this position:
+
+<information>        
+Position: ${futureFen}
+Side To Move: ${sideToMove}
+</information>
+
+<instructions>
+Please follow this structure in your analysis:
+1. First, understand and describe the board state and key features of the position before the move
+2. Next, analyze the move itself: what does it change in the position
+3. Then, consider the engine lines and candidate moves: what alternatives were available
+4. Take account of 1, 2, 3 and provide analysis of the candidate move and how it impacts the position
+
+Be concise but thorough, and use clear chess language.
+</instructions>
+`;
+
+        if (newOpeningData) {
+          const openingSpeech = getOpeningStatSpeech(newOpeningData);
+          query += `\n\nOpening Information:\n${openingSpeech}`;
+        }
+
+        if (engine) {
+          const engineResult = await engine.evaluatePositionWithUpdate({
+            fen: futureFen,
+            depth: engineDepth,
+            multiPv: engineLines,
+            setPartialEval: () => {},
+          });
+
+          if (engineResult) {
+            const formattedEngineLines = engineResult.lines
+              .map((line, index) => formatLineForLLM(line, index))
+              .join("\n");
+            query += `\n\nStockfish Analysis:\n${formattedEngineLines}`;
+          }
+        }
+
+        query += `\n\nAnalyze this move from different points of view.`;
+
+        const userMessage = createChatMessage("user", `Analyze move: ${move}`);
+        const result = await makeApiRequest(futureFen, query, "position");
+        const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
+
+        updateState({ 
+          chatMessages: [...state.chatMessages, userMessage, assistantMessage],
+          chatLoading: false 
+        });
+      } catch (error) {
+        console.error("Error analyzing future move:", error);
+        if (!(error instanceof Error && error.message === "Request cancelled")) {
+          const errorMessage = createChatMessage(
+            "assistant",
+            "Sorry, there was an error analyzing the move. Please try again."
+          );
+          updateState({ 
+            chatMessages: [...state.chatMessages, errorMessage],
+            chatLoading: false 
+          });
+        }
+      }
+    },
+    [
+      state.llmLoading, 
+      state.chatLoading, 
+      state.chatMessages,
+      engine, 
+      engineDepth, 
+      engineLines,
+      formatLineForLLM,
+      makeApiRequest,
+      updateState
+    ]
+  );
+
+  const handleMoveAnnontateClick = useCallback(
+    async (review: MoveAnalysis, customQuery?: string): Promise<void> => {
+      return createAnalysisHandler("annotation")(review, customQuery) as Promise<void>;
+    },
+    [createAnalysisHandler]
+  );
+
+  const handleMovePGNAnnotateClick = useCallback(
+    async (review: MoveAnalysis, customQuery?: string): Promise<string | null> => {
+      return createAnalysisHandler("annotation")(review, customQuery) as Promise<string | null>;
+    },
+    [createAnalysisHandler]
   );
 
   const handleGameReviewSummaryClick = useCallback(
     async (review: MoveAnalysis[], gameInfo: string): Promise<void> => {
-      if (
-        !setChatMessages ||
-        !setChatLoading ||
-        !setAnalysisTab ||
-        !makeApiRequest ||
-        !currentFenRef
-      ) {
-        console.warn("Chat functionality not properly configured");
-        return;
-      }
+      if (state.chatLoading) return;
 
-      if (chatLoading) return;
-
-      // Helper function to find moves by quality and player
       const findMovesByQuality = (quality: MoveQuality, player: "w" | "b") => {
-        return review.filter(
-          (move) => move.quality === quality && move.player === player
-        );
+        return review.filter(move => move.quality === quality && move.player === player);
       };
 
-      // Collect the first key move of each type for each player
       const keyMoves: MoveAnalysis[] = [];
 
-      // Add first blunder for each player (most important)
-      const whiteBlunder = findMovesByQuality("Blunder", "w")[0];
-      const blackBlunder = findMovesByQuality("Blunder", "b")[0];
-      if (whiteBlunder) keyMoves.push(whiteBlunder);
-      if (blackBlunder) keyMoves.push(blackBlunder);
+      // Collect key moves (first blunder, mistake, dubious for each player)
+      ["Blunder", "Mistake", "Dubious"].forEach(quality => {
+        const whiteMove = findMovesByQuality(quality as MoveQuality, "w")[0];
+        const blackMove = findMovesByQuality(quality as MoveQuality, "b")[0];
+        if (whiteMove) keyMoves.push(whiteMove);
+        if (blackMove) keyMoves.push(blackMove);
+      });
 
-      // Add first mistake for each player
-      const whiteMistake = findMovesByQuality("Mistake", "w")[0];
-      const blackMistake = findMovesByQuality("Mistake", "b")[0];
-      if (whiteMistake) keyMoves.push(whiteMistake);
-      if (blackMistake) keyMoves.push(blackMistake);
-
-      // Add first dubious move for each player
-      const whiteDubious = findMovesByQuality("Dubious", "w")[0];
-      const blackDubious = findMovesByQuality("Dubious", "b")[0];
-      if (whiteDubious) keyMoves.push(whiteDubious);
-      if (blackDubious) keyMoves.push(blackDubious);
-
-      // Sort by ply number to maintain game order
       keyMoves.sort((a, b) => a.plyNumber - b.plyNumber);
 
-      // Switch to analysis tab first
-      setAnalysisTab(1);
+      updateState({ analysisTab: 1 });
 
-      // Add initial summary message
-      const summaryMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Starting game review analysis for ${keyMoves.length} key moves from: ${gameInfo}`,
-        timestamp: new Date(),
-      };
-
-      setChatMessages((prev) => [...prev, summaryMessage]);
+      const summaryMessage = createChatMessage(
+        "user",
+        `Starting game review analysis for ${keyMoves.length} key moves from: ${gameInfo}`
+      );
+      updateState({ chatMessages: [...state.chatMessages, summaryMessage] });
 
       // Process each key move sequentially
       for (let i = 0; i < keyMoves.length; i++) {
         const move = keyMoves[i];
-
-        // Add a small delay between moves to prevent overwhelming the UI
+        
         if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         try {
           await handleMoveCoachClick(move);
         } catch (error) {
           console.error(`Error analyzing move ${i + 1}:`, error);
-          // Continue with next move even if one fails
         }
       }
 
-      // Add final summary message
-      const finalMessage = {
-        id: (Date.now() + keyMoves.length + 1).toString(),
-        role: "assistant" as const,
-        content: `Game review complete! Analyzed ${keyMoves.length} key moves. The analysis above covers the most important moments in your game, focusing on critical mistakes and excellent moves. Review each analysis to understand the key concepts and improve your play.`,
-        timestamp: new Date(),
-      };
+      const finalMessage = createChatMessage(
+        "assistant",
+        `Game review complete! Analyzed ${keyMoves.length} key moves. The analysis above covers the most important moments in your game, focusing on critical mistakes and excellent moves. Review each analysis to understand the key concepts and improve your play.`,
+        (Date.now() + keyMoves.length + 1).toString()
+      );
 
-      setChatMessages((prev) => [...prev, finalMessage]);
+      updateState({ 
+        chatMessages: [...state.chatMessages, finalMessage]
+      });
     },
-    [
-      chatLoading,
-      setChatMessages,
-      setChatLoading,
-      setAnalysisTab,
-      makeApiRequest,
-      currentFenRef,
-      handleMoveCoachClick,
-    ]
+    [state.chatLoading, state.chatMessages, handleMoveCoachClick, updateState]
   );
 
-  const handleMoveAnnontateClick = useCallback(
-    async (review: MoveAnalysis, customQuery?: string): Promise<void> => {
-      if (
-        !setChatMessages ||
-        !setChatLoading ||
-        !setAnalysisTab ||
-        !makeApiRequest ||
-        !currentFenRef
-      ) {
-        console.warn("Chat functionality not properly configured");
-        return;
-      }
+  // ==================== AUTO ANALYSIS EFFECT ====================
+  useEffect(() => {
+    if (!engine || !fen) return;
 
-      if (chatLoading) return;
+    // Clear previous results
+    updateState({
+      stockfishAnalysisResult: null,
+      llmAnalysisResult: null,
+      openingData: null,
+    });
 
-      const currentFen = currentFenRef.current;
-      const pastFen = review.fen;
-      const sideToMove = review.player === "w" ? "White" : "Black";
-
-      let query = `As a chess buddy, annontate this move from the game review:
-  
-  Move: ${review.notation}
-  Classification: ${review.quality}
-  Side: ${sideToMove}
-  Position FEN: ${pastFen}
-  Current FEN: ${currentFen}
-  
-  Please provide annontation about this move:
-  1. Talk about how/why the move is ${review.quality} based on the NEXT ply engine anlysis
-  2. Talk about candidates in this position using the CURRENT ply engine analysis
-  3. How the move can impact the game
-
-
-  Start the response with Agine Annotation:
-  
-  `;
-
-      if (customQuery) {
-        query += `\n Consider user thoughts/comments ${customQuery}`;
-      }
-
-      if (engine) {
-        const engineResult = await engine.evaluatePositionWithUpdate({
-          fen: pastFen,
-          depth: engineDepth,
-          multiPv: engineLines,
-          setPartialEval: () => {},
-        });
-
-        if (engineResult) {
-          const formattedEngineLines = engineResult.lines
-            .map((line, index) => {
-              const evaluation = formatEvaluation(line);
-              const moves = formatPrincipalVariation(line.pv, line.fen);
-              let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-              if (line.resultPercentages) {
-                formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-              }
-
-              return formattedLine;
-            })
-            .join("\n");
-
-          query += `\n\nStockfish Analysis For CURRENT Ply:\n${formattedEngineLines}`;
-        }
-      }
-
-      if (engine) {
-        const engineResult = await engine.evaluatePositionWithUpdate({
-          fen: currentFen,
-          depth: engineDepth,
-          multiPv: engineLines,
-          setPartialEval: () => {},
-        });
-
-        if (engineResult) {
-          const formattedEngineLines = engineResult.lines
-            .map((line, index) => {
-              const evaluation = formatEvaluation(line);
-              const moves = formatPrincipalVariation(line.pv, line.fen);
-              let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-              if (line.resultPercentages) {
-                formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-              }
-
-              return formattedLine;
-            })
-            .join("\n");
-
-          query += `\n\nStockfish Analysis For NEXT Ply:\n${formattedEngineLines}`;
-        }
-      }
-
-      // Switch to analysis tab (assuming tab 1 is for chat)
-      setAnalysisTab(1);
-
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: `Agine, annotate this move: ${review.notation} (${review.quality})`,
-        timestamp: new Date(),
-      };
-
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      setChatLoading(true);
-
-      try {
-        const result = await makeApiRequest(pastFen, query, "annotation");
-
-        // Add assistant response to chat
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: result,
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error("Error getting coach analysis:", error);
-        if (
-          !(error instanceof Error && error.message === "Request cancelled")
-        ) {
-          const errorMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant" as const,
-            content:
-              "Sorry, I couldn't annotate that move right now. Please try again later.",
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
-        }
-      } finally {
-        setChatLoading(false);
-      }
-    },
-    [
-      chatLoading,
-      setChatMessages,
-      setChatLoading,
-      setAnalysisTab,
-      makeApiRequest,
-      currentFenRef,
-      openingData,
-    ]
-  );
-
-  const handleMovePGNAnnotateClick = useCallback(
-  async (review: MoveAnalysis, customQuery?: string): Promise<string | null> => {
-    if (!makeApiRequest || !currentFenRef) {
-      console.warn("API request functionality not properly configured");
-      return null;
+    // Cancel any pending API requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
-    const currentFen = currentFenRef.current;
-    const pastFen = review.fen;
-    const sideToMove = review.player === "w" ? "White" : "Black";
-
-    let query = `As a chess buddy, annotate this move from the game review:
-
-Move: ${review.notation}
-Classification: ${review.quality}
-Side: ${sideToMove}
-Position FEN: ${pastFen}
-Current FEN: ${currentFen}
-
-Please provide annotation about this move:
-1. Talk about how/why the move is ${review.quality} based on the NEXT ply engine analysis
-2. Talk about candidates in this position using the CURRENT ply engine analysis
-3. How the move can impact the game
-4. Keep the response in paragraph format
-
-Start the response with Agine Annotation:
-
-`;
-
-    if (customQuery) {
-      query += `\n Consider user thoughts/comments ${customQuery}`;
-    }
-
-    if (engine) {
-      const engineResult = await engine.evaluatePositionWithUpdate({
-        fen: pastFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: () => {},
-      });
-
-      if (engineResult) {
-        const formattedEngineLines = engineResult.lines
-          .map((line, index) => {
-            const evaluation = formatEvaluation(line);
-            const moves = formatPrincipalVariation(line.pv, line.fen);
-            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-            if (line.resultPercentages) {
-              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-            }
-
-            return formattedLine;
-          })
-          .join("\n");
-
-        query += `\n\nStockfish Analysis For CURRENT Ply:\n${formattedEngineLines}`;
+    // Auto-analyze with delay to avoid rapid fire requests
+    const timeoutId = setTimeout(() => {
+      if (currentFenRef.current === fen) {
+        analyzeWithStockfish();
+        fetchOpeningData();
+        fetchLichessOpeningData();
       }
-    }
+    }, ANALYSIS_DELAY);
 
-    if (engine) {
-      const engineResult = await engine.evaluatePositionWithUpdate({
-        fen: currentFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: () => {},
-      });
+    return () => clearTimeout(timeoutId);
+  }, [fen, engine, engineDepth, engineLines, analyzeWithStockfish, fetchOpeningData, fetchLichessOpeningData, updateState]);
 
-      if (engineResult) {
-        const formattedEngineLines = engineResult.lines
-          .map((line, index) => {
-            const evaluation = formatEvaluation(line);
-            const moves = formatPrincipalVariation(line.pv, line.fen);
-            let formattedLine = `Line ${index + 1}: ${evaluation} - ${moves}`;
-
-            if (line.resultPercentages) {
-              formattedLine += ` (Win: ${line.resultPercentages.win}%, Draw: ${line.resultPercentages.draw}%, Loss: ${line.resultPercentages.loss}%)`;
-            }
-
-            return formattedLine;
-          })
-          .join("\n");
-
-        query += `\n\nStockfish Analysis For NEXT Ply:\n${formattedEngineLines}`;
-      }
-    }
-
-    try {
-      const result = await makeApiRequest(pastFen, query, "annotation");
-      return result;
-    } catch (error) {
-      console.error("Error getting coach analysis:", error);
-      if (!(error instanceof Error && error.message === "Request cancelled")) {
-        return "Sorry, I couldn't annotate that move right now. Please try again later.";
-      }
-      return null;
-    }
-  },
-  [makeApiRequest, currentFenRef, engine, engineDepth, engineLines]
-);
-
-  // Clean up on unmount
+  // ==================== CLEANUP EFFECT ====================
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -1480,16 +1067,15 @@ Start the response with Agine Annotation:
   }, []);
 
   // ==================== MEMOIZED RETURN OBJECT ====================
-  //const {data, loading, error, queueing, refetch, requestAnalysis} = useChessDB(fen);
   return useMemo(
     () => ({
       // Analysis Results
-      llmAnalysisResult,
-      setLlmAnalysisResult,
-      stockfishAnalysisResult,
-      setStockfishAnalysisResult,
-      openingData,
-      setOpeningData,
+      llmAnalysisResult: state.llmAnalysisResult,
+      setLlmAnalysisResult: (result: string | null) => updateState({ llmAnalysisResult: result }),
+      stockfishAnalysisResult: state.stockfishAnalysisResult,
+      setStockfishAnalysisResult: (result: PositionEval | null) => updateState({ stockfishAnalysisResult: result }),
+      openingData: state.openingData,
+      setOpeningData: (data: MasterGames | null) => updateState({ openingData: data }),
       chessdbdata,
       loading,
       error,
@@ -1497,34 +1083,33 @@ Start the response with Agine Annotation:
       legalMoves,
       refetch,
       requestAnalysis,
-      handleFutureMoveLegalClick,
+
       // Loading States
-      llmLoading,
-      setLlmLoading,
-      stockfishLoading,
-      setStockfishLoading,
-      openingLoading,
-      setOpeningLoading,
-      lichessOpeningData,
-      lichessOpeningLoading,
-      fetchLichessOpeningData,
-      setLichessOpeningLoading,
+      llmLoading: state.llmLoading,
+      setLlmLoading: (loading: boolean) => updateState({ llmLoading: loading }),
+      stockfishLoading: state.stockfishLoading,
+      setStockfishLoading: (loading: boolean) => updateState({ stockfishLoading: loading }),
+      openingLoading: state.openingLoading,
+      setOpeningLoading: (loading: boolean) => updateState({ openingLoading: loading }),
+      lichessOpeningData: state.lichessOpeningData,
+      lichessOpeningLoading: state.lichessOpeningLoading,
+      setLichessOpeningLoading: (loading: boolean) => updateState({ lichessOpeningLoading: loading }),
 
       // UI State
-      moveSquares,
-      setMoveSquares,
-      analysisTab,
-      setAnalysisTab,
+      moveSquares: state.moveSquares,
+      setMoveSquares: (squares: { [square: string]: string }) => updateState({ moveSquares: squares }),
+      analysisTab: state.analysisTab,
+      setAnalysisTab: (tab: number) => updateState({ analysisTab: tab }),
 
       // Chat State
-      chatMessages,
-      setChatMessages,
-      chatInput,
-      setChatInput,
-      chatLoading,
-      setChatLoading,
-      sessionMode,
-      setSessionMode,
+      chatMessages: state.chatMessages,
+      setChatMessages: (messages: ChatMessage[]) => updateState({ chatMessages: messages }),
+      chatInput: state.chatInput,
+      setChatInput: (input: string) => updateState({ chatInput: input }),
+      chatLoading: state.chatLoading,
+      setChatLoading: (loading: boolean) => updateState({ chatLoading: loading }),
+      sessionMode: state.sessionMode,
+      setSessionMode: (mode: boolean) => updateState({ sessionMode: mode }),
 
       // Engine Settings
       engineDepth,
@@ -1535,17 +1120,18 @@ Start the response with Agine Annotation:
 
       // Game Review
       gameReview,
-      gameReviewProgress,
       setGameReview,
       gameReviewLoading,
+      gameReviewProgress,
       setGameReviewLoading,
+      generateGameReview,
 
       // Functions
       fetchOpeningData,
+      fetchLichessOpeningData,
       analyzeWithStockfish,
-      generateGameReview,
       sendChatMessage,
-      abortChatMessage, // New abort function
+      abortChatMessage,
       handleChatKeyPress,
       clearChatHistory,
       handleEngineLineClick,
@@ -1555,6 +1141,7 @@ Start the response with Agine Annotation:
       handleMoveAnnontateClick,
       handleGameReviewSummaryClick,
       handleMovePGNAnnotateClick,
+      handleFutureMoveLegalClick,
 
       // Utility Functions
       formatEvaluation,
@@ -1562,35 +1149,24 @@ Start the response with Agine Annotation:
       formatLineForLLM,
     }),
     [
-      llmAnalysisResult,
-      stockfishAnalysisResult,
-      openingData,
-      lichessOpeningData,
-      lichessOpeningLoading,
+      state,
       chessdbdata,
-      llmLoading,
-      stockfishLoading,
-      openingLoading,
-      moveSquares,
-      analysisTab,
-      chatMessages,
-      chatInput,
-      chatLoading,
-      sessionMode,
-      engineDepth,
-      engineLines,
-      engine,
-      gameReview,
-      gameReviewLoading,
-      gameReviewProgress,
       loading,
       error,
       queueing,
       legalMoves,
       refetch,
       requestAnalysis,
+      engineDepth,
       setEngineDepth,
+      engineLines,
       setEngineLines,
+      engine,
+      gameReview,
+      setGameReview,
+      gameReviewLoading,
+      gameReviewProgress,
+      setGameReviewLoading,
       generateGameReview,
       fetchOpeningData,
       fetchLichessOpeningData,
@@ -1603,12 +1179,14 @@ Start the response with Agine Annotation:
       handleOpeningMoveClick,
       handleMoveClick,
       handleMoveCoachClick,
-      handleFutureMoveLegalClick,
-      handleMovePGNAnnotateClick,
+      handleMoveAnnontateClick,
       handleGameReviewSummaryClick,
+      handleMovePGNAnnotateClick,
+      handleFutureMoveLegalClick,
       formatEvaluation,
       formatPrincipalVariation,
       formatLineForLLM,
+      updateState,
     ]
   );
 }

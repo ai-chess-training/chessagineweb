@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-
 import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon } from "@mui/icons-material";
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import ReactMarkdown from "react-markdown";
@@ -31,6 +30,7 @@ import {
   DialogActions,
   Divider,
 } from "@mui/material";
+import { MoveAnalysis } from "../agine/useGameReview";
 
 interface ChatMessage {
   id: string;
@@ -58,7 +58,7 @@ interface ChatTabProps {
     currentMove?: string,
     puzzleMode?: boolean,
     puzzleQuery?: string,
-    playMode?: boolean
+    playMode?: boolean,
   ) => void;
   abortChatMessage?: () => void;
 }

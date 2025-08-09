@@ -563,9 +563,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }}
             >
               <Typography variant="caption" sx={{ color: "grey.300", textAlign: "center", display: "block", lineHeight: 1.4 }}>
-                ⚠️ <strong>Friendly reminder:</strong> I can make mistakes and miss things! 
+                ⚠️ <strong>Friendly reminder:</strong> I can make mistakes and miss things just like a human! 
                 Always double-check important moves, especially in real games. 
-                I'm here to help you think through positions, not replace your own judgment.
+                I am here to help you think through positions, not replace your own judgment.
               </Typography>
             </Paper>
 

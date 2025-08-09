@@ -74,13 +74,6 @@ export default function HomePage() {
                   description:
                     'Do Random Lichess puzzles interactivly with Agine',
                   onClick: () => router.push('/puzzle'),
-                },
-                {
-                  icon: <FaRobot style={{ fontSize: 48 }} />,
-                  title: 'Play Stockfish',
-                  description:
-                    'Challenge Stockfish in a chess game and get feedback on your moves as you play.',
-                  onClick: () => router.push('/play'),
                 }
               ].map((card) => (
                 <Card

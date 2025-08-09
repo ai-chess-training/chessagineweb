@@ -47,9 +47,6 @@ export default function NavBar() {
               Puzzles
             </Button>
 
-            <Button color="inherit" startIcon={<FaRobot/>} href="/play">
-              Play
-            </Button>
 
             <Button
               variant="text"

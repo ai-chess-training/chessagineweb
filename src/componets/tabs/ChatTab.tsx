@@ -64,63 +64,62 @@ interface ChatTabProps {
 }
 
 const sessionPrompts = [
-  "What's the best move in this position?",
-  "What does Agine Engine think about this position?",
-  "Analyze the current position for me",
-  "What are the key weaknesses in this position?",
-  "Suggest a strategic plan",
-  "Is this position winning or losing?",
-  "What opening is this?",
-  "Show me tactical opportunities",
-  "Evaluate the pawn structure",
-  "What are the candidate moves here?",
-  "Explain the imbalances in this position",
-  "How should I continue from here?",
-  "What's the evaluation of this position?",
+  "What do you think about this position?",
+  "Any ideas for my next move?",
+  "How would you play this?",
+  "What catches your eye here?",
+  "Is this looking good or bad?",
+  "What's your gut feeling about this position?",
+  "Any cool tactics you spot?",
+  "How should I approach this?",
+  "What would you do here?",
+  "See anything interesting?",
+  "Thoughts on the position?",
+  "Which move feels right to you?",
+  "What's your take on this setup?",
 ];
 
 const puzzlePrompts = [
-  "Can you give me a hint",
-  "How to solve this puzzle",
-  "Analyze this position for me",
-  "What's the theme of this puzzle?",
-  "Show me the key move",
-  "Explain the solution step by step",
+  "Any hints you can share?",
+  "How would you approach this puzzle?",
+  "What do you see here?",
+  "Got any ideas?",
+  "What's your first thought?",
+  "Can you give me a nudge in the right direction?",
 ];
 
 const playPrompts = [
-  "What's the best move here?",
-  "Should I castle now?",
-  "Is this a good time to attack?",
-  "How should I defend this position?",
-  "What's my opponent's threat?",
-  "Should I trade pieces?",
-  "Is this move safe?",
-  "What's the key plan in this position?",
-  "Should I advance my pawns?",
-  "How do I improve my piece coordination?",
-  "Is there a tactical shot available?",
-  "What's the most important piece to develop?",
+  "What would you play here?",
+  "Should I castle or wait?",
+  "Time to attack or be patient?",
+  "How do I handle this threat?",
+  "What's my opponent up to?",
+  "Good time to trade pieces?",
+  "Is this move safe enough?",
+  "What's the plan here?",
+  "Push the pawns or hold back?",
+  "How can I coordinate better?",
+  "See any tactics brewing?",
+  "What piece should I develop next?",
 ];
 
 const chatPrompts = [
-  "Explain chess fundamentals",
-  "What does Agine Engine think about this position?",
-  "How do I improve my chess rating?",
-  "What are common chess tactics?",
-  "Tell me about famous chess games",
-  "How do I study chess openings?",
-  "What's the importance of endgames?",
-  "Explain chess strategy vs tactics",
-  "How do grandmasters think?",
-  "What are the basic chess principles?",
-  "How to calculate variations?",
-  "Explain pawn structures",
-  "What's the difference between positional and tactical play?",
-  "How to manage time in chess games?",
-  "What are common opening mistakes?",
-  "Explain king safety concepts",
-  "How to improve pattern recognition?",
+  "Tell me about chess basics",
+  "How do I get better at chess?",
+  "What are your favorite tactics?",
+  "Know any cool chess stories?",
+  "How should I study openings?",
+  "Why are endgames important?",
+  "What's the difference between strategy and tactics?",
+  "How do strong players think?",
+  "What are the key chess principles?",
+  "How do you calculate moves?",
+  "Tell me about pawn structures",
+  "Positional vs tactical play - what's the deal?",
+  "Any time management tips?",
+  "What opening mistakes should I avoid?",
+  "How do I keep my king safe?",
+  "How can I recognize patterns better?",
 ];
 
 export const ChatTab: React.FC<ChatTabProps> = ({
@@ -249,19 +248,19 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
   // Determine which prompts to show based on mode
   let currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
-  let modeTitle = sessionMode ? "Position Analysis" : "Chess Discussion";
+  let modeTitle = sessionMode ? "Chess Buddy Analysis" : "Chess Chat";
   let modeDescription = sessionMode
-    ? "🔗 Session Mode: Agine will analyze your questions with current position, engine data, and opening theory"
-    : "💬 Chat Mode: General conversation without position context";
+    ? "🤔 Let's look at this position together (I might miss things too!)"
+    : "♟️ Just chatting about chess - no pressure, no perfect answers";
 
   if (puzzleMode) {
     currentPrompts = puzzlePrompts;
-    modeTitle = "Puzzle Assistant";
-    modeDescription = "🧩 Puzzle Mode: Get hints and solutions for chess puzzles";
+    modeTitle = "Puzzle Solving";
+    modeDescription = "🧩 Let's figure this puzzle out together!";
   } else if (playMode) {
     currentPrompts = playPrompts;
-    modeTitle = "Game Assistant";
-    modeDescription = "🎮 Play Mode: Get real-time assistance during your game";
+    modeTitle = "Game Buddy";
+    modeDescription = "🎮 I'm here to brainstorm moves with you";
   }
 
   const drawerContent = (
@@ -319,7 +318,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       
       <Box sx={{ p: 2, borderTop: `1px solid rgba(255,255,255,0.1)`, backgroundColor: "#1a1a1a" }}>
         <Typography variant="caption" sx={{ color: "grey.400", fontStyle: "italic" }}>
-          💡 Click any prompt to use it
+          💡 Click any prompt to get started
         </Typography>
       </Box>
     </Box>
@@ -360,14 +359,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }}
             />
             <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
-              AgineAI Chat
+              Agine - Your Chess Buddy
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
           
           {/* Action Buttons */}
           <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Quick Prompts" arrow>
+            <Tooltip title="Conversation starters" arrow>
               <IconButton
                 onClick={() => setDrawerOpen(true)}
                 sx={{ color: "white", p: 0.5 }}
@@ -405,7 +404,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         {!puzzleMode && !playMode && (
           <Stack direction="row" alignItems="center" spacing={1.5}>
             <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
-              Session Mode
+              Position Context
             </Typography>
             <Switch
               checked={sessionMode}
@@ -421,7 +420,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }}
             />
             <Typography variant="caption" sx={{ color: "grey.400", fontSize: '11px' }}>
-              {sessionMode ? "Position context enabled" : "General chat mode"}
+              {sessionMode ? "Looking at the board together" : "General chess chat"}
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
             {chatMessages.length > 0 && (
@@ -535,22 +534,40 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             />
             <Typography variant="subtitle1" sx={{ mb: 1, textAlign: "center", fontWeight: 500 }}>
               {playMode 
-                ? "Ready to help you win!" 
+                ? "Hey! Let's figure out some good moves together" 
                 : puzzleMode 
-                ? "Let's solve some puzzles!"
-                : "Let's talk chess!"
+                ? "Ready to tackle this puzzle with you!"
+                : "Hey there, chess friend!"
               }
             </Typography>
-            <Typography variant="caption" sx={{ mb: 3, textAlign: "center", color: "grey.300", maxWidth: 300 }}>
+            <Typography variant="caption" sx={{ mb: 2, textAlign: "center", color: "grey.300", maxWidth: 320 }}>
               {playMode 
-                ? "Ask me about your moves, tactics, and strategy during your game."
+                ? "I'll share my thoughts on moves and positions. Keep in mind I'm not perfect - just here to brainstorm with you!"
                 : puzzleMode 
-                ? "Need a hint? Want to understand the solution? Just ask!"
+                ? "Let's work on this puzzle together! I might not get it right the first time, but that's part of the fun."
                 : sessionMode
-                ? "I'll analyze the current position and provide detailed insights."
-                : "Ask me anything about chess - from basics to advanced strategy."
+                ? "I'll take a look at your position and share what I'm thinking. Remember, I can miss things too - let's discuss!"
+                : "Let's chat about chess! I'm just a fellow chess enthusiast, so don't expect perfection from me."
               }
             </Typography>
+            
+            {/* Disclaimer */}
+            <Paper
+              sx={{
+                p: 1.5,
+                mb: 3,
+                backgroundColor: "rgba(156, 39, 176, 0.1)",
+                border: "1px solid rgba(156, 39, 176, 0.3)",
+                borderRadius: 2,
+                maxWidth: 350,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: "grey.300", textAlign: "center", display: "block", lineHeight: 1.4 }}>
+                ⚠️ <strong>Friendly reminder:</strong> I can make mistakes and miss things! 
+                Always double-check important moves, especially in real games. 
+                I'm here to help you think through positions, not replace your own judgment.
+              </Typography>
+            </Paper>
 
             {/* Quick Start Prompts */}
             <Box sx={{ width: "100%" }}>
@@ -558,7 +575,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 variant="caption"
                 sx={{ mb: 2, display: "block", opacity: 0.8, textAlign: "center", color: "grey.400" }}
               >
-                Quick start - click any topic:
+                Quick start - try one of these:
               </Typography>
               <Box
                 sx={{
@@ -603,7 +620,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     },
                   }}
                 >
-                  View all prompts →
+                  More conversation starters →
                 </Button>
               </Box>
             </Box>
@@ -809,12 +826,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             maxRows={3}
             placeholder={
               playMode 
-                ? "Ask for game advice..." 
+                ? "What are you thinking?" 
                 : puzzleMode 
-                  ? "Ask about this puzzle..." 
+                  ? "Want to brainstorm this puzzle?" 
                   : sessionMode 
-                    ? "Ask about this position..." 
-                    : "Chat with Agine..."
+                    ? "What's on your mind about this position?" 
+                    : "Let's talk chess..."
             }
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}

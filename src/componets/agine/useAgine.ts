@@ -420,7 +420,7 @@ ${currentMove}
 
           const formatMoveList = (moveList: MoveAnalysis[]): string => {
             return moveList
-              .map(move => `Move ${Math.ceil(move.plyNumber / 2)}${move.player === 'w' ? '' : '...'} ${move.sanNotation || move.notation}`)
+              .map(move => `Move ${Math.ceil(move.plyNumber / 2)}${move.player === 'w' ? '' : '...'} ${move.notation}`)
               .join(', ');
           };
 
@@ -462,7 +462,7 @@ ${currentMove}
             criticalMoments.slice(0, 8).forEach((move, index) => {
               const moveNumber = Math.ceil(move.plyNumber / 2);
               const playerSymbol = move.player === 'w' ? '♔' : '♚';
-              summary += `${index + 1}. ${playerSymbol} Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.sanNotation || move.notation} - ${move.quality}\n`;
+              summary += `${index + 1}. ${playerSymbol} Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.notation} - ${move.quality} Best Was ${move.sanNotation}\n`;
             });
           }
 
@@ -478,7 +478,7 @@ Detailed Move Analysis:
 ${gameReview.map(move => {
   const moveNumber = Math.ceil(move.plyNumber / 2);
   const playerName = move.player === 'w' ? 'White' : 'Black';
-  return `Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.sanNotation || move.notation} (${playerName}) - Quality: ${move.quality}`;
+  return `Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.notation} (${playerName}) - Quality: ${move.quality} Best was ${move.sanNotation}`;
 }).join('\n')}
 </game_review_analysis>`;
       }

@@ -203,12 +203,6 @@ export default function useAgine(fen: string) {
     });
   }, [state.chatMessages, updateState]);
 
-  const addChatMessages = useCallback((messages: ChatMessage[]) => {
-    updateState({ 
-      chatMessages: [...state.chatMessages, ...messages] 
-    });
-  }, [state.chatMessages, updateState]);
-
   // ==================== API FUNCTIONS ====================
   const makeApiRequest = useCallback(
     async (fen: string, query: string, mode: string): Promise<string> => {

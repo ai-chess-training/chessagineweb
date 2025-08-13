@@ -159,10 +159,11 @@ const SettingsPage: React.FC = () => {
 
   // Handle provider change
   const handleProviderChange = (provider: string) => {
+    const config = PROVIDERS[provider];
     setTempSettings({
       ...tempSettings,
       provider: provider as ApiSettings['provider'],
-      model: provider ? PROVIDERS[provider]?.models[0] || '' : '',
+      model: config?.models[0] || '',
     });
     setValidationError('');
   };
@@ -186,8 +187,10 @@ const SettingsPage: React.FC = () => {
     }
     
     if (!validateApiKey(tempSettings.provider, tempSettings.apiKey)) {
-      const expectedPrefix = PROVIDERS[tempSettings.provider]?.keyPrefix;
-      setValidationError(`Invalid API key format. ${PROVIDERS[tempSettings.provider]?.name} keys should start with "${expectedPrefix}"`);
+      const config = PROVIDERS[tempSettings.provider];
+      const expectedPrefix = config?.keyPrefix;
+      const providerName = config?.name;
+      setValidationError(`Invalid API key format. ${providerName || 'This provider'} keys should start with "${expectedPrefix}"`);
       return;
     }
 
@@ -215,6 +218,9 @@ const SettingsPage: React.FC = () => {
     if (!tempSettings.provider) return [];
     return PROVIDERS[tempSettings.provider]?.models || [];
   };
+
+  // Get current provider config
+  const currentProviderConfig = PROVIDERS[tempSettings.provider];
 
   return (
     <ThemeProvider theme={muiTheme}>
@@ -346,7 +352,7 @@ const SettingsPage: React.FC = () => {
                 </FormControl>
 
                 {/* Model Selection */}
-                {tempSettings.provider && (
+                {tempSettings.provider && currentProviderConfig && (
                   <FormControl fullWidth margin="normal">
                     <InputLabel sx={{ color: purpleTheme.text.secondary }}>
                       Model
@@ -380,7 +386,7 @@ const SettingsPage: React.FC = () => {
             </Card>
 
             {/* API Key Configuration */}
-            {tempSettings.provider && (
+            {tempSettings.provider && currentProviderConfig && (
               <Card 
                 variant="outlined" 
                 sx={{ 
@@ -399,7 +405,7 @@ const SettingsPage: React.FC = () => {
                     </Typography>
                     <Chip 
                       size="small" 
-                      label={PROVIDERS[tempSettings.provider].name}
+                      label={currentProviderConfig.name}
                       sx={{
                         backgroundColor: `${purpleTheme.secondary}30`,
                         color: purpleTheme.text.primary,
@@ -411,12 +417,12 @@ const SettingsPage: React.FC = () => {
                   
                   <TextField
                     fullWidth
-                    label={`${PROVIDERS[tempSettings.provider].name} API Key`}
+                    label={`${currentProviderConfig.name} API Key`}
                     type={showApiKey ? 'text' : 'password'}
                     value={tempSettings.apiKey}
                     onChange={(e) => setTempSettings({ ...tempSettings, apiKey: e.target.value })}
-                    placeholder={`Enter your ${PROVIDERS[tempSettings.provider].name} API key...`}
-                    helperText={`Should start with "${PROVIDERS[tempSettings.provider].keyPrefix}"`}
+                    placeholder={`Enter your ${currentProviderConfig.name} API key...`}
+                    helperText={`Should start with "${currentProviderConfig.keyPrefix}"`}
                     sx={{
                       '& .MuiInputLabel-root': {
                         color: purpleTheme.text.secondary,
@@ -452,7 +458,7 @@ const SettingsPage: React.FC = () => {
                   
                   <Box mt={2}>
                     <Link 
-                      href={PROVIDERS[tempSettings.provider].website} 
+                      href={currentProviderConfig.website} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       sx={{ 
@@ -466,7 +472,7 @@ const SettingsPage: React.FC = () => {
                       }}
                     >
                       <InfoIcon fontSize="small" />
-                      Get your {PROVIDERS[tempSettings.provider].name} API key
+                      Get your {currentProviderConfig.name} API key
                     </Link>
                   </Box>
                 </CardContent>

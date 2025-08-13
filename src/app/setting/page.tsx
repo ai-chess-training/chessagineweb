@@ -629,7 +629,7 @@ const SettingsPage: React.FC = () => {
                 }}
               >
                 <Typography variant="body2">
-                  <strong>Privacy Note:</strong> Your API keys are stored locally in your browser's localStorage 
+                  <strong>Privacy Note:</strong> Your API keys are stored locally in your browser localStorage 
                   and are never sent to our servers. Keep your keys secure and never share them publicly.
                 </Typography>
               </Alert>

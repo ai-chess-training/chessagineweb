@@ -111,14 +111,14 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     website: 'https://platform.openai.com/api-keys',
     docsUrl: 'https://platform.openai.com/docs/quickstart',
   },
-  claude: {
+  anthropic: {
     name: 'Anthropic Claude',
     models: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307', 'claude-3-5-sonnet-20241022'],
     keyPrefix: 'sk-ant-',
     website: 'https://console.anthropic.com/settings/keys',
     docsUrl: 'https://docs.anthropic.com/claude/docs/getting-started',
   },
-  gemini: {
+  google: {
     name: 'Google Gemini',
     models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
     keyPrefix: 'AIza',

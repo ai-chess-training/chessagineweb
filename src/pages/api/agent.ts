@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   const { query, fen, mode, apiSettings } = req.body;
 
   const apiSettings1: ApiSettings = apiSettings;
-  
+
   // Validate API settings
   if (!apiSettings1 || !apiSettings1.provider || !apiSettings1.model || !apiSettings1.apiKey) {
     return res.status(400).json({ 

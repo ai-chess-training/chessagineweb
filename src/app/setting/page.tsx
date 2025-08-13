@@ -89,7 +89,7 @@ const muiTheme = createTheme({
 
 // Types
 export interface ApiSettings {
-  provider: 'openai' | 'claude' | 'gemini' | '';
+  provider: 'openai' | 'anthropic' | 'google';
   model: string;
   apiKey: string;
 }
@@ -130,7 +130,7 @@ const PROVIDERS: Record<string, ProviderConfig> = {
 const SettingsPage: React.FC = () => {
   // Local storage hooks
   const [apiSettings, setApiSettings] = useLocalStorage<ApiSettings>('api-settings', {
-    provider: '',
+    provider: 'openai',
     model: '',
     apiKey: '',
   });
@@ -203,7 +203,7 @@ const SettingsPage: React.FC = () => {
   // Handle reset
   const handleReset = () => {
     setTempSettings({
-      provider: '',
+      provider: 'openai',
       model: '',
       apiKey: '',
     });

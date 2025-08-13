@@ -7,7 +7,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { FaChessPawn, FaChessBoard, FaDiscord, FaPuzzlePiece} from "react-icons/fa6";
+import { FaChessPawn, FaChessBoard, FaDiscord, FaPuzzlePiece, FaGear} from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import {
   SignedIn,
@@ -29,7 +29,7 @@ export default function NavBar() {
           sx={{ fontWeight: "bold", cursor: "pointer" }}
           onClick={() => router.push("/")}
         >
-          ♟️ ChessAgine
+          ChessAgine
         </Typography>
 
         <Stack direction="row" spacing={2} alignItems="center">
@@ -47,6 +47,9 @@ export default function NavBar() {
               Puzzles
             </Button>
 
+            <Button color="inherit" startIcon={<FaGear/>} href="/setting">
+              Setting
+            </Button>
 
             <Button
               variant="text"

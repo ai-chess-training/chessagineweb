@@ -14,6 +14,7 @@ import { CandidateMove, getChessDBSpeech, useChessDB } from "../tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { Board } from "../analysis/board";
+import { ApiSettings } from "@/app/setting/page";
 
 // Types
 interface ChatMessage {
@@ -205,41 +206,59 @@ export default function useAgine(fen: string) {
 
   // ==================== API FUNCTIONS ====================
   const makeApiRequest = useCallback(
-    async (fen: string, query: string, mode: string): Promise<string> => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+  async (fen: string, query: string, mode: string): Promise<string> => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    
+    try {
+      const token = await session?.getToken();
+      
+      // Get API settings from localStorage
+      const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
+      
+      // Validate API settings
+      if (!apiSettings.provider || !apiSettings.model || !apiSettings.apiKey) {
+        throw new Error('Please configure your API settings in the Settings page before using the chess agent.');
       }
-
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-
-      try {
-        const token = await session?.getToken();
-        const response = await fetch(`/api/agent`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ fen, query, mode }),
-          signal: controller.signal,
-        });
-
-        const data = await response.json();
-        return data.message;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          throw new Error("Request cancelled");
-        }
-        throw error;
-      } finally {
-        if (abortControllerRef.current === controller) {
-          abortControllerRef.current = null;
-        }
+      
+      const response = await fetch(`/api/agent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          fen, 
+          query, 
+          mode,
+          // Add API settings to the request
+          apiSettings: {
+            provider: apiSettings.provider,
+            model: apiSettings.model,
+            apiKey: apiSettings.apiKey
+          }
+        }),
+        signal: controller.signal,
+      });
+      
+      const data = await response.json();
+      return data.message;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request cancelled");
       }
-    },
-    [session]
-  );
+      throw error;
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+    }
+  },
+  [session]
+);
 
   const fetchOpeningData = useCallback(async (): Promise<void> => {
     const currentFen = currentFenRef.current;

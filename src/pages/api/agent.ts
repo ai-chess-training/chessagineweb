@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
 
     const lambdaResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/agent`,
       {
         method: "POST",
         headers: {

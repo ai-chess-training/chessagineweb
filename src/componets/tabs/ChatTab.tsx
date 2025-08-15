@@ -542,12 +542,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </Typography>
             <Typography variant="caption" sx={{ mb: 2, textAlign: "center", color: "grey.300", maxWidth: 320 }}>
               {playMode 
-                ? "I'll share my thoughts on moves and positions. Keep in mind I'm not perfect - just here to brainstorm with you!"
+                ? "I'll share my thoughts on moves and positions."
                 : puzzleMode 
                 ? "Let's work on this puzzle together! I might not get it right the first time, but that's part of the fun."
                 : sessionMode
-                ? "I'll take a look at your position and share what I'm thinking. Remember, I can miss things too - let's discuss!"
-                : "Let's chat about chess! I'm just a fellow chess enthusiast, so don't expect perfection from me."
+                ? "I'll take a look at your position and share what I'm thinking."
+                : "Let's chat about chess! I'm just a fellow chess enthusiast."
               }
             </Typography>
             

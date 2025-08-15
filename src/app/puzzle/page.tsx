@@ -241,84 +241,87 @@ export default function PuzzlePage() {
     []
   );
 
-  // Fixed fetchPuzzle function with proper rating logic
   const fetchPuzzle = useCallback(
-    async (themes: string[] = [], ratingFrom?: number, ratingTo?: number) => {
-      setLoading(true);
-      setError(null);
-      try {
-        let url = "https://api.chessgubbins.com/puzzles/random";
-        const params = new URLSearchParams();
-
-        // Add themes parameter if provided
-        if (themes.length > 0) {
-          params.append("themes", themes.join(","));
-        }
-
-        // Add rating parameters if provided
-        if (ratingFrom !== undefined && ratingTo !== undefined) {
-          params.append("ratingFrom", ratingFrom.toString());
-          params.append("ratingTo", ratingTo.toString());
-        }
-
-        // Append parameters to URL if any exist
-        if (params.toString()) {
-          url += `?${params.toString()}`;
-        }
-
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error("Failed to fetch puzzle");
-        }
-        const data: PuzzleData = await response.json();
-        setPuzzleData(data);
-
-        // Set up game
-        const newGame = new Chess(data.FEN);
-        setGame(newGame);
-        setFen(data.FEN);
-
-        // Parse solution moves
-        const moves = data.moves.split(" ");
-        setSolutionMoves(moves);
-        setCurrentSolutionIndex(0);
-
-        // Convert moves to SAN format for puzzle query
-        const sanMoves = convertMovesToSAN(moves, data.FEN);
-
-        // Create puzzle query object
-        const newPuzzleQuery: PuzzleQuery = {
-          themes: data.themes,
-          solution: sanMoves,
-        };
-        setPuzzleQuery(newPuzzleQuery);
-
-        // Create puzzle query string for ChatTab
-        const queryString = createPuzzlePrompt(newPuzzleQuery);
-        setPuzzleQueryString(queryString);
-
-        // Reset puzzle state
-        setPuzzleComplete(false);
-        setPuzzleFailed(false);
-        setHintUsed(false);
-        setShowHint(false);
-        setShowingSolution(false);
-        setSolutionViewIndex(0);
-        setSolutionGameState(null);
-        setMoveSquares({});
-        setSelectedSquare(null);
-        setLegalMoves([]);
-      } catch (err) {
-        console.log(puzzleQuery);
-        console.error("Error fetching puzzle:", err);
-        setError("Failed to load puzzle. Please try again.");
-      } finally {
-        setLoading(false);
+  async (themes: string[] = [], ratingFrom?: number, ratingTo?: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Use your Next.js API endpoint instead
+      let url = "/api/puzzle";
+      const params = new URLSearchParams();
+      
+      // Add themes parameter if provided
+      if (themes.length > 0) {
+        params.append("themes", themes.join(","));
       }
-    },
-    [convertMovesToSAN, createPuzzlePrompt]
-  );
-
+      
+      // Add rating parameters if provided
+      if (ratingFrom !== undefined && ratingTo !== undefined) {
+        params.append("ratingFrom", ratingFrom.toString());
+        params.append("ratingTo", ratingTo.toString());
+      }
+      
+      // Append parameters to URL if any exist
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await fetch(url);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch puzzle");
+      }
+      
+      const data: PuzzleData = result.data;
+      setPuzzleData(data);
+      
+      // Set up game
+      const newGame = new Chess(data.FEN);
+      setGame(newGame);
+      setFen(data.FEN);
+      
+      // Parse solution moves
+      const moves = data.moves.split(" ");
+      setSolutionMoves(moves);
+      setCurrentSolutionIndex(0);
+      
+      // Convert moves to SAN format for puzzle query
+      const sanMoves = convertMovesToSAN(moves, data.FEN);
+      
+      // Create puzzle query object
+      const newPuzzleQuery: PuzzleQuery = {
+        themes: data.themes,
+        solution: sanMoves,
+      };
+      setPuzzleQuery(newPuzzleQuery);
+      
+      // Create puzzle query string for ChatTab
+      const queryString = createPuzzlePrompt(newPuzzleQuery);
+      setPuzzleQueryString(queryString);
+      
+      // Reset puzzle state
+      setPuzzleComplete(false);
+      setPuzzleFailed(false);
+      setHintUsed(false);
+      setShowHint(false);
+      setShowingSolution(false);
+      setSolutionViewIndex(0);
+      setSolutionGameState(null);
+      setMoveSquares({});
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      
+    } catch (err) {
+      console.log(puzzleQuery);
+      console.error("Error fetching puzzle:", err);
+      setError("Failed to load puzzle. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  },
+  [convertMovesToSAN, createPuzzlePrompt]
+);
   // Initialize with first puzzle
   useEffect(() => {
     fetchPuzzle([], puzzleLevel, puzzleLevel + 500); // Use puzzleLevel as base with 500 point range

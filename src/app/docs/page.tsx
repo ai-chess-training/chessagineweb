@@ -381,13 +381,13 @@ const ChessAgineDocumentation: React.FC = () => {
                   <Chip 
                     label={rec.cost} 
                     size="small" 
-                    color={getCostColor(rec.cost) as any}
+                    color={getCostColor(rec.cost)}
                     icon={<CostIcon />}
                   />
                   <Chip 
                     label={rec.performance} 
                     size="small" 
-                    color={getPerformanceColor(rec.performance) as any}
+                    color={getPerformanceColor(rec.performance)}
                     icon={<SpeedIcon />}
                   />
                 </Box>
@@ -434,8 +434,8 @@ const ChessAgineDocumentation: React.FC = () => {
           {/* Security Alert */}
           <Alert severity="warning" sx={{ mb: 4 }}>
             <AlertTitle>Important Security Information</AlertTitle>
-            <Typography variant="body2" paragraph>
-              <strong>ChessAgine DOES NOT store your API keys on our servers.</strong> Your keys are only stored in your browser's local storage and encrypted during transmission.
+            <Typography variant="body2">
+              <strong>ChessAgine DOES NOT store your API keys on our servers.</strong> Your keys are only stored in your browser local storage and encrypted during transmission.
             </Typography>
             <Typography variant="body2">
               <SecurityIcon sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />

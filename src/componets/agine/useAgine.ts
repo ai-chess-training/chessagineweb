@@ -936,7 +936,6 @@ ${board.toString()}
         if (analysisType === "annotation") {
           query = query.replace("</chess_analysis_request>", "</chess_annotation_request>");
         }
-
         // Determine message content based on analysis type
         let messageContent = "";
         switch (analysisType) {

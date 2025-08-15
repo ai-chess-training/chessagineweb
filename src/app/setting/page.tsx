@@ -106,26 +106,57 @@ interface ProviderConfig {
 const PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: 'OpenAI',
-    models: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'gpt-4o', 'gpt-4o-mini', "o3", "o3-mini", "o1", "o1-mini", "o4-mini"],
+    models: [
+      'gpt-4', 
+      'gpt-4-turbo', 
+      'gpt-3.5-turbo', 
+      'gpt-4o', 
+      'gpt-4o-mini', 
+      'o3', 
+      'o3-mini', 
+      'o1', 
+      'o1-mini', 
+      'o4-mini',
+      'gpt-5',
+      'gpt-5-mini',
+      'gpt-5-nano',
+      'gpt-4.1',
+      'gpt-4.1-mini',
+      'gpt-4.1-nano'
+    ],
     keyPrefix: 'sk-',
     website: 'https://platform.openai.com/api-keys',
     docsUrl: 'https://platform.openai.com/docs/quickstart',
   },
   anthropic: {
     name: 'Anthropic Claude',
-    models: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307', 'claude-3-5-sonnet-20241022'],
+    models: [
+      'claude-sonnet-4-20250514',
+      'claude-opus-4-20250514',
+      'claude-3-5-sonnet-latest',
+      'claude-3-5-haiku-latest'
+    ],
     keyPrefix: 'sk-ant-',
     website: 'https://console.anthropic.com/settings/keys',
     docsUrl: 'https://docs.anthropic.com/claude/docs/getting-started',
   },
   google: {
     name: 'Google Gemini',
-    models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+    models: [
+      'gemini-1.5-pro',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro'
+    ],
     keyPrefix: 'AIza',
     website: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
   },
 };
+
+
 
 const SettingsPage: React.FC = () => {
   // Local storage hooks

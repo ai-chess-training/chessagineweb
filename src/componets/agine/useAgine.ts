@@ -967,7 +967,7 @@ ${board.toString()}
         }
 
         const userMessage = createChatMessage("user", messageContent);
-        const result = await makeApiRequest(currentFen, query, "position");
+        const result = await makeApiRequest(currentFen, query, analysisType === "annotation" ? "annotation" : "position");
         const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
 
         updateState({ 

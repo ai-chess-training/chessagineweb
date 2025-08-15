@@ -10,12 +10,20 @@ import {
   Card,
   CardContent,
   Avatar,
+  Chip,
+  Grid,
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import SchoolIcon from '@mui/icons-material/School';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ViewBoardIcon from '@mui/icons-material/Bolt';
+import SearchIcon from '@mui/icons-material/Search';
+import StorageIcon from '@mui/icons-material/Storage';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import FreeBreakfastIcon from '@mui/icons-material/FreeBreakfast';
+import ApiIcon from '@mui/icons-material/Api';
+import SecurityIcon from '@mui/icons-material/Security';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { FaPuzzlePiece } from 'react-icons/fa6';
@@ -127,7 +135,6 @@ export default function HomePage() {
     );
   }
 
-  // Landing page for non-logged-in users
   return (
     <main>
       {/* Hero Section */}
@@ -151,11 +158,8 @@ export default function HomePage() {
                   bgcolor: '#f5deb3',
                   color: '#7c3aed',
                   fontSize: '4rem',
-                  
                 }}
-              >
-                
-              </Avatar>
+              />
               <Box 
                 sx={{
                   position: 'absolute',
@@ -178,7 +182,7 @@ export default function HomePage() {
             <Stack spacing={4}>
               <Box>
                 <Typography variant="h1" fontWeight="bold" sx={{ fontSize: { xs: '3rem', md: '4rem' } }}>
-                  Meet Agine
+                  Meet ChessAgine
                 </Typography>
                 <Typography 
                   variant="h3" 
@@ -189,7 +193,7 @@ export default function HomePage() {
                     mt: 2
                   }}
                 >
-                  Your Virtual Chess Buddy
+                  Your AI-Powered Chess Training Partner
                 </Typography>
               </Box>
               
@@ -202,8 +206,32 @@ export default function HomePage() {
                   fontSize: { xs: '1.2rem', md: '1.5rem' }
                 }}
               >
-                More than just an engine – Agine is your conversational training partner who helps you understand your thought process and explains chess in plain language.
+                Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware ChessAgine and get personalized live chat training powered by Stockfish 17.
               </Typography>
+            </Stack>
+
+            {/* Feature Pills */}
+            <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center" sx={{ mt: 4 }}>
+              {[
+                'Stockfish 17 Engine',
+                'Web Chess Search',
+                'Lichess Integration', 
+                'Free Game Reviews',
+                'AI Powered Puzzles'
+              ].map((feature) => (
+                <Chip
+                  key={feature}
+                  label={feature}
+                  sx={{
+                    bgcolor: 'rgba(245, 222, 179, 0.2)',
+                    color: '#f5deb3',
+                    borderColor: '#f5deb3',
+                    border: '1px solid',
+                    fontWeight: 'bold',
+                    mb: 1
+                  }}
+                />
+              ))}
             </Stack>
 
             {/* CTA Buttons */}
@@ -228,7 +256,7 @@ export default function HomePage() {
                 }}
                 onClick={() => clerk.openSignUp()}
               >
-                Start Training with Agine
+                Start Training with ChessAgine
               </Button>
               <Button 
                 variant="outlined" 
@@ -258,6 +286,81 @@ export default function HomePage() {
         </Container>
       </Box>
 
+      {/* Plug & Play Section */}
+      <Box py={16} bgcolor="white">
+        <Container maxWidth="lg">
+          <Stack spacing={8} alignItems="center">
+            <Box textAlign="center">
+              <Typography 
+                variant="h2" 
+                fontWeight="bold" 
+                color="#7c3aed"
+                sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
+                gutterBottom
+              >
+                Plug & Play AI Integration
+              </Typography>
+              <Typography 
+                variant="h5" 
+                color="#5b21b6" 
+                sx={{ opacity: 0.8, fontSize: { xs: '1.2rem', md: '1.5rem' } }}
+              >
+                Use your own API key for complete control and privacy
+              </Typography>
+            </Box>
+
+            <Grid container spacing={4} justifyContent="center">
+              {[
+                {
+                  icon: <ApiIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+                  title: 'Your API, Your Control',
+                  description: 'Connect OpenAI, Anthropic Claude, or Google Gemini with your own API key. Pay only for what you use.',
+                  color: '#e8f5e8'
+                },
+                {
+                  icon: <SecurityIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+                  title: 'Privacy First',
+                  description: 'Your API keys are stored locally in your browser. We never see or store your credentials.',
+                  color: '#fff3e0'
+                },
+                {
+                  icon: <PsychologyIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+                  title: 'Choose Your Model',
+                  description: 'From budget-friendly options to premium models - select the AI that fits your needs and budget.',
+                  color: '#f3e5f5'
+                }
+              ].map((card) => (
+                <Grid size={{ xs: 12, md: 4 }} key={card.title}>
+                  <Paper
+                    elevation={4}
+                    sx={{
+                      p: 4,
+                      textAlign: 'center',
+                      height: '100%',
+                      bgcolor: card.color,
+                      borderRadius: 3,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 30px rgba(124, 58, 237, 0.15)',
+                      },
+                    }}
+                  >
+                    <Box mb={2}>{card.icon}</Box>
+                    <Typography variant="h5" fontWeight="bold" color="#7c3aed" gutterBottom>
+                      {card.title}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                      {card.description}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </Stack>
+        </Container>
+      </Box>
+
       {/* Features Section */}
       <Box py={16} bgcolor="#f5deb3">
         <Container maxWidth="lg">
@@ -270,7 +373,102 @@ export default function HomePage() {
                 sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
                 gutterBottom
               >
-                Why Choose Agine?
+                Powerful Chess Features
+              </Typography>
+              <Typography 
+                variant="h5" 
+                color="#5b21b6" 
+                sx={{ opacity: 0.8, fontSize: { xs: '1.2rem', md: '1.5rem' } }}
+              >
+                Everything you need for comprehensive chess training
+              </Typography>
+            </Box>
+
+            <Grid container spacing={6}>
+              {[
+                {
+                  icon: <SearchIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
+                  title: 'Web Chess Search',
+                  description: 'Access real-time chess databases and opening theory from across the web for comprehensive position analysis.',
+                },
+                {
+                  icon: <StorageIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
+                  title: 'Lichess Master DB',
+                  description: 'Explore opening variations with the complete Lichess master games database and opening explorer.',
+                },
+                {
+                  icon: <PsychologyIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
+                  title: 'Stockfish 17 Engine',
+                  description: 'Powered by the latest Stockfish 17 engine for world-class position evaluation and tactical analysis.',
+                },
+                {
+                  icon: <FaPuzzlePiece style={{ fontSize: 64, color: '#7c3aed', marginBottom: 24 }} />,
+                  title: 'AI-Powered Puzzles',
+                  description: 'Solve interactive puzzles with AI guidance that adapts to your skill level and explains solutions.',
+                },
+                {
+                  icon: <FreeBreakfastIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
+                  title: 'Free Game Reviews',
+                  description: 'Upload your games and get detailed AI analysis with explanations of key moments and improvements.',
+                },
+                {
+                  icon: <ChatIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
+                  title: 'Natural Conversation',
+                  description: 'Ask questions in plain language and get clear explanations about positions, moves, and strategies.',
+                },
+              ].map((card) => (
+                <Grid size={{ xs: 12, md: 6, lg: 4 }} key={card.title}>
+                  <Paper
+                    elevation={8}
+                    sx={{
+                      p: 6,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      bgcolor: 'white',
+                      borderRadius: 4,
+                      height: '100%',
+                      minHeight: 320,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-8px)',
+                        boxShadow: '0 20px 40px rgba(124, 58, 237, 0.15)',
+                      },
+                    }}
+                  >
+                    {card.icon}
+                    <Typography variant="h5" fontWeight="bold" gutterBottom color="#7c3aed">
+                      {card.title}
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6, flexGrow: 1 }}
+                    >
+                      {card.description}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </Stack>
+        </Container>
+      </Box>
+
+      {/* Why Choose Section */}
+      <Box py={16} bgcolor="white">
+        <Container maxWidth="lg">
+          <Stack spacing={12}>
+            <Box textAlign="center">
+              <Typography 
+                variant="h2" 
+                fontWeight="bold" 
+                color="#7c3aed"
+                sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
+                gutterBottom
+              >
+                Why Choose ChessAgine?
               </Typography>
               <Typography 
                 variant="h5" 
@@ -287,24 +485,21 @@ export default function HomePage() {
               alignItems="stretch"
               justifyContent="center"
             >
-              {[ // Use an array to DRY up the cards
-                {
-                  icon: <ChatIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
-                  title: 'Chat Naturally',
-                  description:
-                    'Ask "Why is this move good?" or "What should I think here?" and get clear, helpful answers in plain language.',
-                },
+              {[
                 {
                   icon: <SportsEsportsIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
-                  title: 'Training Partner',
-                  description:
-                    'Practice scenarios, work through puzzles, and get personalized feedback based on your playing style.',
+                  title: 'Interactive Training',
+                  description: 'Practice scenarios, work through puzzles, and get personalized feedback based on your playing style and level.',
                 },
                 {
                   icon: <SchoolIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
                   title: 'Learn to Think',
-                  description:
-                    'Develop better decision-making patterns and strategic understanding with guided analysis.',
+                  description: 'Develop better decision-making patterns and strategic understanding with guided analysis and explanations.',
+                },
+                {
+                  icon: <ApiIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
+                  title: 'Cost Effective',
+                  description: 'Pay only for the AI you use with your own API key. No subscription fees or hidden costs - complete transparency.',
                 },
               ].map((card) => (
                 <Paper
@@ -316,7 +511,7 @@ export default function HomePage() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    bgcolor: 'white',
+                    bgcolor: '#f8f9ff',
                     borderRadius: 4,
                     flex: 1,
                     minWidth: 0,
@@ -367,7 +562,7 @@ export default function HomePage() {
                   fontSize: { xs: '1.3rem', md: '1.5rem' }
                 }}
               >
-                Join players who are training smarter with Agine
+                Join players who are training smarter with ChessAgine plug-and-play AI
               </Typography>
             </Box>
             

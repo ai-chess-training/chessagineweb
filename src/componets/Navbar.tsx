@@ -1,76 +1,320 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AppBar,
-  Button,
-  Stack,
   Toolbar,
   Typography,
+  Box,
+  Button,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  useMediaQuery,
+  useTheme,
+  Divider,
 } from "@mui/material";
-import { FaChessPawn, FaChessBoard, FaDiscord, FaPuzzlePiece, FaGear} from "react-icons/fa6";
-import { useRouter } from "next/navigation";
+import MenuIcon from "@mui/icons-material/Menu";
+import { 
+  FaChessPawn, 
+  FaChessBoard, 
+  FaDiscord, 
+  FaPuzzlePiece, 
+  FaGear,
+  FaBook
+} from "react-icons/fa6";
+import { useClerk } from "@clerk/nextjs";
 import {
   SignedIn,
   SignedOut,
-  SignInButton,
-  SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
 
-
 export default function NavBar() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { openSignIn, openSignUp } = useClerk();
   const router = useRouter();
 
+  const toggleDrawer = (open: boolean) => () => {
+    setDrawerOpen(open);
+  };
+
+  const handleSignIn = () => {
+    openSignIn();
+  };
+
+  const handleSignUp = () => {
+    openSignUp();
+  };
+
+  const handleLogoClick = () => {
+    router.push("/");
+  };
+
+  // Public navigation links (available to everyone)
+  const publicNavLinks = [
+    { 
+      label: "Docs", 
+      href: "/docs", 
+      icon: <FaBook />
+    },
+  ];
+
+  // Authenticated navigation links (only for signed-in users)
+  const authNavLinks = [
+    { 
+      label: "Analyze Position", 
+      href: "/position", 
+      icon: <FaChessBoard />
+    },
+    { 
+      label: "Analyze Game", 
+      href: "/game", 
+      icon: <FaChessPawn />
+    },
+    { 
+      label: "Puzzles", 
+      href: "/puzzle", 
+      icon: <FaPuzzlePiece />
+    },
+    { 
+      label: "Settings", 
+      href: "/setting", 
+      icon: <FaGear />
+    },
+  ];
+
+  const externalLinks = [
+    {
+      label: "Discord",
+      href: "https://discord.gg/3RpEnvmZwp",
+      icon: <FaDiscord />,
+    },
+  ];
+
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#111", mb: 3 }}>
-      <Toolbar sx={{ justifyContent: "space-between" }}>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: "bold", cursor: "pointer" }}
-          onClick={() => router.push("/")}
+    <>
+      <AppBar position="static" sx={{ backgroundColor: "#111", mb: 3 }}>
+        <Toolbar>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              flexGrow: 1, 
+              fontWeight: "bold", 
+              cursor: "pointer" 
+            }}
+            onClick={handleLogoClick}
+          >
+            ChessAgine
+          </Typography>
+          
+          {isMobile ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+              <IconButton color="inherit" onClick={toggleDrawer(true)}>
+                <MenuIcon />
+              </IconButton>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {/* Public links - always visible */}
+              {publicNavLinks.map((link) => (
+                <Button 
+                  key={link.href} 
+                  color="inherit" 
+                  href={link.href}
+                  startIcon={link.icon}
+                >
+                  {link.label}
+                </Button>
+              ))}
+
+              {/* Authenticated links - only when signed in */}
+              <SignedIn>
+                {authNavLinks.map((link) => (
+                  <Button 
+                    key={link.href} 
+                    color="inherit" 
+                    href={link.href}
+                    startIcon={link.icon}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+
+                {/* External links */}
+                {externalLinks.map((link) => (
+                  <Button
+                    key={link.href}
+                    color="inherit"
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    startIcon={link.icon}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+              </SignedIn>
+
+              {/* Auth buttons for signed out users */}
+              <SignedOut>
+                <Button 
+                  color="inherit" 
+                  onClick={handleSignIn}
+                  sx={{ 
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  color="inherit" 
+                  onClick={handleSignUp}
+                  sx={{ 
+                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    }
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </SignedOut>
+              
+              {/* User button for signed in users */}
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+            </Box>
+          )}
+        </Toolbar>
+      </AppBar>
+      
+      {/* Mobile Drawer */}
+      <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
+        <Box
+          sx={{
+            width: 280,
+            bgcolor: "#111",
+            height: "100%",
+            color: "white",
+          }}
+          role="presentation"
+          onClick={toggleDrawer(false)}
         >
-          ChessAgine
-        </Typography>
+          <List>
+            {/* Public navigation items */}
+            {publicNavLinks.map((link) => (
+              <ListItem
+                key={link.href}
+                component="a"
+                href={link.href}
+                sx={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                  {link.icon}
+                </ListItemIcon>
+                <ListItemText primary={link.label} />
+              </ListItem>
+            ))}
 
-        <Stack direction="row" spacing={2} alignItems="center">
-          <SignedIn>
-            
-            <Button color="inherit" startIcon={<FaChessBoard />} href="/position">
-              Analyze Position
-            </Button>
+            {/* Authenticated navigation items */}
+            <SignedIn>
+              <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
+              
+              {authNavLinks.map((link) => (
+                <ListItem
+                  key={link.href}
+                  component="a"
+                  href={link.href}
+                  sx={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.1)",
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                    {link.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={link.label} />
+                </ListItem>
+              ))}
 
-            <Button color="inherit" startIcon={<FaChessPawn />} href="/game">
-              Analyze Game
-            </Button>
+              <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
+              
+              {/* External links */}
+              {externalLinks.map((link) => (
+                <ListItem
+                  key={link.href}
+                  component="a"
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.1)",
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                    {link.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={link.label} />
+                </ListItem>
+              ))}
+            </SignedIn>
 
-            <Button color="inherit" startIcon={<FaPuzzlePiece/>} href="/puzzle">
-              Puzzles
-            </Button>
-
-            <Button color="inherit" startIcon={<FaGear/>} href="/setting">
-              Setting
-            </Button>
-
-            <Button
-              variant="text"
-              color="inherit"
-              startIcon={<FaDiscord />}
-              href="https://discord.gg/3RpEnvmZwp"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Discord
-            </Button>
-            <UserButton />
-          </SignedIn>
-
-          <SignedOut>
-            <SignInButton mode="modal" />
-            <SignUpButton mode="modal" />
-          </SignedOut>
-        </Stack>
-      </Toolbar>
-    </AppBar>
+            {/* Auth section for signed out users */}
+            <SignedOut>
+              <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
+              <ListItem
+                onClick={handleSignIn}
+                sx={{
+                  cursor: "pointer",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <ListItemText primary="Sign In" />
+              </ListItem>
+              <ListItem
+                onClick={handleSignUp}
+                sx={{
+                  cursor: "pointer",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <ListItemText primary="Sign Up" />
+              </ListItem>
+            </SignedOut>
+          </List>
+        </Box>
+      </Drawer>
+    </>
   );
 }
-

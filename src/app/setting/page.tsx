@@ -1,5 +1,7 @@
 "use client"
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Next.js 13+ App Router
+// import { useNavigate } from 'react-router-dom'; // For React Router
 import {
   Box,
   Container,
@@ -12,18 +14,10 @@ import {
   TextField,
   Button,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Card,
   CardContent,
-  Divider,
   Link,
-  List,
-  ListItem,
-  ListItemText,
   Chip,
   ThemeProvider,
   createTheme,
@@ -156,9 +150,10 @@ const PROVIDERS: Record<string, ProviderConfig> = {
   },
 };
 
-
-
 const SettingsPage: React.FC = () => {
+  const router = useRouter(); // Next.js App Router
+  // const navigate = useNavigate(); // React Router alternative
+  
   // Local storage hooks
   const [apiSettings, setApiSettings] = useLocalStorage<ApiSettings>('api-settings', {
     provider: 'openai',
@@ -168,7 +163,6 @@ const SettingsPage: React.FC = () => {
 
   // Component state
   const [showApiKey, setShowApiKey] = useState(false);
-  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [tempSettings, setTempSettings] = useState<ApiSettings>(apiSettings);
@@ -177,6 +171,12 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     setTempSettings(apiSettings);
   }, [apiSettings]);
+
+  // Handle help button click - redirect to /docs
+  const handleHelpClick = () => {
+    router.push('/docs');
+    // navigate('/docs'); // React Router alternative
+  };
 
   // Validation function
   const validateApiKey = (provider: string, apiKey: string): boolean => {
@@ -281,7 +281,7 @@ const SettingsPage: React.FC = () => {
                 API Settings
               </Typography>
               <IconButton 
-                onClick={() => setHelpDialogOpen(true)}
+                onClick={handleHelpClick}
                 sx={{ 
                   color: purpleTheme.secondary,
                   '&:hover': { 
@@ -289,6 +289,7 @@ const SettingsPage: React.FC = () => {
                   }
                 }}
                 size="large"
+                title="View Documentation"
               >
                 <HelpIcon />
               </IconButton>
@@ -546,145 +547,6 @@ const SettingsPage: React.FC = () => {
               </Button>
             </Box>
           </Paper>
-
-          {/* Help Dialog */}
-          <Dialog 
-            open={helpDialogOpen} 
-            onClose={() => setHelpDialogOpen(false)}
-            maxWidth="md"
-            fullWidth
-            PaperProps={{
-              sx: {
-                backgroundColor: purpleTheme.background.paper,
-                color: purpleTheme.text.primary,
-              }
-            }}
-          >
-            <DialogTitle sx={{ color: purpleTheme.text.accent }}>
-              How to Get API Keys
-            </DialogTitle>
-            <DialogContent>
-              <Typography variant="body1" paragraph sx={{ color: purpleTheme.text.secondary }}>
-                Follow these steps to obtain API keys from each provider:
-              </Typography>
-              
-              {Object.entries(PROVIDERS).map(([key, config]) => (
-                <Box key={key} mb={3}>
-                  <Typography 
-                    variant="h6" 
-                    gutterBottom
-                    sx={{ color: purpleTheme.text.accent }}
-                  >
-                    {config.name}
-                  </Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText 
-                        primary="1. Create an account"
-                        secondary={
-                          <Link 
-                            href={config.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            sx={{ color: purpleTheme.accent }}
-                          >
-                            {config.website}
-                          </Link>
-                        }
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            color: purpleTheme.text.primary,
-                          }
-                        }}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText 
-                        primary="2. Navigate to API Keys section"
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            color: purpleTheme.text.primary,
-                          }
-                        }}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText 
-                        primary="3. Create a new API key"
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            color: purpleTheme.text.primary,
-                          }
-                        }}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText 
-                        primary="4. Copy the key (starts with)"
-                        secondary={
-                          <code style={{ color: purpleTheme.accent }}>
-                            {config.keyPrefix}...
-                          </code>
-                        }
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            color: purpleTheme.text.primary,
-                          }
-                        }}
-                      />
-                    </ListItem>
-                  </List>
-                  <Link 
-                    href={config.docsUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    sx={{ 
-                      ml: 2,
-                      color: purpleTheme.accent,
-                      '&:hover': {
-                        color: purpleTheme.text.accent,
-                      }
-                    }}
-                  >
-                    📚 Documentation
-                  </Link>
-                  {key !== Object.keys(PROVIDERS)[Object.keys(PROVIDERS).length - 1] && (
-                    <Divider sx={{ mt: 2, borderColor: `${purpleTheme.secondary}40` }} />
-                  )}
-                </Box>
-              ))}
-              
-              <Alert 
-                severity="info" 
-                sx={{ 
-                  mt: 2,
-                  backgroundColor: `${purpleTheme.accent}20`,
-                  color: purpleTheme.text.primary,
-                  '& .MuiAlert-icon': {
-                    color: purpleTheme.accent,
-                  },
-                }}
-              >
-                <Typography variant="body2">
-                  <strong>Privacy Note:</strong> Your API keys are stored locally in your browser localStorage 
-                  and are never sent to our servers. Keep your keys secure and never share them publicly.
-                </Typography>
-              </Alert>
-            </DialogContent>
-            <DialogActions>
-              <Button 
-                onClick={() => setHelpDialogOpen(false)}
-                sx={{
-                  color: purpleTheme.text.secondary,
-                  '&:hover': {
-                    backgroundColor: `${purpleTheme.secondary}20`,
-                  }
-                }}
-              >
-                Close
-              </Button>
-            </DialogActions>
-          </Dialog>
         </Container>
       </Box>
     </ThemeProvider>

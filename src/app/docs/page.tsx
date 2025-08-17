@@ -864,10 +864,10 @@ const ChessAgineDocumentation: React.FC = () => {
             <CommunityIcon />
             About ChessAgine
           </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            ChessAgine is designed to be your friendly AI chess companion - think of it as a knowledgeable chess buddy 
-            who's always available to chat, analyze positions, and help you explore the wonderful world of chess. 
-            It's not a formal coach with structured lessons, but rather a conversational partner that adapts to your curiosity and learning style.
+          <Typography variant="body1" color="text.secondary" >
+            ChessAgine is designed to be your friendly AI chess companion, think of it as a knowledgeable chess buddy 
+            who is always available to chat, analyze positions, and help you explore the wonderful world of chess. 
+            It is NOT a formal coach with structured lessons, but rather a conversational partner that adapts to your curiosity and learning style.
           </Typography>
         </CardContent>
       </Card>
@@ -906,14 +906,14 @@ const ChessAgineDocumentation: React.FC = () => {
             Still Have Questions?
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Can't find what you're looking for? Join our community Discord where fellow chess enthusiasts 
+            Can not find what you're looking for? Join our community Discord where fellow chess enthusiasts 
             and ChessAgine users share tips, discuss strategies, and help each other out!
           </Typography>
           <Button
             variant="outlined"
             color="success"
             startIcon={<CommunityIcon />}
-            href="#"
+            href="https://discord.gg/3RpEnvmZwp"
             sx={{ mr: 2 }}
           >
             Join Discord Community
@@ -931,7 +931,8 @@ const ChessAgineDocumentation: React.FC = () => {
       </Typography>
       
       <Typography variant="body1" color="text.secondary" paragraph>
-        ChessAgine connects with powerful chess tools and databases to enhance your experience. 
+        ChessAgine connects with powerful chess tools and databases to enhance your experience. ChessAgine convets a general purpose LLM into 
+        a chess native helper buddy.
       </Typography>
 
       <Grid container spacing={3}>

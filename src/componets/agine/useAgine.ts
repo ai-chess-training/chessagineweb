@@ -969,6 +969,13 @@ ${board.toString()}
         const result = await makeApiRequest(currentFen, query, analysisType === "annotation" ? "annotation" : "position");
         const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
 
+        if(analysisType === "moveCoach"){
+          const chathistory: ChatMessage[] = state.chatMessages;
+          chathistory.push(userMessage);
+          chathistory.push(assistantMessage);
+          updateState({ chatMessages: chathistory });
+        }
+
         updateState({ 
           chatMessages: [...state.chatMessages, userMessage, assistantMessage],
           chatLoading: false 
@@ -1157,7 +1164,9 @@ Be concise but thorough, and use clear chess language.`;
         "user",
         `Starting game review analysis for ${keyMoves.length} key moves from: ${gameInfo}`
       );
-      updateState({ chatMessages: [...state.chatMessages, summaryMessage] });
+      const chathistory: ChatMessage[] = state.chatMessages;
+      chathistory.push(summaryMessage);
+      updateState({ chatMessages: chathistory });
 
       // Process each key move sequentially
       for (let i = 0; i < keyMoves.length; i++) {

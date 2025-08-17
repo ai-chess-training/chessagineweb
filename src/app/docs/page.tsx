@@ -21,6 +21,15 @@ import {
   ThemeProvider,
   createTheme,
   CssBaseline,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   Security as SecurityIcon,
@@ -31,8 +40,22 @@ import {
   Speed as SpeedIcon,
   AttachMoney as CostIcon,
   Psychology as IntelligenceIcon,
+  Calculate as CalculateIcon,
+  SportsEsports as GameIcon,
+  Quiz as PuzzleIcon,
+  Analytics as AnalysisIcon,
+  ExpandMore as ExpandMoreIcon,
+  HelpOutline as HelpIcon,
+  Search as SearchIcon,
+  Storage as DatabaseIcon,
+  Computer as EngineIcon,
+  Groups as CommunityIcon,
+  School as LearnIcon,
+  SupportAgent as SupportIcon,
+  OpenInNew as OpenIcon,
 } from '@mui/icons-material';
 import { deepPurple, purple, indigo } from '@mui/material/colors';
+import { FaGear } from 'react-icons/fa6';
 
 interface ProviderConfig {
   name: string;
@@ -51,10 +74,42 @@ interface ModelRecommendation {
   reasoning: string;
 }
 
+interface ModelPricing {
+  provider: string;
+  model: string;
+  inputPrice: number; // per 1M tokens
+  outputPrice: number; // per 1M tokens
+  costPer200Requests: number;
+  tier: 'Budget' | 'Balanced' | 'Premium';
+}
+
+interface ChessScenario {
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  tokensPerRequest: { input: number; output: number };
+  requestsPerSession: number;
+}
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+}
+
+interface FAQItem {
+  question: string;
+  answer: string;
+  category: 'general' | 'technical' | 'cost' | 'privacy';
+}
+
+interface IntegrationItem {
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  features: string[];
+  status: 'Available' | 'Coming Soon' | 'Beta';
+  link?: string;
 }
 
 const purpleTheme = {
@@ -124,6 +179,28 @@ const muiTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 6,
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: `1px solid ${purpleTheme.background.input}`,
+          color: purpleTheme.text.primary,
+        },
+        head: {
+          backgroundColor: purpleTheme.background.input,
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiAccordion: {
+      styleOverrides: {
+        root: {
+          backgroundColor: purpleTheme.background.card,
+          '&:before': {
+            display: 'none',
+          },
         },
       },
     },
@@ -199,19 +276,27 @@ const PROVIDERS: Record<string, ProviderConfig> = {
 const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
   {
     provider: 'OpenAI',
-    model: 'gpt-4o-mini',
-    useCase: 'Budget-friendly casual games',
+    model: 'gpt-5-nano',
+    useCase: 'quick analysis and chat about a game',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Great balance of cost and chess understanding for beginners'
+    reasoning: 'Extremely affordable with solid chess understanding for beginners'
   },
   {
     provider: 'OpenAI',
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
+    useCase: 'Budget-friendly analysis',
+    cost: 'Low',
+    performance: 'Good',
+    reasoning: 'Great balance of cost and chess understanding'
+  },
+  {
+    provider: 'OpenAI',
+    model: 'gpt-5',
     useCase: 'Advanced chess analysis',
     cost: 'Medium',
     performance: 'Better',
-    reasoning: 'Superior reasoning capabilities for complex positions'
+    reasoning: 'Latest model with superior reasoning capabilities'
   },
   {
     provider: 'OpenAI',
@@ -219,11 +304,12 @@ const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     useCase: 'Deep chess training',
     cost: 'High',
     performance: 'Best',
-    reasoning: 'Exceptional reasoning and strategic depth'
+    reasoning: 'Exceptional reasoning and strategic depth for complex positions'
   },
+
   {
     provider: 'Claude',
-    model: 'claude-3-5-haiku-latest',
+    model: 'claude-3-5-haiku',
     useCase: 'Quick analysis and hints',
     cost: 'Low',
     performance: 'Good',
@@ -231,27 +317,219 @@ const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
   },
   {
     provider: 'Claude',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4',
     useCase: 'Balanced performance',
     cost: 'Medium',
     performance: 'Better',
     reasoning: 'Excellent reasoning with good cost efficiency'
   },
   {
+    provider: 'Claude',
+    model: 'claude-opus-4',
+    useCase: 'Ultimate chess analysis',
+    cost: 'High',
+    performance: 'Best',
+    reasoning: 'Latest and most capable Claude model for complex analysis'
+  },
+  {
     provider: 'Gemini',
-    model: 'gemini-2.0-flash-lite',
-    useCase: 'Fast casual games',
+    model: 'gemini-2.5-flash-lite',
+    useCase: 'Ultra-fast casual games',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Quick responses for rapid gameplay'
+    reasoning: 'Quickest responses for rapid gameplay'
   },
   {
     provider: 'Gemini',
     model: 'gemini-2.5-pro',
     useCase: 'Deep position analysis',
-    cost: 'High',
+    cost: 'Medium',
     performance: 'Best',
-    reasoning: 'Advanced analysis, can take longer time to get responses'
+    reasoning: 'Advanced analysis with 1M token context window'
+  }
+];
+
+// Pricing data (current as of August 2025, verified from official provider pricing pages)
+const MODEL_PRICING: ModelPricing[] = [
+  // OpenAI Models (Standard tier pricing)
+  { provider: 'OpenAI', model: 'gpt-5-nano', inputPrice: 0.05, outputPrice: 0.40, costPer200Requests: 0.09, tier: 'Budget' },
+  { provider: 'OpenAI', model: 'gpt-4o-mini', inputPrice: 0.15, outputPrice: 0.60, costPer200Requests: 0.18, tier: 'Budget' },
+  { provider: 'OpenAI', model: 'gpt-5-mini', inputPrice: 0.25, outputPrice: 2.00, costPer200Requests: 0.45, tier: 'Budget' },
+  { provider: 'OpenAI', model: 'gpt-4.1-nano', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.12, tier: 'Budget' },
+  { provider: 'OpenAI', model: 'gpt-4.1-mini', inputPrice: 0.40, outputPrice: 1.60, costPer200Requests: 0.48, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'o1-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'o3-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'o4-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'gpt-5', inputPrice: 1.25, outputPrice: 10.00, costPer200Requests: 2.25, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'gpt-4.1', inputPrice: 2.00, outputPrice: 8.00, costPer200Requests: 2.00, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'gpt-4o', inputPrice: 2.50, outputPrice: 10.00, costPer200Requests: 2.50, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'o3', inputPrice: 2.00, outputPrice: 8.00, costPer200Requests: 2.00, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'o1', inputPrice: 15.00, outputPrice: 60.00, costPer200Requests: 15.00, tier: 'Premium' },
+  
+  // Claude Models (Standard API pricing)
+  { provider: 'Claude', model: 'claude-3-haiku', inputPrice: 0.25, outputPrice: 1.25, costPer200Requests: 0.35, tier: 'Budget' },
+  { provider: 'Claude', model: 'claude-3-5-haiku', inputPrice: 0.80, outputPrice: 4.00, costPer200Requests: 0.96, tier: 'Budget' },
+  { provider: 'Claude', model: 'claude-sonnet-3.7', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
+  { provider: 'Claude', model: 'claude-sonnet-4', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
+  { provider: 'Claude', model: 'claude-opus-4', inputPrice: 15.00, outputPrice: 75.00, costPer200Requests: 18.00, tier: 'Premium' },
+  
+  // Google Gemini Models
+  { provider: 'Gemini', model: 'gemini-2.5-flash-lite', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.28, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-2.0-flash', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.28, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-1.5-flash', inputPrice: 0.35, outputPrice: 1.05, costPer200Requests: 0.91, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-2.5-flash', inputPrice: 0.30, outputPrice: 2.50, costPer200Requests: 0.56, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-1.5-pro', inputPrice: 3.50, outputPrice: 10.50, costPer200Requests: 2.80, tier: 'Balanced' },
+  { provider: 'Gemini', model: 'gemini-2.5-pro', inputPrice: 1.25, outputPrice: 10.00, costPer200Requests: 2.25, tier: 'Balanced' },
+];
+
+const CHESS_SCENARIOS: ChessScenario[] = [
+  {
+    name: 'Quick Move Analysis',
+    description: 'Get hints or analyze a single position during live play',
+    icon: <GameIcon />,
+    tokensPerRequest: { input: 1750, output: 900 },
+    requestsPerSession: 15
+  },
+  {
+    name: 'Full Game Review (40 moves)',
+    description: 'Analyze every move of a typical game (~80 half-moves)',
+    icon: <AnalysisIcon />,
+    tokensPerRequest: { input: 2200, output: 1100 },
+    requestsPerSession: 80
+  },
+  {
+    name: 'Puzzle Training (20 puzzles)',
+    description: 'Solve multiple tactical puzzles with detailed explanations',
+    icon: <PuzzleIcon />,
+    tokensPerRequest: { input: 1500, output: 850 },
+    requestsPerSession: 20
+  },
+  {
+    name: 'Opening Study',
+    description: 'Learn opening theory and key variations',
+    icon: <InfoIcon />,
+    tokensPerRequest: { input: 1750, output: 900 },
+    requestsPerSession: 12
+  }
+];
+const FAQ_ITEMS: FAQItem[] = [
+  {
+    question: "What is ChessAgine and how is it different from a chess coach?",
+    answer: "ChessAgine is your AI chess buddy, not a formal coach. Think of it as a knowledgeable friend who's always available to chat about chess, analyze positions, explain concepts, and help you explore the game. Unlike a structured coaching program, ChessAgine adapts to your curiosity and provides conversational, friendly guidance whenever you need it.",
+    category: "general"
+  },
+  {
+    question: "Is ChessAgine suitable for beginners?",
+    answer: "Absolutely! ChessAgine is designed to be helpful for players of all levels. It can explain basic rules, teach fundamental concepts, suggest beginner-friendly openings, and provide encouragement. The AI adapts its explanations to your level and asks clarifying questions to better understand what you want to learn.",
+    category: "general"
+  },
+  {
+    question: "Can ChessAgine help improve my chess rating?",
+    answer: "While ChessAgine isn't a replacement for structured training or human coaching, it can definitely support your improvement journey. It can help you understand your games, explain tactical patterns, suggest areas to focus on, and provide practice scenarios. Think of it as a study companion that's available 24/7.",
+    category: "general"
+  },
+  {
+    question: "Can ChessAgine make mistakes or give incorrect analysis?",
+    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1.",
+    category: "technical"
+  },
+  {
+    question: "How can I get more accurate results from ChessAgine?",
+    answer: "To improve accuracy: 1) Use higher-tier models (like GPT-5, Claude Opus-4, or o1) which generally provide better reasoning, 2) Be specific in your questions, 3) Ask follow-up questions if something seems unclear 4) Cross-reference important analysis with multiple sources. Remember, more powerful models cost more but typically give significantly better results.",
+    category: "technical"
+  },
+  {
+    question: "How accurate is ChessAgine's chess analysis?",
+    answer: "ChessAgine provides good general chess understanding and can explain concepts well, but it's not a chess engine like Stockfish. For precise move evaluation, it integrates with Stockfish. For learning and understanding concepts, ChessAgine excels at providing clear, conversational explanations. However, like all AI, it can make errors, so use it as a learning tool rather than an absolute authority.",
+    category: "technical"
+  },
+  {
+    question: "Do different AI models give different quality results?",
+    answer: "Absolutely! More advanced models (like o1, GPT-5, Claude Opus-4) generally provide more accurate analysis, better strategic understanding, and fewer mistakes compared to budget models. If you're serious about chess improvement or need reliable analysis, investing in a premium model can make a significant difference in the quality of explanations and accuracy of suggestions.",
+    category: "technical"
+  },
+  {
+    question: "Why do I need my own API key instead of a subscription?",
+    answer: "Using your own API key gives you direct access to the latest AI models, complete cost control, and enhanced privacy. You only pay for what you use, can choose any supported model, and your conversations go directly to the AI provider without intermediaries.",
+    category: "cost"
+  },
+  {
+    question: "How much does it typically cost to use ChessAgine?",
+    answer: "Costs vary by model and usage. For casual use (a few analyses per day), expect $0.50-$3 per month. Heavy users might spend $5-$15 monthly. The cost analysis tab shows detailed breakdowns for different usage patterns and models.",
+    category: "cost"
+  },
+  {
+    question: "Is my chess data and conversation history private?",
+    answer: "Your privacy depends on the AI provider you choose. ChessAgine doesn't store your conversations - they go directly between your browser and the AI provider. Check each provider's privacy policy for details on data handling and retention.",
+    category: "privacy"
+  },
+  {
+    question: "Can I use multiple AI providers with ChessAgine?",
+    answer: "Yes! You can set up API keys for multiple providers and switch between them. This lets you use different models for different purposes - perhaps a fast, cheap model for quick questions and a more powerful model for deep analysis.",
+    category: "technical"
+  },
+  {
+    question: "What happens if I run out of API credits?",
+    answer: "If your API credits are exhausted, you'll need to add more funds to your provider account. ChessAgine will show you the error message from the provider, and you can add credits directly through their platform.",
+    category: "cost"
+  },
+  {
+    question: "Can ChessAgine analyze games from chess.com or Lichess?",
+    answer: "Yes! You can paste PGN games from any platform, and ChessAgine can analyze them. With the Lichess integration, you can also explore opening databases and get additional context for your games.",
+    category: "technical"
+  }
+];
+
+const INTEGRATIONS: IntegrationItem[] = [
+  {
+    name: "Web Search",
+    description: "Access real-time chess information, recent tournament results, and player statistics",
+    icon: <SearchIcon />,
+    features: [
+      "Latest tournament results and standings",
+      "Current player ratings and statistics", 
+      "Recent chess news and developments",
+      "Opening theory updates and trends"
+    ],
+    status: "Available"
+  },
+  {
+    name: "Lichess Explorer",
+    description: "Explore opening databases and master games directly within ChessAgine",
+    icon: <DatabaseIcon />,
+    features: [
+      "Opening explorer with statistics",
+      "Master game database access",
+      "Position frequency analysis",
+      "Variation popularity trends"
+    ],
+    status: "Available",
+    link: "https://lichess.org/api"
+  },
+  {
+    name: "Stockfish Engine",
+    description: "Precise position evaluation and best move calculations",
+    icon: <EngineIcon />,
+    features: [
+      "Accurate position evaluation",
+      "Best move suggestions with depth",
+      "Tactical mistake identification",
+      "Engine line analysis"
+    ],
+    status: "Available"
+  },
+  {
+    name: "ChessDB",
+    description: "Access to comprehensive chess position databases",
+    icon: <DatabaseIcon />,
+    features: [
+      "Position lookup in master games",
+      "Historical game statistics",
+      "Endgame tablebase access",
+      "Position occurrence frequency"
+    ],
+    status: "Beta",
+    link: "https://chessdb.cn/"
   }
 ];
 
@@ -278,6 +556,30 @@ const ChessAgineDocumentation: React.FC = () => {
       case 'Best': return 'success';
       default: return 'default';
     }
+  };
+
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case 'Budget': return 'success';
+      case 'Balanced': return 'warning';
+      case 'Premium': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Available': return 'success';
+      case 'Beta': return 'warning';
+      case 'Coming Soon': return 'info';
+      default: return 'default';
+    }
+  };
+
+  const calculateScenarioCost = (pricing: ModelPricing, scenario: ChessScenario) => {
+    const inputCost = (scenario.tokensPerRequest.input * scenario.requestsPerSession * pricing.inputPrice) / 1000000;
+    const outputCost = (scenario.tokensPerRequest.output * scenario.requestsPerSession * pricing.outputPrice) / 1000000;
+    return inputCost + outputCost;
   };
 
   const renderProviderSetup = (provider: ProviderConfig) => (
@@ -411,6 +713,309 @@ const ChessAgineDocumentation: React.FC = () => {
     </Grid>
   );
 
+  const renderCostsAnalysis = () => (
+    <Box>
+      {/* Cost Overview */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h5" gutterBottom color="primary.text" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CalculateIcon />
+            Cost Analysis Overview
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            All costs are calculated based on 200 API requests with approximately 2,000 input tokens and 1,000 output tokens per request.
+            Chess scenarios below show approximately usage patterns, actual costs may very. Pricing updated August 2025 from official provider APIs.
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {/* Pricing Table */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom color="primary.text">
+            Model Pricing Comparison
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Provider</TableCell>
+                  <TableCell>Model</TableCell>
+                  <TableCell align="right">Input Price<br />(/1M tokens)</TableCell>
+                  <TableCell align="right">Output Price<br />(/1M tokens)</TableCell>
+                  <TableCell align="right">200 Requests<br />Cost</TableCell>
+                  <TableCell align="center">Tier</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {MODEL_PRICING.sort((a, b) => a.costPer200Requests - b.costPer200Requests).map((model, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{model.provider}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                      {model.model}
+                    </TableCell>
+                    <TableCell align="right">${model.inputPrice.toFixed(2)}</TableCell>
+                    <TableCell align="right">${model.outputPrice.toFixed(2)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>
+                      ${model.costPer200Requests.toFixed(2)}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip 
+                        label={model.tier} 
+                        size="small" 
+                        color={getTierColor(model.tier)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+
+      {/* Chess Scenarios */}
+      <Typography variant="h5" gutterBottom color="primary.text" sx={{ mb: 3 }}>
+        Chess Session Cost Examples
+      </Typography>
+      
+      {CHESS_SCENARIOS.map((scenario, scenarioIndex) => (
+        <Card key={scenarioIndex} sx={{ mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              {scenario.icon}
+              <Box>
+                <Typography variant="h6" color="primary.text">
+                  {scenario.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {scenario.description}
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Session: {scenario.requestsPerSession} requests × {scenario.tokensPerRequest.input} input + {scenario.tokensPerRequest.output} output tokens each
+            </Typography>
+
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Model</TableCell>
+                    <TableCell align="right">Cost per Session</TableCell>
+                    <TableCell align="right">Monthly Cost<br />(20 sessions)</TableCell>
+                    <TableCell align="center">Value Rating</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {MODEL_PRICING
+                    .map(model => ({
+                      ...model,
+                      sessionCost: calculateScenarioCost(model, scenario)
+                    }))
+                    .sort((a, b) => a.sessionCost - b.sessionCost)
+                    .map((model, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {model.provider}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                            {model.model}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        ${model.sessionCost.toFixed(3)}
+                      </TableCell>
+                      <TableCell align="right">
+                        ${(model.sessionCost * 20).toFixed(2)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip 
+                          label={model.tier} 
+                          size="small" 
+                          color={getTierColor(model.tier)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+  );
+
+  const renderFAQ = () => (
+    <Box>
+      <Typography variant="h4" gutterBottom color="primary.text" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <HelpIcon />
+        Frequently Asked Questions
+      </Typography>
+      
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom color="primary.text" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CommunityIcon />
+            About ChessAgine
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            ChessAgine is designed to be your friendly AI chess companion - think of it as a knowledgeable chess buddy 
+            who's always available to chat, analyze positions, and help you explore the wonderful world of chess. 
+            It's not a formal coach with structured lessons, but rather a conversational partner that adapts to your curiosity and learning style.
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {['general', 'technical', 'cost', 'privacy'].map((category) => (
+        <Box key={category} sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom color="primary.text" sx={{ textTransform: 'capitalize', mb: 2 }}>
+            {category === 'general' && <LearnIcon sx={{ mr: 1, verticalAlign: 'middle' }} />}
+            {category === 'technical' && <InfoIcon sx={{ mr: 1, verticalAlign: 'middle' }} />}
+            {category === 'cost' && <CostIcon sx={{ mr: 1, verticalAlign: 'middle' }} />}
+            {category === 'privacy' && <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />}
+            {category} Questions
+          </Typography>
+          
+          {FAQ_ITEMS.filter(item => item.category === category).map((faq, index) => (
+            <Accordion key={index} sx={{ mb: 1 }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="body1" color="primary.text">
+                  {faq.question}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography variant="body2" color="text.secondary">
+                  {faq.answer}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      ))}
+
+      <Card sx={{ mt: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom color="primary.text" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SupportIcon />
+            Still Have Questions?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Can't find what you're looking for? Join our community Discord where fellow chess enthusiasts 
+            and ChessAgine users share tips, discuss strategies, and help each other out!
+          </Typography>
+          <Button
+            variant="outlined"
+            color="success"
+            startIcon={<CommunityIcon />}
+            href="#"
+            sx={{ mr: 2 }}
+          >
+            Join Discord Community
+          </Button>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+
+  const renderIntegrations = () => (
+    <Box>
+      <Typography variant="h4" gutterBottom color="primary.text" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <FaGear/>
+        ChessAgine Integrations
+      </Typography>
+      
+      <Typography variant="body1" color="text.secondary" paragraph>
+        ChessAgine connects with powerful chess tools and databases to enhance your experience. 
+      </Typography>
+
+      <Grid container spacing={3}>
+        {INTEGRATIONS.map((integration, index) => (
+          <Grid  key={index}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {integration.icon}
+                    <Typography variant="h6" color="primary.text">
+                      {integration.name}
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={integration.status} 
+                    size="small" 
+                    color={getStatusColor(integration.status)}
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {integration.description}
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom color="primary.text">
+                  Features:
+                </Typography>
+                <List dense>
+                  {integration.features.map((feature, featureIndex) => (
+                    <ListItem key={featureIndex} sx={{ py: 0.5, pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 24 }}>
+                        <CheckCircleIcon sx={{ fontSize: 16, color: purpleTheme.success }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={feature} 
+                        primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+                
+                {integration.link && (
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="success"
+                      startIcon={<OpenIcon />}
+                      href={integration.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Learn More
+                    </Button>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Card sx={{ mt: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom color="primary.text">
+            How Integrations Work
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            ChessAgine seamlessly combines AI analysis with these powerful tools. When you ask about an opening, 
+            it might consult the Lichess database for statistics. When you need precise evaluation, it can use 
+            Stockfish. For recent tournament information, it searches the web. All of this happens automatically 
+            based on your questions and needs.
+          </Typography>
+          
+          <Typography variant="body2" color="text.secondary">
+            <strong>Privacy Note:</strong> Integration data is processed in real-time and follows the same 
+            privacy principles as your AI conversations - no permanent storage by ChessAgine.
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
@@ -488,10 +1093,15 @@ const ChessAgineDocumentation: React.FC = () => {
               onChange={handleTabChange}
               indicatorColor="primary"
               textColor="primary"
+              variant="scrollable"
+              scrollButtons="auto"
             >
               <Tab label="Setup Guides" />
               <Tab label="Model Recommendations" />
+              <Tab label="Costs Analysis" />
               <Tab label="Supported Providers" />
+              <Tab label="Integrations" />
+              <Tab label="FAQ" />
             </Tabs>
           </Box>
 
@@ -522,6 +1132,10 @@ const ChessAgineDocumentation: React.FC = () => {
           </CustomTabPanel>
 
           <CustomTabPanel value={selectedTab} index={2}>
+            {renderCostsAnalysis()}
+          </CustomTabPanel>
+
+          <CustomTabPanel value={selectedTab} index={3}>
             <Typography variant="h4" gutterBottom color="primary.text">
               Supported Providers
             </Typography>
@@ -579,6 +1193,14 @@ const ChessAgineDocumentation: React.FC = () => {
                 </Grid>
               ))}
             </Grid>
+          </CustomTabPanel>
+
+          <CustomTabPanel value={selectedTab} index={4}>
+            {renderIntegrations()}
+          </CustomTabPanel>
+
+          <CustomTabPanel value={selectedTab} index={5}>
+            {renderFAQ()}
           </CustomTabPanel>
 
           {/* Footer */}

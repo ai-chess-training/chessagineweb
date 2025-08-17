@@ -39,8 +39,6 @@ interface ProviderConfig {
   docsUrl: string;
 }
 
-
-
 // Provider configurations
 const PROVIDERS: Record<string, ProviderConfig> = {
   openai: {

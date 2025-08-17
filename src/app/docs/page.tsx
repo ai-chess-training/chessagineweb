@@ -906,7 +906,7 @@ const ChessAgineDocumentation: React.FC = () => {
             Still Have Questions?
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Can not find what you're looking for? Join our community Discord where fellow chess enthusiasts 
+            Can not find what you are looking for? Join our community Discord where fellow chess enthusiasts 
             and ChessAgine users share tips, discuss strategies, and help each other out!
           </Typography>
           <Button

@@ -30,6 +30,7 @@ import {
   DialogActions,
   Divider,
 } from "@mui/material";
+import ModelSetting from "./ModelSetting";
 
 
 interface ChatMessage {
@@ -987,6 +988,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 </Stack>
               </Stack>
             </Box>
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+
+            <ModelSetting/>
             
             <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
             

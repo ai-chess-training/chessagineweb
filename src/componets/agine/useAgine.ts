@@ -14,7 +14,7 @@ import { CandidateMove, getChessDBSpeech, useChessDB } from "../tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { Board } from "../analysis/board";
-import { ApiSettings } from "@/app/setting/page";
+import { ApiSettings } from "../tabs/ModelSetting";
 
 // Types
 interface ChatMessage {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon } from "@mui/icons-material";
+import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon, VolumeUp, VolumeOff } from "@mui/icons-material";
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import ReactMarkdown from "react-markdown";
 import {
@@ -29,11 +29,13 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import ModelSetting from "./ModelSetting";
 import { ChatMessage } from "../../hooks/useAgine";
 import { calculateChatPrice } from "@/libs/docs/helper";
-
 
 interface ChatTabProps {
   sessionMode: boolean;
@@ -145,6 +147,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const [showTechnicalInfo, setTechnicalInfo] = useState(true);
   const [compactView, setCompactView] = useState(false);
   
+  // Text-to-Speech state
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentSpeakingId, setCurrentSpeakingId] = useState<string | null>(null);
+  const [speechRate, setSpeechRate] = useState(1);
+  const [speechPitch, setSpeechPitch] = useState(1);
+  const [speechVolume, setSpeechVolume] = useState(0.8);
+  const [selectedVoice, setSelectedVoice] = useState<string>('');
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [speechEnabled, setSpeechEnabled] = useState(true);
+  
   // Resize functionality
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const [isResizing, setIsResizing] = useState(false);
@@ -154,6 +166,113 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize speech synthesis
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      const loadVoices = () => {
+        const voices = speechSynthesis.getVoices();
+        setAvailableVoices(voices);
+        
+        // Try to find a good default voice
+        const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+        const preferredVoice = englishVoices.find(voice => voice.name.includes('Female')) || 
+                              englishVoices.find(voice => voice.name.includes('Natural')) ||
+                              englishVoices[0];
+        
+        if (preferredVoice && !selectedVoice) {
+          setSelectedVoice(preferredVoice.name);
+        }
+      };
+
+      // Load voices immediately if available
+      loadVoices();
+      
+      // Also listen for the voiceschanged event (needed for some browsers)
+      speechSynthesis.addEventListener('voiceschanged', loadVoices);
+      
+      return () => {
+        speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+      };
+    } else {
+      setSpeechEnabled(false);
+    }
+  }, [selectedVoice]);
+
+  // Clean up speech when component unmounts
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Text-to-Speech functions
+  const stripMarkdown = (text: string): string => {
+    return text
+      .replace(/[*_`~]/g, '') // Remove markdown formatting
+      .replace(/#+\s/g, '') // Remove headers
+      .replace(/>\s/g, '') // Remove blockquotes
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to just text
+      .replace(/\n+/g, ' ') // Replace newlines with spaces
+      .trim();
+  };
+
+  const speakMessage = (messageId: string, content: string) => {
+    if (!speechEnabled || !('speechSynthesis' in window)) return;
+
+    // Stop any current speech
+    speechSynthesis.cancel();
+    
+    if (currentSpeakingId === messageId && isSpeaking) {
+      // If clicking the same message that's playing, stop it
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+      return;
+    }
+
+    const cleanText = stripMarkdown(content);
+    
+    if (!cleanText.trim()) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // Find the selected voice
+    const voice = availableVoices.find(v => v.name === selectedVoice);
+    if (voice) {
+      utterance.voice = voice;
+    }
+    
+    utterance.rate = speechRate;
+    utterance.pitch = speechPitch;
+    utterance.volume = speechVolume;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setCurrentSpeakingId(messageId);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+    };
+
+    speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+    }
+  };
 
   // Resize handler
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -381,6 +500,18 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   size="small"
                 >
                   <History fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            {speechEnabled && isSpeaking && (
+              <Tooltip title="Stop speaking" arrow>
+                <IconButton
+                  onClick={stopSpeaking}
+                  sx={{ color: "#ff6b6b", p: 0.5 }}
+                  size="small"
+                >
+                  <VolumeOff fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}
@@ -655,35 +786,66 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     color: "white",
                     borderRadius: 2,
                     position: "relative",
-                    "&:hover .copy-button": {
+                    "&:hover .message-actions": {
                       opacity: 1,
                     },
                   }}
                 >
+                  {/* Message Actions */}
                   {message.role === "assistant" && (
-                    <Tooltip title="Copy message" arrow>
-                      <IconButton
-                        className="copy-button"
-                        onClick={() => copyMessage(message.content)}
-                        sx={{
-                          position: "absolute",
-                          top: 2,
-                          right: 2,
-                          opacity: 0,
-                          transition: "opacity 0.2s",
-                          color: "rgba(255, 255, 255, 0.7)",
-                          backgroundColor: "rgba(0, 0, 0, 0.2)",
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.4)",
-                            color: "white",
-                          },
-                        }}
-                        size="small"
-                      >
-                        <ContentCopy fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
+                    <Box
+                      className="message-actions"
+                      sx={{
+                        position: "absolute",
+                        top: 2,
+                        right: 2,
+                        opacity: 0,
+                        transition: "opacity 0.2s",
+                        display: "flex",
+                        gap: 0.5,
+                      }}
+                    >
+                      {speechEnabled && (
+                        <Tooltip title={currentSpeakingId === message.id && isSpeaking ? "Stop speaking" : "Listen to message"} arrow>
+                          <IconButton
+                            onClick={() => speakMessage(message.id, message.content)}
+                            sx={{
+                              color: currentSpeakingId === message.id && isSpeaking ? "#ff6b6b" : "rgba(255, 255, 255, 0.7)",
+                              backgroundColor: "rgba(0, 0, 0, 0.2)",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.4)",
+                                color: "white",
+                              },
+                            }}
+                            size="small"
+                          >
+                            {currentSpeakingId === message.id && isSpeaking ? (
+                              <VolumeOff fontSize="inherit" />
+                            ) : (
+                              <VolumeUp fontSize="inherit" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Copy message" arrow>
+                        <IconButton
+                          onClick={() => copyMessage(message.content)}
+                          sx={{
+                            color: "rgba(255, 255, 255, 0.7)",
+                            backgroundColor: "rgba(0, 0, 0, 0.2)",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.4)",
+                              color: "white",
+                            },
+                          }}
+                          size="small"
+                        >
+                          <ContentCopy fontSize="inherit" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   )}
+                  
                   {message.role === "assistant" ? (
                     <ReactMarkdown
                       components={{
@@ -934,7 +1096,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           sx: {
             backgroundColor: "#1a1a1a",
             color: "white",
-            minWidth: 400
+            minWidth: 450,
+            maxHeight: "80vh"
           }
         }}
       >
@@ -1017,6 +1180,114 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               </Stack>
             </Box>
             <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+
+            {/* Text-to-Speech Settings */}
+            {speechEnabled && (
+              <>
+                <Box>
+                  <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                    Text-to-Speech Settings
+                  </Typography>
+                  <Stack spacing={2}>
+                    <FormControl size="small" fullWidth>
+                      <InputLabel sx={{ color: "grey.300" }}>Voice</InputLabel>
+                      <Select
+                        value={selectedVoice}
+                        onChange={(e) => setSelectedVoice(e.target.value)}
+                        label="Voice"
+                        sx={{
+                          color: "white",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255,255,255,0.2)",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255,255,255,0.3)",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#9c27b0",
+                          },
+                        }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              backgroundColor: "#2a2a2a",
+                              color: "white",
+                            },
+                          },
+                        }}
+                      >
+                        {availableVoices.map((voice) => (
+                          <MenuItem key={voice.name} value={voice.name}>
+                            {voice.name} ({voice.lang})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <Box>
+                      <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                        Speech Rate: {speechRate.toFixed(1)}x
+                      </Typography>
+                      <Box sx={{ px: 1 }}>
+                        <input
+                          type="range"
+                          min={0.5}
+                          max={2}
+                          step={0.1}
+                          value={speechRate}
+                          onChange={(e) => setSpeechRate(Number(e.target.value))}
+                          style={{
+                            width: '100%',
+                            accentColor: '#9c27b0'
+                          }}
+                        />
+                      </Box>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                        Pitch: {speechPitch.toFixed(1)}
+                      </Typography>
+                      <Box sx={{ px: 1 }}>
+                        <input
+                          type="range"
+                          min={0.5}
+                          max={2}
+                          step={0.1}
+                          value={speechPitch}
+                          onChange={(e) => setSpeechPitch(Number(e.target.value))}
+                          style={{
+                            width: '100%',
+                            accentColor: '#9c27b0'
+                          }}
+                        />
+                      </Box>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                        Volume: {Math.round(speechVolume * 100)}%
+                      </Typography>
+                      <Box sx={{ px: 1 }}>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.1}
+                          value={speechVolume}
+                          onChange={(e) => setSpeechVolume(Number(e.target.value))}
+                          style={{
+                            width: '100%',
+                            accentColor: '#9c27b0'
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  </Stack>
+                </Box>
+                <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+              </>
+            )}
 
             <ModelSetting/>
             

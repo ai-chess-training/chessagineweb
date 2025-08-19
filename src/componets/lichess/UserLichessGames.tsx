@@ -17,7 +17,7 @@ import TimerIcon from "@mui/icons-material/Timer";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import HistoryIcon from "@mui/icons-material/History";
 import CasinoIcon from "@mui/icons-material/Casino";
-import { purpleTheme } from "./UserGameSelect";
+import { purpleTheme } from "@/theme/theme";
 
 interface UserGameProp {
   loadPGN: (pgn: string) => void;

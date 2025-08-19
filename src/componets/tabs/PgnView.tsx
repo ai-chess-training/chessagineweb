@@ -18,9 +18,9 @@ import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import { MoveQuality, MoveAnalysis, } from '../agine/useGameReview';
+import { MoveQuality, MoveAnalysis, } from '../../hooks/useGameReview';
 import { getMoveClassificationStyle } from './GameReviewTab';
-import { AgentMessage } from '../agine/useAgine';
+import { AgentMessage } from '../../hooks/useAgine';
 
 export interface Move {
   from: string;

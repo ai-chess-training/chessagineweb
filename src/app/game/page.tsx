@@ -16,7 +16,6 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { deepPurple, purple, indigo } from "@mui/material/colors";
 import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
@@ -26,7 +25,7 @@ import {
   PlayArrow as PlayIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
-import useAgine from "@/componets/agine/useAgine";
+import useAgine from "@/hooks/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import { TabPanel } from "@/componets/tabs/tab";
 import OpeningExplorer from "@/componets/tabs/OpeningTab";
@@ -40,125 +39,8 @@ import GameInfoTab from "@/componets/tabs/GameInfoTab";
 import PGNView from "@/componets/tabs/PgnView";
 import LegalMoveTab from "@/componets/tabs/LegalMoveTab";
 import ResizableChapterSelector from "@/componets/tabs/ChaptersTab";
-
-// Custom theme colors
-const purpleTheme = {
-  primary: deepPurple[500],
-  primaryDark: deepPurple[700],
-  secondary: purple[400],
-  accent: indigo[300],
-  background: {
-    main: "#1a0d2e",
-    paper: "#2d1b3d",
-    card: "#3e2463",
-    input: "#4a2c5a",
-  },
-  text: {
-    primary: "#e1d5f0",
-    secondary: "#b39ddb",
-    accent: "#ce93d8",
-  },
-};
-
-function parsePgnChapters(pgnText: string) {
-  const chapterBlocks = pgnText.split(/\n\n(?=\[Event)/);
-  return chapterBlocks.map((block) => {
-    const title = block.match(/\[ChapterName "(.*)"\]/)?.[1] || "Untitled";
-    const url = block.match(/\[ChapterURL "(.*)"\]/)?.[1] || "";
-    return { title, url, pgn: block.trim() };
-  });
-}
-
-function extractMovesWithComments(
-  pgn: string
-): { move: string; comment?: string }[] {
-  const strippedHeaders = pgn.replace(/\[.*?\]\s*/g, "");
-  const tokenRegex = /(\{[^}]*\})|(;[^\n]*)|([^\s{};]+)/g;
-  const tokens = [...strippedHeaders.matchAll(tokenRegex)];
-
-  const result: { move: string; comment?: string }[] = [];
-  let currentComment: string | undefined = undefined;
-
-  for (const match of tokens) {
-    const token = match[0];
-    if (token.startsWith("{")) {
-      currentComment = token.slice(1, -1).trim();
-    } else if (token.startsWith(";")) {
-      currentComment = token.slice(1).trim();
-    } else if (/^[a-hRNBQKO0-9+#=x-]+$/.test(token)) {
-      result.push({ move: token, comment: currentComment });
-      currentComment = undefined;
-    }
-  }
-
-  return result;
-}
-
-function extractGameInfo(pgn: string) {
-  const info: Record<string, string> = {};
-  const lines = pgn.split("\n");
-
-  for (const line of lines) {
-    const match = line.match(/\[(\w+)\s+"(.*)"\]/);
-    if (match) {
-      info[match[1]] = match[2];
-    }
-  }
-
-  return info;
-}
-
-function getValidGameId(url: string): string {
-  if (!url) return "";
-
-  try {
-    const urlObj = new URL(url);
-    const pathname = urlObj.pathname;
-    const gameIdMatch = pathname.match(/^\/([a-zA-Z0-9]{8,12})(?:\/|$)/);
-
-    if (gameIdMatch) {
-      let gameId = gameIdMatch[1];
-      if (gameId.length > 8) {
-        gameId = gameId.substring(0, 8);
-      }
-      return gameId;
-    }
-
-    return "";
-  } catch (error) {
-    console.log(error);
-    const parts = url.split("/");
-    if (parts.length >= 4) {
-      const gameId = parts[3];
-      const cleanGameId = gameId.split(/[?#]/)[0];
-      return cleanGameId.substring(0, 8);
-    }
-
-    return "";
-  }
-}
-
-async function fetchLichessGame(gameId: string): Promise<string> {
-  const response = await fetch(`https://lichess.org/game/export/${gameId}`, {
-    headers: {
-      Accept: "application/x-chess-pgn",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch game: ${response.status} ${response.statusText}`
-    );
-  }
-
-  const pgnText = await response.text();
-
-  if (!pgnText || pgnText.trim() === "") {
-    throw new Error("Empty PGN received from Lichess");
-  }
-
-  return pgnText;
-}
+import { extractMovesWithComments, extractGameInfo, getValidGameId, fetchLichessGame, parsePgnChapters } from "@/libs/game/helper";
+import { purpleTheme } from "@/theme/theme";
 
 export default function PGNUploaderPage() {
   const session = useSession();

@@ -13,7 +13,6 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { deepPurple, purple, indigo } from "@mui/material/colors";
 import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
@@ -25,29 +24,11 @@ import OpeningExplorer from "@/componets/tabs/OpeningTab";
 import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
-import useAgine from "@/componets/agine/useAgine";
+import useAgine from "@/hooks/useAgine";
 import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 import LegalMoveTab from "@/componets/tabs/LegalMoveTab";
-
-// Custom theme colors
-const purpleTheme = {
-  primary: deepPurple[500],
-  primaryDark: deepPurple[700],
-  secondary: purple[400],
-  accent: indigo[300],
-  background: {
-    main: "#1a0d2e",
-    paper: "#2d1b3d",
-    card: "#3e2463",
-    input: "#4a2c5a",
-  },
-  text: {
-    primary: "#e1d5f0",
-    secondary: "#b39ddb",
-    accent: "#ce93d8",
-  },
-};
+import { purpleTheme } from "@/theme/theme";
 
 export default function PositionPage() {
   const session = useSession();

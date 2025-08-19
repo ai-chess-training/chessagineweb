@@ -13,7 +13,7 @@ export default function ChatBubble({ message, isUser = false }: ChatBubbleProps)
         sx={{
           p: 2,
           maxWidth: "75%",
-          bgcolor: isUser ? "purple" : "#f5f5dc", // user = darker wheat, agent = light beige
+          bgcolor: isUser ? "purple" : "#f5f5dc", 
           color: "black",
           borderRadius: 3,
           fontFamily: "monospace",

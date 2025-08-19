@@ -31,7 +31,7 @@ import {
   Divider,
 } from "@mui/material";
 import ModelSetting from "./ModelSetting";
-import { ChatMessage } from "../agine/useAgine";
+import { ChatMessage } from "../../hooks/useAgine";
 
 
 interface ChatTabProps {

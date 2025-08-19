@@ -25,7 +25,7 @@ import {
   Pen,
   Sparkles,
 } from "lucide-react";
-import { MoveAnalysis, MoveQuality } from "../agine/useGameReview";
+import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
 
 export interface MoveStats {
   Best: number;

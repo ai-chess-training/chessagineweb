@@ -8,7 +8,7 @@ import {
     Alert
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { purpleTheme } from "./UserGameSelect";
+import { purpleTheme } from "@/theme/theme";
 
 interface PGNUploaderProps {
     loadPGN: (pgn: string) => void;

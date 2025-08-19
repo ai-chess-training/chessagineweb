@@ -7,8 +7,7 @@ import {
   ThemeProvider,
   createTheme,
 } from "@mui/material";
-
-import { purpleTheme } from "@/componets/lichess/UserGameSelect";
+import { purpleTheme } from "@/theme/theme";
 import ModelSetting from "@/componets/tabs/ModelSetting";
 
 // Create Material-UI theme

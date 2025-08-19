@@ -30,16 +30,15 @@ import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
-import { MasterGames } from "../opening/helper";
+import { MasterGames } from "../../libs/openingdatabase/helper";
 import {
   Arrow,
   BoardOrientation,
 } from "react-chessboard/dist/chessboard/types";
-import { MoveAnalysis } from "../agine/useGameReview";
+import { MoveAnalysis } from "../../hooks/useGameReview";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
-
-import { Board } from "./board";
+import { Board } from "../../libs/tacticalboard/board";
 
 interface AiChessboardPanelProps {
   fen: string;

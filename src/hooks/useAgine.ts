@@ -6,15 +6,15 @@ import {
   getOpeningStats,
   Moves,
   getLichessOpeningStats,
-} from "@/componets/opening/helper";
+} from "@/libs/openingdatabase/helper";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
-import { CandidateMove, getChessDBSpeech, useChessDB } from "../tabs/Chessdb";
+import { CandidateMove, getChessDBSpeech, useChessDB } from "../componets/tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
-import { Board } from "../analysis/board";
-import { ApiSettings } from "../tabs/ModelSetting";
+import { Board } from "../libs/tacticalboard/board";
+import { ApiSettings } from "../componets/tabs/ModelSetting";
 
 // Types
 export interface ChatMessage {

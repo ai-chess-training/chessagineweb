@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Stack, Card, CardContent, Typography, Chip, Box, } from '@mui/material';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import { purpleTheme } from '../lichess/UserGameSelect';
+import { purpleTheme } from '@/theme/theme';
 
 interface ResizableChapterSelectorProps {
   chapters: { title: string; url: string; pgn: string }[];

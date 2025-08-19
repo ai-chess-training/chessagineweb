@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { User, Clock, Calendar, Trophy, Info } from "lucide-react";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
-import { MoveAnalysis } from "@/componets/agine/useGameReview";
+import { MoveAnalysis } from "@/hooks/useGameReview";
 
 function GameInfoTab({
   moves,

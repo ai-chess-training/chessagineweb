@@ -129,7 +129,7 @@ export default function useAgine(fen: string) {
 
   // Hooks
   const { session } = useSession();
-  const engine = useEngine(true, EngineName.Stockfish16);
+  const engine = useEngine(true, EngineName.Stockfish17);
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
   const {
     gameReview,
@@ -253,7 +253,8 @@ export default function useAgine(fen: string) {
           apiSettings: {
             provider: apiSettings.provider,
             model: apiSettings.model,
-            apiKey: apiSettings.apiKey
+            apiKey: apiSettings.apiKey,
+            language: apiSettings.language,
           }
         }),
         signal: controller.signal,

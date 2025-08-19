@@ -5,6 +5,7 @@ interface ApiSettings {
   provider: 'openai' | 'anthropic' | 'google';
   model: string;
   apiKey: string;
+  language: string,
 }
 
 export type ResponseData = {

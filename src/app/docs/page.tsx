@@ -56,7 +56,7 @@ import {
 } from '@mui/icons-material';
 import { deepPurple, purple, indigo } from '@mui/material/colors';
 import { FaGear } from 'react-icons/fa6';
-import { ChessScenario, IntegrationItem, FAQItem, FAQ_ITEMS, MODEL_PRICING, MODEL_RECOMMENDATIONS, ModelPricing, ProviderConfig, PROVIDERS, TabPanelProps } from '@/libs/docs/helper';
+import { ChessScenario, IntegrationItem, FAQ_ITEMS, MODEL_PRICING, MODEL_RECOMMENDATIONS, ModelPricing, ProviderConfig, PROVIDERS, TabPanelProps } from '@/libs/docs/helper';
 
 const CHESS_SCENARIOS: ChessScenario[] = [
   {

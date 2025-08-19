@@ -219,6 +219,16 @@ export const MODEL_PRICING: ModelPricing[] = [
 ];
 
 
+export function calculateChatPrice(tokens: number, model: string){
+    const modelPrice = MODEL_PRICING.find(val => val.model === model);
+
+    if(!modelPrice){
+        return 0;
+    }
+
+    return (tokens * (modelPrice.inputPrice + modelPrice.outputPrice) / 1000000);
+}
+
 export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is ChessAgine and how is it different from a chess coach?",

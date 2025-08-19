@@ -32,6 +32,7 @@ import {
 } from "@mui/material";
 import ModelSetting from "./ModelSetting";
 import { ChatMessage } from "../../hooks/useAgine";
+import { calculateChatPrice } from "@/libs/docs/helper";
 
 
 interface ChatTabProps {
@@ -755,7 +756,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         fontSize: `${fontSize - 2}px`
                       }}
                     >
-                      Tokens: {message.maxTokens}, {message.provider}: {message.model}
+                      Tokens: {message.maxTokens} Cost: ${calculateChatPrice(message.maxTokens, message.model)}, {message.provider}: {message.model}
                     </Typography>
                     
                   )}

@@ -167,7 +167,7 @@ const ModelSetting: React.FC = () => {
 
   // Update temp settings when apiSettings changes
   useEffect(() => {
-    setTempSettings(prev => ({
+    setTempSettings(({
       ...defaultSettings,
       ...apiSettings,
     }));

@@ -54,7 +54,7 @@ import {
   SupportAgent as SupportIcon,
   OpenInNew as OpenIcon,
 } from '@mui/icons-material';
-import { deepPurple, purple, indigo } from '@mui/material/colors';
+import { purpleTheme } from '@/theme/theme';
 import { FaGear } from 'react-icons/fa6';
 import { ChessScenario, IntegrationItem, FAQ_ITEMS, MODEL_PRICING, MODEL_RECOMMENDATIONS, ModelPricing, ProviderConfig, PROVIDERS, TabPanelProps } from '@/libs/docs/helper';
 
@@ -142,24 +142,6 @@ const INTEGRATIONS: IntegrationItem[] = [
   }
 ];
 
-const purpleTheme = {
-  primary: deepPurple[500],
-  primaryDark: deepPurple[700],
-  secondary: purple[400],
-  accent: indigo[300],
-  background: {
-    main: "#1a0d2e",
-    paper: "#2d1b3d",
-    card: "#3e2463",
-    input: "#4a2c5a",
-  },
-  text: {
-    primary: "#ffffff",
-    secondary: "#e0e0e0",
-    accent: "#f0f0f0",
-  },
-  success: "#4caf50",
-};
 
 const muiTheme = createTheme({
   palette: {

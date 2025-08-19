@@ -15,5 +15,6 @@ export const purpleTheme = {
     primary: '#e1d5f0',
     secondary: '#b39ddb',
     accent: '#ce93d8'
-  }
+  },
+  success: "#4caf50",
 };

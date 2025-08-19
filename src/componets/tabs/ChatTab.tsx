@@ -31,14 +31,8 @@ import {
   Divider,
 } from "@mui/material";
 import ModelSetting from "./ModelSetting";
+import { ChatMessage } from "../agine/useAgine";
 
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
 
 interface ChatTabProps {
   sessionMode: boolean;
@@ -147,6 +141,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const [fontSize, setFontSize] = useState(14);
   const [showTimestamps, setShowTimestamps] = useState(true);
+  const [showTechnicalInfo, setTechnicalInfo] = useState(true);
   const [compactView, setCompactView] = useState(false);
   
   // Resize functionality
@@ -750,6 +745,21 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       {message.timestamp.toLocaleTimeString()}
                     </Typography>
                   )}
+                  {showTechnicalInfo && message.maxTokens && message.model && message.provider && (
+                    <Typography
+                      variant="caption"
+                      sx={{ 
+                        opacity: 0.7, 
+                        display: "block", 
+                        mt: 0.5,
+                        fontSize: `${fontSize - 2}px`
+                      }}
+                    >
+                      Tokens: {message.maxTokens}, {message.provider}: {message.model}
+                    </Typography>
+                    
+                  )}
+
                 </Paper>
               </Box>
             ))}
@@ -959,6 +969,23 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   <Switch
                     checked={showTimestamps}
                     onChange={(e) => setShowTimestamps(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#9c27b0',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#9c27b0',
+                      },
+                    }}
+                  />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    Show tokens, model info
+                  </Typography>
+                  <Switch
+                    checked={showTechnicalInfo}
+                    onChange={(e) => setTechnicalInfo(e.target.checked)}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
                         color: '#9c27b0',

@@ -211,7 +211,7 @@ const ModelSetting: React.FC = () => {
           severity="success" 
           sx={{ 
             mb: 3,
-            backgroundColor: `${colors.accent}20`,
+            backgroundColor: `${colors.secondary}20`,
             color: colors.text.primary,
             '& .MuiAlert-icon': {
               color: colors.accent,

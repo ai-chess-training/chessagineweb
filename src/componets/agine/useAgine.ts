@@ -17,11 +17,21 @@ import { Board } from "../analysis/board";
 import { ApiSettings } from "../tabs/ModelSetting";
 
 // Types
-interface ChatMessage {
+export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
+  maxTokens?: number,
+  provider?: string,
+  model?: string,
   content: string;
   timestamp: Date;
+}
+
+export interface AgentMessage {
+  message: string,
+  maxTokens: number,
+  provider: string,
+  model: string,
 }
 
 interface AgineState {
@@ -73,11 +83,17 @@ const isValidFEN = (fen: string): boolean => {
 
 const createChatMessage = (
   role: "user" | "assistant", 
-  content: string, 
+  content: string,
+  maxTokens?: number,
+  provider?: string,
+  model?: string, 
   id?: string
 ): ChatMessage => ({
   id: id || Date.now().toString(),
   role,
+  maxTokens,
+  provider,
+  model,
   content,
   timestamp: new Date(),
 });
@@ -206,7 +222,7 @@ export default function useAgine(fen: string) {
 
   // ==================== API FUNCTIONS ====================
   const makeApiRequest = useCallback(
-  async (fen: string, query: string, mode: string): Promise<string> => {
+  async (fen: string, query: string, mode: string): Promise<AgentMessage> => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -234,7 +250,6 @@ export default function useAgine(fen: string) {
           fen, 
           query, 
           mode,
-          // Add API settings to the request
           apiSettings: {
             provider: apiSettings.provider,
             model: apiSettings.model,
@@ -244,8 +259,8 @@ export default function useAgine(fen: string) {
         signal: controller.signal,
       });
       
-      const data = await response.json();
-      return data.message;
+      const data = await response.json() as AgentMessage;
+      return data;
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         throw new Error("Request cancelled");
@@ -606,7 +621,7 @@ ${board.toString()}
           : "position";
           
         const result = await makeApiRequest(currentFen, query, mode);
-        const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
+        const assistantMessage = createChatMessage("assistant", result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
 
         updateState({ 
           chatMessages: [...state.chatMessages, userMessage, assistantMessage],
@@ -618,6 +633,9 @@ ${board.toString()}
           const errorMessage = createChatMessage(
             "assistant",
             "Sorry, there was an error processing your message. Please try again.",
+            undefined,
+            undefined,
+            undefined,
             (Date.now() + 1).toString()
           );
           updateState({ 
@@ -646,7 +664,7 @@ ${board.toString()}
 
   // ==================== CLICK HANDLERS ====================
   const createAnalysisHandler = useCallback(
-    (analysisType: string) => async (data: AnalysisData, customQuery?: string): Promise<void | string> => {
+    (analysisType: string) => async (data: AnalysisData, customQuery?: string): Promise<void | AgentMessage> => {
       if (state.llmLoading || state.chatLoading) return;
 
       updateState({ chatLoading: true, analysisTab: 1 });
@@ -967,7 +985,8 @@ ${board.toString()}
 
         const userMessage = createChatMessage("user", messageContent);
         const result = await makeApiRequest(currentFen, query, analysisType === "annotation" ? "annotation" : "position");
-        const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
+        const assistantMessage = createChatMessage("assistant", result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
+
 
         if(analysisType === "moveCoach"){
           const chathistory: ChatMessage[] = state.chatMessages;
@@ -988,6 +1007,9 @@ ${board.toString()}
           const errorMessage = createChatMessage(
             "assistant",
             `Sorry, there was an error analyzing the ${analysisType}. Please try again.`,
+            undefined,
+            undefined,
+            undefined,
             (Date.now() + 1).toString()
           );
           updateState({ 
@@ -995,7 +1017,7 @@ ${board.toString()}
             chatLoading: false 
           });
         }
-        return analysisType === "annotation" ? "" : undefined;
+        
       }
     },
     [
@@ -1091,7 +1113,8 @@ Be concise but thorough, and use clear chess language.`;
 
         const userMessage = createChatMessage("user", `Analyze move: ${move}`);
         const result = await makeApiRequest(futureFen, query, "position");
-        const assistantMessage = createChatMessage("assistant", result, (Date.now() + 1).toString());
+        const assistantMessage = createChatMessage("assistant", result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
+
 
         updateState({ 
           chatMessages: [...state.chatMessages, userMessage, assistantMessage],
@@ -1132,8 +1155,8 @@ Be concise but thorough, and use clear chess language.`;
   );
 
   const handleMovePGNAnnotateClick = useCallback(
-    async (review: MoveAnalysis, customQuery?: string): Promise<string | null> => {
-      return createAnalysisHandler("annotation")(review, customQuery) as Promise<string | null>;
+    async (review: MoveAnalysis, customQuery?: string): Promise<AgentMessage | null> => {
+      return createAnalysisHandler("annotation")(review, customQuery) as Promise<AgentMessage | null>;
     },
     [createAnalysisHandler]
   );
@@ -1186,6 +1209,9 @@ Be concise but thorough, and use clear chess language.`;
       const finalMessage = createChatMessage(
         "assistant",
         `Game review complete! Analyzed ${keyMoves.length} key moves. The analysis above covers the most important moments in your game, focusing on critical mistakes and excellent moves. Review each analysis to understand the key concepts and improve your play.`,
+        undefined,
+        undefined,
+        undefined,
         (Date.now() + keyMoves.length + 1).toString()
       );
 

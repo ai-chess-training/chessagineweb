@@ -387,28 +387,28 @@ const CHESS_SCENARIOS: ChessScenario[] = [
     name: 'Quick Move Analysis',
     description: 'Get hints or analyze a single position during live play',
     icon: <GameIcon />,
-    tokensPerRequest: { input: 1750, output: 900 },
+    tokensPerRequest: { input: 3000, output: 3000 },
     requestsPerSession: 15
   },
   {
     name: 'Full Game Review (40 moves)',
     description: 'Analyze every move of a typical game (~80 half-moves)',
     icon: <AnalysisIcon />,
-    tokensPerRequest: { input: 2200, output: 1100 },
+    tokensPerRequest: { input: 3200, output: 3000 },
     requestsPerSession: 80
   },
   {
     name: 'Puzzle Training (20 puzzles)',
     description: 'Solve multiple tactical puzzles with detailed explanations',
     icon: <PuzzleIcon />,
-    tokensPerRequest: { input: 1500, output: 850 },
+    tokensPerRequest: { input: 3000, output: 1200 },
     requestsPerSession: 20
   },
   {
     name: 'Opening Study',
     description: 'Learn opening theory and key variations',
     icon: <InfoIcon />,
-    tokensPerRequest: { input: 1750, output: 900 },
+    tokensPerRequest: { input: 3000, output: 3000 },
     requestsPerSession: 12
   }
 ];
@@ -582,6 +582,7 @@ const ChessAgineDocumentation: React.FC = () => {
     return inputCost + outputCost;
   };
 
+
   const renderProviderSetup = (provider: ProviderConfig) => (
     <Card sx={{ mb: 3 }}>
       <CardContent>
@@ -723,7 +724,7 @@ const ChessAgineDocumentation: React.FC = () => {
             Cost Analysis Overview
           </Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
-            All costs are calculated based on 200 API requests with approximately 2,000 input tokens and 1,000 output tokens per request.
+            All costs are calculated based on 200 API requests with approximately 3,000 input tokens and 3,000 output tokens per request.
             Chess scenarios below show approximately usage patterns, actual costs may very. Pricing updated August 2025 from official provider APIs.
           </Typography>
         </CardContent>

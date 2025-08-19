@@ -20,6 +20,7 @@ import CommentIcon from '@mui/icons-material/Comment';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MoveQuality, MoveAnalysis, } from '../agine/useGameReview';
 import { getMoveClassificationStyle } from './GameReviewTab';
+import { AgentMessage } from '../agine/useAgine';
 
 export interface Move {
   from: string;
@@ -42,7 +43,7 @@ interface PGNViewProps {
   moveAnalysis: MoveAnalysis[] | null;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
-  onAnnotateMove?: (review: MoveAnalysis, customQuery?: string) => Promise<string | null>;
+  onAnnotateMove?: (review: MoveAnalysis, customQuery?: string) => Promise<AgentMessage | null>;
 }
 
 
@@ -210,7 +211,7 @@ const PGNView: React.FC<PGNViewProps> = ({
         // Add AI annotation to existing text
         const currentText = commentText.trim();
         const separator = currentText ? '\n\n' : '';
-        const newText = currentText + separator + `Agine: ${annotation}`;
+        const newText = currentText + separator + `Agine: ${annotation.message}`;
         
         setCommentText(newText);
       }

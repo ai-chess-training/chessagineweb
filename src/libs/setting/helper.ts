@@ -39,5 +39,5 @@ export const DEFAULT_BOARD_PANEL_DIMENSIONS = {
 
 export const DEFAULT_PGN_PANEL_DIMENSIONS = {
     width: 550,
-    height: 800
+    height: 200
 }

@@ -39,6 +39,8 @@ import { MoveAnalysis } from "../../hooks/useGameReview";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
 import { Board } from "../../libs/tacticalboard/board";
+import { useLocalStorage } from "usehooks-ts";
+import { DEFAULT_BOARD_ANIMATION_DURATION, DEFAULT_BOARD_FLIPPED, DEFAULT_BOARD_HANGING_PIECE, DEFAULT_BOARD_PANEL_DIMENSIONS, DEFAULT_BOARD_SEMI_PROTECTED_PIECE, DEFAULT_BOARD_SHOW_COORDINATE, DEFAULT_BOARD_SHOW_FEN, DEFAULT_BOARD_SIZE } from "@/libs/setting/helper";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -99,7 +101,10 @@ export default function AiChessboardPanel({
   engineThinking = false,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [isFlipped, setIsFlipped] = useLocalStorage<boolean>(
+    "board_ui_flipped",
+    DEFAULT_BOARD_FLIPPED
+  )
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -107,18 +112,40 @@ export default function AiChessboardPanel({
   const [showArrows, setShowArrows] = useState(
     puzzleMode || playMode ? false : true
   );
-  const [boardSize, setBoardSize] = useState(550);
+  const [boardSize, setBoardSize] = useLocalStorage<number>(
+    "board_ui_size",
+    DEFAULT_BOARD_SIZE
+  )
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showCoordinates, setShowCoordinates] = useState(true);
-  const [animationDuration, setAnimationDuration] = useState(300);
-  const [showFen, setShowFen] = useState(false); // Default to false (hidden)
+  const [showCoordinates, setShowCoordinates] = useLocalStorage<boolean>(
+    "board_show_coordinates",
+    DEFAULT_BOARD_SHOW_COORDINATE
+  )
+  const [animationDuration, setAnimationDuration] = useLocalStorage<number>(
+    "board_ui_animation_duration",
+    DEFAULT_BOARD_ANIMATION_DURATION
+  )
+  
+  const [showFen, setShowFen] = useLocalStorage<boolean>(
+    "board_ui_show_fen",
+    DEFAULT_BOARD_SHOW_FEN
+  )
 
   // Piece highlighting settings
-  const [showHangingPieces, setShowHangingPieces] = useState(false);
-  const [showSemiProtectedPieces, setShowSemiProtectedPieces] = useState(false);
+  const [showHangingPieces, setShowHangingPieces] = useLocalStorage<boolean>(
+    "board_ui_show_hanging_piece",
+    DEFAULT_BOARD_HANGING_PIECE
+  )
+  const [showSemiProtectedPieces, setShowSemiProtectedPieces] = useLocalStorage<boolean>(
+    "board_ui_show_semiprotectedpiece",
+    DEFAULT_BOARD_SEMI_PROTECTED_PIECE
+  )
 
   // Resize functionality
-  const [panelDimensions, setPanelDimensions] = useState({ width: 600, height: 800 });
+  const [panelDimensions, setPanelDimensions] = useLocalStorage<{width: number, height: number}>(
+    "board_ui_show_panel_dimensions",
+    DEFAULT_BOARD_PANEL_DIMENSIONS
+  )
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });

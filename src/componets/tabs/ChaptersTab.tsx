@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Stack, Card, CardContent, Typography, Chip, Box, } from '@mui/material';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { purpleTheme } from '@/theme/theme';
+import { useLocalStorage } from 'usehooks-ts';
+import { DEFAULT_CHAPTER_DIMENIONS } from '@/libs/setting/helper';
 
 interface ResizableChapterSelectorProps {
   chapters: { title: string; url: string; pgn: string }[];
@@ -12,7 +14,10 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
   chapters,
   onChapterSelect,
 }) => {
-  const [dimensions, setDimensions] = useState({ width: 900, height: 500 });
+  const [dimensions, setDimensions] = useLocalStorage<{width: number, height: number}>(
+    "chapter_ui_dimensions",
+    DEFAULT_CHAPTER_DIMENIONS
+  )
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

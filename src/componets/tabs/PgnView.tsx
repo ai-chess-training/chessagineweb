@@ -21,6 +21,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MoveQuality, MoveAnalysis, } from '../../hooks/useGameReview';
 import { getMoveClassificationStyle } from './GameReviewTab';
 import { AgentMessage } from '../../hooks/useAgine';
+import { useLocalStorage } from 'usehooks-ts';
+import { DEFAULT_PGN_PANEL_DIMENSIONS } from '@/libs/setting/helper';
 
 export interface Move {
   from: string;
@@ -82,7 +84,10 @@ const PGNView: React.FC<PGNViewProps> = ({
   currentMoveIndex,
   onAnnotateMove,
 }) => {
-  const [dimensions, setDimensions] = useState({ width: 550, height: 100 });
+  const [dimensions, setDimensions] = useLocalStorage<{width: number, height: number}>(
+    "pgn_view_ui_dimensions",
+    DEFAULT_PGN_PANEL_DIMENSIONS
+  )
   const [isResizing, setIsResizing] = useState(false);
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [selectedMoveIndex, setSelectedMoveIndex] = useState<number | null>(null);

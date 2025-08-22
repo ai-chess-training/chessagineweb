@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Settings as SettingsIcon, Storage, Refresh, Queue } from "@mui/icons-material";
 import { validateFen } from "chess.js";
+import { useLocalStorage } from "usehooks-ts";
 
 export interface CandidateMove {
   uci: string;
@@ -206,8 +207,14 @@ export function ChessDBDisplay({
 }: ChessDBDisplayProps) {
   const [chessDBEnabled, setChessDBEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showScores, setShowScores] = useState(true);
-  const [showWinrates, setShowWinrates] = useState(true);
+  const [showScores, setShowScores] = useLocalStorage<boolean>(
+    "chessdb_ui_show_scores",
+    true
+  )
+  const [showWinrates, setShowWinrates] = useLocalStorage<boolean>(
+    "chessdb_ui_show_winrate",
+    true
+  )
 
   // Calculate maximum possible moves from current position
   const availableMoves = data ? data.length : 0;

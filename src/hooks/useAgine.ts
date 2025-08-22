@@ -15,6 +15,7 @@ import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { Board } from "../libs/tacticalboard/board";
 import { ApiSettings } from "../componets/tabs/ModelSetting";
+import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
 
 // Types
 export interface ChatMessage {
@@ -68,11 +69,6 @@ interface MoveCoachData {
 
 type AnalysisData = EngineLineData | Moves | CandidateMove | MoveCoachData | MoveAnalysis;
 
-// Constants
-const ANALYSIS_DELAY = 300;
-const DEFAULT_ENGINE_DEPTH = 15;
-const DEFAULT_ENGINE_LINES = 3;
-const MAX_PV_MOVES = 6;
 
 // Utility functions
 const isValidFEN = (fen: string): boolean => {

@@ -36,6 +36,8 @@ import {
 import ModelSetting from "./ModelSetting";
 import { ChatMessage } from "../../hooks/useAgine";
 import { calculateChatPrice } from "@/libs/docs/helper";
+import { useLocalStorage } from "usehooks-ts";
+import { DEFAULT_CHAT_AUTOSCROLL, DEFAULT_CHAT_COMPACT_VIEW, DEFAULT_CHAT_FONT_SIZE, DEFAULT_CHAT_DIMENSIONS, DEFAULT_CHAT_SHOW_TIMESTAMP, DEFAULT_CHAT_SPEECH_PITCH, DEFAULT_CHAT_SPEECH_RATE, DEFAULT_CHAT_SPEECH_VOICE, DEFAULT_CHAT_SPEECH_VOLUME, DEFAULT_CHAT_TECHNICAL_INFO } from "@/libs/setting/helper";
 
 interface ChatTabProps {
   sessionMode: boolean;
@@ -137,28 +139,59 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   playMode = false,
   puzzleQuery,
 }) => {
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copySnackbar, setCopySnackbar] = useState(false);
   const [copyMenuAnchor, setCopyMenuAnchor] = useState<null | HTMLElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [fontSize, setFontSize] = useState(14);
-  const [showTimestamps, setShowTimestamps] = useState(true);
-  const [showTechnicalInfo, setTechnicalInfo] = useState(true);
-  const [compactView, setCompactView] = useState(false);
+  const [autoScroll, setAutoScroll] = useLocalStorage<boolean>(
+    "chat_ui_autoscroll",
+    DEFAULT_CHAT_AUTOSCROLL
+  )
+  const [fontSize, setFontSize] = useLocalStorage<number>(
+    "chat_ui_font_size",
+    DEFAULT_CHAT_FONT_SIZE
+  )
+  const [showTimestamps, setShowTimestamps] = useLocalStorage<boolean>(
+    "chat_ui_timestamp",
+    DEFAULT_CHAT_SHOW_TIMESTAMP
+  )
+  const [showTechnicalInfo, setTechnicalInfo] = useLocalStorage<boolean>(
+    "chat_ui_technical_info",
+    DEFAULT_CHAT_TECHNICAL_INFO
+  )
+  const [compactView, setCompactView] = useLocalStorage<boolean>(
+    "chat_ui_compact_view",
+    DEFAULT_CHAT_COMPACT_VIEW
+  )
   
   // Text-to-Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSpeakingId, setCurrentSpeakingId] = useState<string | null>(null);
-  const [speechRate, setSpeechRate] = useState(1);
-  const [speechPitch, setSpeechPitch] = useState(1);
-  const [speechVolume, setSpeechVolume] = useState(0.8);
-  const [selectedVoice, setSelectedVoice] = useState<string>('');
+  const [speechRate, setSpeechRate] = useLocalStorage<number>(
+    "chat_ui_speech_rate",
+    DEFAULT_CHAT_SPEECH_RATE
+  )
+  const [speechPitch, setSpeechPitch] = useLocalStorage<number>(
+    "chat_ui_speech_pitch",
+    DEFAULT_CHAT_SPEECH_PITCH
+  )
+  const [speechVolume, setSpeechVolume] = useLocalStorage<number>(
+    "chat_ui_speech_volume",
+    DEFAULT_CHAT_SPEECH_VOLUME
+  )
+  const [selectedVoice, setSelectedVoice] = useLocalStorage<string>(
+    "chat_ui_speech_voice",
+    DEFAULT_CHAT_SPEECH_VOICE
+  )
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [speechEnabled, setSpeechEnabled] = useState(true);
   
   // Resize functionality
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  const [dimensions, setDimensions] = useLocalStorage<{width: number, height: number}>(
+    "chat_ui_chat_dimensions",
+    DEFAULT_CHAT_DIMENSIONS
+  )
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });

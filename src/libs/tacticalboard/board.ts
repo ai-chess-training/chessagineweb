@@ -1,4 +1,4 @@
-import { BISHOP, Chess, Color, KING, KNIGHT, Move, PAWN, Piece, PieceSymbol, QUEEN, ROOK, Square } from "chess.js";
+import { BISHOP, Chess, Color, KING, KNIGHT, PAWN, Piece, PieceSymbol, QUEEN, ROOK, Square } from "chess.js";
 
 enum PieceType {
   Pawn = 'P',

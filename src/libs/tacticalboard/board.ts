@@ -166,8 +166,7 @@ export class Board {
 
   private detectPinsForColor(attackingColor: PieceColour): void {
     const pins: Pin[] = [];
-    const chess = new Chess(this.fen);
-    
+   
     // Look for all sliding pieces (bishops, rooks, queens) of the attacking color
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
@@ -184,7 +183,7 @@ export class Board {
           const directions = this.getDirectionsForPiece(piece);
           
           for (const [dx, dy] of directions) {
-            const pinResult = this.checkDirectionForPin(x, y, dx, dy, attackingColor, chess);
+            const pinResult = this.checkDirectionForPin(x, y, dx, dy, attackingColor);
             
             if (pinResult) {
               pins.push({
@@ -210,7 +209,7 @@ export class Board {
     }
   }
 
-  private checkDirectionForPin(x: number, y: number, dx: number, dy: number, attackingColor: PieceColour, chess: Chess): 
+  private checkDirectionForPin(x: number, y: number, dx: number, dy: number, attackingColor: PieceColour): 
     {pinnedPiece: string, pinnedSquare: string, targetPiece: string, targetSquare: string, isAbsolute: boolean} | null {
     
     const enemyColor = attackingColor === PieceColour.White ? PieceColour.Black : PieceColour.White;

@@ -129,7 +129,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     gameReport: false,
   });
 
-
   useEffect(() => {
     setUserThoughts(comment || "");
   }, [comment]);
@@ -143,19 +142,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
       });
     }
   }, [chatLoading]);
-
-  // Auto-generate game review when moves are available
-  useEffect(() => {
-    const shouldAutoGenerate = 
-      moves.length > 0 
-
-    if (shouldAutoGenerate) {
-      console.log('Auto-generating game review for moves:', moves.length);
-      generateGameReview(moves);
-    }
-  }, [gameInfo]);
-
- 
 
   const handleChatClick = (review: MoveAnalysis) => {
     setLoadingStates(prev => ({
@@ -188,10 +174,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
       newGameInfo = `${gameInfo}\nGAME REVIEW DETAILS\n${whiteStatsStr}\n${blackStatsStr}`;
     }
     handleGameReviewClick(gameReview!, newGameInfo);
-  };
-
-  const handleManualRegenerate = () => {
-    generateGameReview(moves);
   };
   
   const getStatistics = () => {
@@ -231,56 +213,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     return gameReview[currentMoveIndex - 1];
   }, [gameReview, currentMoveIndex]);
 
-  // Show loading state while auto-generating
-  if (gameReviewLoading) {
-    return (
-      <Box sx={{ bgcolor: "#000", p: 2 }}>
-        <Stack spacing={2} alignItems="center">
-          <Sparkles size={32} color="#666" />
-          <Typography variant="h6" sx={{ color: "#fff", textAlign: "center" }}>
-            Analyzing Game with AI
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#999", textAlign: "center" }}>
-            Generating detailed move-by-move analysis...
-          </Typography>
-
-          <Box sx={{ width: "100%", maxWidth: 300 }}>
-            <LinearProgress
-              variant="determinate"
-              value={gameReviewProgress}
-              sx={{
-                bgcolor: "#333",
-                "& .MuiLinearProgress-bar": { bgcolor: "#666" },
-              }}
-            />
-            <Typography variant="caption" sx={{ color: "#999", mt: 1, display: "block", textAlign: "center" }}>
-              {`${Math.round(gameReviewProgress)}% Complete`}
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
-    );
-  }
-
-  // Show empty state only when no moves are available
   if (!gameReview || gameReview.length === 0) {
-    if (moves.length === 0) {
-      return (
-        <Box sx={{ bgcolor: "#000", p: 2 }}>
-          <Stack spacing={2} alignItems="center">
-            <Sparkles size={32} color="#666" />
-            <Typography variant="h6" sx={{ color: "#fff", textAlign: "center" }}>
-              AI Game Analysis
-            </Typography>
-            <Typography variant="body2" sx={{ color: "#999", textAlign: "center" }}>
-              Play some moves to get started with AI analysis
-            </Typography>
-          </Stack>
-        </Box>
-      );
-    }
-
-    // If we have moves but no review and not loading, show regenerate option
     return (
       <Box sx={{ bgcolor: "#000", p: 2 }}>
         <Stack spacing={2} alignItems="center">
@@ -289,23 +222,41 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             AI Game Analysis
           </Typography>
           <Typography variant="body2" sx={{ color: "#999", textAlign: "center" }}>
-            Analysis failed to generate automatically
+            Generate detailed move-by-move analysis with AI insights
           </Typography>
 
           <Button
             variant="contained"
-            onClick={handleManualRegenerate}
-            startIcon={<PlayCircle size={18} />}
+            onClick={() => generateGameReview(moves)}
+            disabled={gameReviewLoading || moves.length === 0}
+            startIcon={!gameReviewLoading && <PlayCircle size={18} />}
             sx={{
               bgcolor: "#333",
               color: "#fff",
               px: 3,
               py: 1,
               "&:hover": { bgcolor: "#444" },
+              "&:disabled": { bgcolor: "#222", color: "#666" },
             }}
           >
-            Retry Analysis
+            {gameReviewLoading ? "Analyzing..." : "Generate Analysis"}
           </Button>
+
+          {gameReviewLoading && (
+            <Box sx={{ width: "100%", maxWidth: 300 }}>
+              <LinearProgress
+                variant="determinate"
+                value={gameReviewProgress}
+                sx={{
+                  bgcolor: "#333",
+                  "& .MuiLinearProgress-bar": { bgcolor: "#666" },
+                }}
+              />
+              <Typography variant="caption" sx={{ color: "#999", mt: 1, display: "block", textAlign: "center" }}>
+                {`${Math.round(gameReviewProgress)}% Complete`}
+              </Typography>
+            </Box>
+          )}
         </Stack>
       </Box>
     );
@@ -317,26 +268,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   return (
     <Box sx={{ bgcolor: "#000", p: 2 }}>
       <Stack spacing={2}>
-        {/* Header with regenerate option */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" sx={{ color: "#fff" }}>
-            AI Game Analysis
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleManualRegenerate}
-            startIcon={<PlayCircle size={16} />}
-            sx={{
-              borderColor: "#333",
-              color: "#fff",
-              "&:hover": { borderColor: "#555", bgcolor: "#222" },
-            }}
-          >
-            Regenerate
-          </Button>
-        </Box>
-
         {/* Current Move Classification */}
         {currentMove && (
           <Card sx={{ bgcolor: "#111", border: "1px solid #333" }}>

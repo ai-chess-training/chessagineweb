@@ -15,6 +15,16 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+  Chip,
+  Alert,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -23,8 +33,13 @@ import {
   Upload as UploadIcon,
   Refresh as RefreshIcon,
   PlayArrow as PlayIcon,
+  Save as SaveIcon,
+  History as HistoryIcon,
+  Delete as DeleteIcon,
+  Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
+import { useLocalStorage } from "usehooks-ts";
 import useAgine from "@/hooks/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import { TabPanel } from "@/componets/tabs/tab";
@@ -39,8 +54,26 @@ import GameInfoTab from "@/componets/tabs/GameInfoTab";
 import PGNView from "@/componets/tabs/PgnView";
 import LegalMoveTab from "@/componets/tabs/LegalMoveTab";
 import ResizableChapterSelector from "@/componets/tabs/ChaptersTab";
-import { extractMovesWithComments, extractGameInfo, getValidGameId, fetchLichessGame, parsePgnChapters } from "@/libs/game/helper";
+import {
+  extractMovesWithComments,
+  extractGameInfo,
+  getValidGameId,
+  fetchLichessGame,
+  parsePgnChapters,
+} from "@/libs/game/helper";
 import { purpleTheme } from "@/theme/theme";
+import { MoveAnalysis } from "@/hooks/useGameReview";
+
+// Types for game review history
+interface SavedGameReview {
+  id: string;
+  gameInfo: Record<string, string>;
+  pgn: string;
+  gameReview: MoveAnalysis[];
+  moves: string[];
+  savedAt: string;
+  title?: string;
+}
 
 export default function PGNUploaderPage() {
   const session = useSession();
@@ -63,6 +96,14 @@ export default function PGNUploaderPage() {
   const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
   const [loadingGame, setLoadingGame] = useState(false);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState(0);
+
+  // Game review history state
+  const [gameReviewHistory, setGameReviewHistory] = useLocalStorage<
+    SavedGameReview[]
+  >("chess-game-review-history", []);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveTitle, setSaveTitle] = useState("");
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   const {
     setLlmAnalysisResult,
@@ -132,6 +173,79 @@ export default function PGNUploaderPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentMoveIndex, moves]);
+
+  // Game review history functions
+  const saveGameReview = () => {
+    if (!gameReview.length) {
+      alert("No game review to save. Please generate a review first.");
+      return;
+    }
+    setSaveDialogOpen(true);
+  };
+
+  const handleSaveConfirm = () => {
+    const gameTitle = saveTitle.trim() || generateGameTitle();
+    const savedGame: SavedGameReview = {
+      id: Date.now().toString(),
+      gameInfo,
+      pgn: pgnText,
+      gameReview,
+      moves,
+      savedAt: new Date().toISOString(),
+      title: gameTitle,
+    };
+
+    setGameReviewHistory((prev) => [savedGame, ...prev]);
+    setSaveDialogOpen(false);
+    setSaveTitle("");
+    alert("Game review saved successfully!");
+  };
+
+  const generateGameTitle = () => {
+    const white = gameInfo.White || "Unknown";
+    const black = gameInfo.Black || "Unknown";
+    const date = gameInfo.Date || new Date().toLocaleDateString();
+    return `${white} vs ${black} - ${date}`;
+  };
+
+  const loadFromHistory = (savedGame: SavedGameReview) => {
+    try {
+      setPgnText(savedGame.pgn);
+      setMoves(savedGame.moves);
+      setGameInfo(savedGame.gameInfo);
+      setGameReview(savedGame.gameReview);
+
+      const parsed = extractMovesWithComments(savedGame.pgn);
+      setParsedMovesWithComments(parsed);
+      setCurrentMoveIndex(0);
+
+      const resetGame = new Chess();
+      setGame(resetGame);
+      setFen(resetGame.fen());
+      setLlmAnalysisResult(null);
+      setComment("");
+
+      setHistoryDialogOpen(false);
+      setInputsVisible(false);
+    } catch (err) {
+      console.error("Error loading game from history:", err);
+      alert("Error loading saved game");
+    }
+  };
+
+  const deleteFromHistory = (id: string) => {
+    setGameReviewHistory((prev) => prev.filter((game) => game.id !== id));
+  };
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   if (!session.isLoaded) {
     return (
@@ -389,6 +503,47 @@ export default function PGNUploaderPage() {
             </Box>
 
             <Stack spacing={3}>
+              {/* Game Review History Section */}
+              {gameReviewHistory.length > 0 && (
+                <>
+                  <Box>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: purpleTheme.text.accent,
+                        mb: 2,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <HistoryIcon sx={{ mr: 1 }} />
+                      Saved Game Reviews
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={() => setHistoryDialogOpen(true)}
+                      startIcon={<HistoryIcon />}
+                      sx={{
+                        borderColor: purpleTheme.secondary,
+                        color: purpleTheme.text.primary,
+                        "&:hover": {
+                          borderColor: purpleTheme.accent,
+                          backgroundColor: `${purpleTheme.accent}20`,
+                        },
+                        borderRadius: 2,
+                        py: 1.5,
+                        textTransform: "none",
+                        fontSize: "1rem",
+                      }}
+                    >
+                      Load from History ({gameReviewHistory.length} saved)
+                    </Button>
+                  </Box>
+                  <Divider sx={{ borderColor: purpleTheme.secondary }} />
+                </>
+              )}
+
               {/* Lichess Study Section */}
               <Box>
                 <Typography
@@ -645,37 +800,64 @@ export default function PGNUploaderPage() {
                 currentMoveIndex={currentMoveIndex}
               />
 
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setInputsVisible(true);
-                  setMoves([]);
-                  setPgnText("");
-                  setStudyUrl("");
-                  setGameUrl("");
-                  setGameInfo({});
-                  setLlmAnalysisResult(null);
-                  setComment("");
-                  const reset = new Chess();
-                  setGame(reset);
-                  setFen(reset.fen());
-                }}
-                startIcon={<RefreshIcon />}
-                sx={{
-                  borderColor: purpleTheme.secondary,
-                  color: purpleTheme.text.primary,
-                  "&:hover": {
-                    borderColor: purpleTheme.accent,
-                    backgroundColor: `${purpleTheme.accent}20`,
-                  },
-                  borderRadius: 2,
-                  px: 3,
-                  py: 1.5,
-                  textTransform: "none",
-                }}
-              >
-                Load New Game
-              </Button>
+              <Stack direction="row" spacing={2}>
+                {/* Save Game Review Button */}
+                <Button
+                  variant="contained"
+                  onClick={saveGameReview}
+                  startIcon={<SaveIcon />}
+                  disabled={!gameReview.length}
+                  sx={{
+                    backgroundColor: purpleTheme.accent,
+                    "&:hover": {
+                      backgroundColor: `${purpleTheme.accent}dd`,
+                    },
+                    "&:disabled": {
+                      backgroundColor: purpleTheme.secondary,
+                      color: purpleTheme.text.secondary,
+                    },
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1.5,
+                    textTransform: "none",
+                  }}
+                >
+                  Save Game
+                </Button>
+
+                {/* Load New Game Button */}
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setInputsVisible(true);
+                    setMoves([]);
+                    setPgnText("");
+                    setStudyUrl("");
+                    setGameUrl("");
+                    setGameInfo({});
+                    setLlmAnalysisResult(null);
+                    setComment("");
+                    const reset = new Chess();
+                    setGame(reset);
+                    setFen(reset.fen());
+                  }}
+                  startIcon={<RefreshIcon />}
+                  sx={{
+                    borderColor: purpleTheme.secondary,
+                    color: purpleTheme.text.primary,
+                    "&:hover": {
+                      borderColor: purpleTheme.accent,
+                      backgroundColor: `${purpleTheme.accent}20`,
+                    },
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1.5,
+                    textTransform: "none",
+                  }}
+                >
+                  Load New Game
+                </Button>
+              </Stack>
             </Stack>
           </Box>
         )}
@@ -683,8 +865,6 @@ export default function PGNUploaderPage() {
         {!inputsVisible && (
           <Box sx={{ flex: 1 }}>
             <Stack spacing={3}>
-            
-
               {moves.length > 0 && (
                 <Card
                   sx={{
@@ -739,7 +919,7 @@ export default function PGNUploaderPage() {
                   <Box sx={{ p: 3 }}>
                     <TabPanel value={analysisTab} index={0}>
                       <Stack spacing={3}>
-                        {/* Stockfish Analysis */}
+                        {/* Game Review */}
                         <Accordion
                           expanded={activeAnalysisTab === 0}
                           onChange={() =>
@@ -803,6 +983,7 @@ export default function PGNUploaderPage() {
                             />
                           </AccordionDetails>
                         </Accordion>
+
                         <Accordion
                           expanded={activeAnalysisTab === 1}
                           onChange={() =>
@@ -972,6 +1153,7 @@ export default function PGNUploaderPage() {
                             />
                           </AccordionDetails>
                         </Accordion>
+
                         <Accordion
                           expanded={activeAnalysisTab === 4}
                           onChange={() =>
@@ -1059,9 +1241,249 @@ export default function PGNUploaderPage() {
             </Stack>
           </Box>
         )}
-          
       </Stack>
-      
+
+      {/* Save Game Dialog */}
+      <Dialog
+        open={saveDialogOpen}
+        onClose={() => setSaveDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: purpleTheme.background.paper,
+            borderRadius: 3,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: purpleTheme.text.primary }}>
+          Save Game Review
+        </DialogTitle>
+        <DialogContent>
+          <div>
+            <Typography
+            variant="body2"
+            component="div"
+            sx={{ color: purpleTheme.text.secondary, mb: 2 }}
+          >
+            Give your game review a title for easy identification
+          </Typography>
+          </div>
+          
+          
+          <TextField
+            autoFocus
+            fullWidth
+            label="Game Title"
+            value={saveTitle}
+            onChange={(e) => setSaveTitle(e.target.value)}
+            placeholder={generateGameTitle()}
+            sx={{
+              mt: 1,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: purpleTheme.secondary,
+                },
+                "&:hover fieldset": {
+                  borderColor: purpleTheme.accent,
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: purpleTheme.accent,
+                },
+              },
+            }}
+            slotProps={{
+              inputLabel: { sx: { color: purpleTheme.text.secondary } },
+              input: { sx: { color: purpleTheme.text.primary } },
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setSaveDialogOpen(false)}
+            sx={{ color: purpleTheme.text.secondary }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveConfirm}
+            variant="contained"
+            sx={{
+              backgroundColor: purpleTheme.accent,
+              "&:hover": { backgroundColor: `${purpleTheme.accent}dd` },
+            }}
+          >
+            Save Review
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Game History Dialog */}
+      <Dialog
+        open={historyDialogOpen}
+        onClose={() => setHistoryDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              backgroundColor: purpleTheme.background.paper,
+              borderRadius: 3,
+              maxHeight: "80vh",
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: purpleTheme.text.primary }}>
+          Saved Game Reviews
+        </DialogTitle>
+        <DialogContent>
+          {gameReviewHistory.length === 0 ? (
+            <Alert
+              severity="info"
+              sx={{
+                backgroundColor: `${purpleTheme.accent}20`,
+                color: purpleTheme.text.primary,
+                "& .MuiAlert-icon": {
+                  color: purpleTheme.accent,
+                },
+              }}
+            >
+              No saved game reviews yet. Analyze a game and save the review to
+              build your history!
+            </Alert>
+          ) : (
+            <List sx={{ width: "100%" }}>
+              {gameReviewHistory.map((savedGame) => (
+                <ListItem
+                  key={savedGame.id}
+                  sx={{
+                    backgroundColor: purpleTheme.background.card,
+                    borderRadius: 2,
+                    mb: 1,
+                    "&:hover": {
+                      backgroundColor: `${purpleTheme.secondary}20`,
+                    },
+                  }}
+                  secondaryAction={
+                    <Stack direction="row" spacing={1}>
+                      <IconButton
+                        onClick={() => loadFromHistory(savedGame)}
+                        sx={{
+                          color: purpleTheme.accent,
+                          "&:hover": {
+                            backgroundColor: `${purpleTheme.accent}20`,
+                          },
+                        }}
+                      >
+                        <ViewIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => deleteFromHistory(savedGame.id)}
+                        sx={{
+                          color: "#f44336",
+                          "&:hover": {
+                            backgroundColor: "#f4433620",
+                          },
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Stack>
+                  }
+                >
+                  <ListItemText
+                    primary={
+                      <div>
+                        <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{
+                          color: purpleTheme.text.primary,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {savedGame.title}
+                      </Typography>
+                      </div>
+                    }
+                    secondary={
+                      <Box component="div">
+                        <Typography
+                          variant="body2"
+                          component="span"
+                          sx={{ color: purpleTheme.text.secondary, display: "block" }}
+                        >
+                          Saved: {formatDate(savedGame.savedAt)}
+                        </Typography>
+                        <Box
+                          sx={{
+                            mt: 1,
+                            display: "flex",
+                            gap: 1,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {savedGame.gameInfo.Event && (
+                            <Chip
+                              label={savedGame.gameInfo.Event}
+                              size="small"
+                              sx={{
+                                backgroundColor: `${purpleTheme.accent}30`,
+                                color: purpleTheme.text.primary,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          )}
+                          <Chip
+                            label={`${
+                              savedGame.gameInfo.White || "unknown"
+                            } vs ${savedGame.gameInfo.Black || "unknown"}`}
+                            size="small"
+                            sx={{
+                              backgroundColor: `${purpleTheme.accent}30`,
+                              color: purpleTheme.text.primary,
+                              fontSize: "0.75rem",
+                            }}
+                          />
+                          {savedGame.gameInfo.Result && (
+                            <Chip
+                              label={`Result: ${savedGame.gameInfo.Result}`}
+                              size="small"
+                              sx={{
+                                backgroundColor: `${purpleTheme.secondary}30`,
+                                color: purpleTheme.text.primary,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          )}
+                          <Chip
+                            label={`${savedGame.moves.length} moves`}
+                            size="small"
+                            sx={{
+                              backgroundColor: `${purpleTheme.primary}30`,
+                              color: purpleTheme.text.primary,
+                              fontSize: "0.75rem",
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setHistoryDialogOpen(false)}
+            sx={{ color: purpleTheme.text.secondary }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

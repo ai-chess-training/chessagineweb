@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon, VolumeUp, VolumeOff } from "@mui/icons-material";
+import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon, VolumeUp, VolumeOff, Visibility, DeleteOutline } from "@mui/icons-material";
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import { Delete, DeleteIcon } from "lucide-react";
+import { BookmarkAdd } from "@mui/icons-material";
+import { Bookmark } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
+import { Chessboard } from "react-chessboard";
 import {
   Stack,
   Box,
@@ -32,6 +36,9 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Card,
+  CardContent,
+  CardActions
 } from "@mui/material";
 import ModelSetting from "./ModelSetting";
 import { ChatMessage } from "../../hooks/useAgine";
@@ -62,6 +69,15 @@ interface ChatTabProps {
   ) => void;
   abortChatMessage?: () => void;
 }
+
+interface SavedPosition {
+  id: string;
+  fen: string;
+  analysis: string;
+  timestamp: Date;
+  title?: string;
+}
+
 
 const sessionPrompts = [
   "What do you think about this position?",
@@ -144,6 +160,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copySnackbar, setCopySnackbar] = useState(false);
   const [copyMenuAnchor, setCopyMenuAnchor] = useState<null | HTMLElement>(null);
+  const [chessboardModalOpen, setChessboardModalOpen] = useState(false);
+  const [selectedFen, setSelectedFen] = useState<string>("");
+  
+  const [savedPositions, setSavedPositions] = useLocalStorage<SavedPosition[]>(
+    "agine_position_library",
+    []
+  );
+ 
+  const [libraryOpen, setLibraryOpen] = useState(false);
+
   const [autoScroll, setAutoScroll] = useLocalStorage<boolean>(
     "chat_ui_autoscroll",
     DEFAULT_CHAT_AUTOSCROLL
@@ -241,6 +267,35 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     };
   }, []);
 
+  // Position Library functions
+  const savePositionToLibrary = (message: ChatMessage) => {
+    if (!message.fen || message.role !== 'assistant') return;
+    
+    const newPosition: SavedPosition = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      fen: message.fen,
+      analysis: message.content,
+      timestamp: message.timestamp,
+      title: `Analysis from ${message.timestamp.toLocaleDateString()}`
+    };
+    
+    setSavedPositions(prev => [newPosition, ...prev]);
+  };
+
+  const deletePositionFromLibrary = (positionId: string) => {
+    setSavedPositions(prev => prev.filter(pos => pos.id !== positionId));
+  };
+
+  const viewPositionFromLibrary = (position: SavedPosition) => {
+    setSelectedFen(position.fen);
+    setChessboardModalOpen(true);
+    setLibraryOpen(false);
+  };
+
+  const isPositionSaved = (fen: string) => {
+    return savedPositions.some(pos => pos.fen === fen);
+  };
+
   // Text-to-Speech functions
   const stripMarkdown = (text: string): string => {
     return text
@@ -305,6 +360,25 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       setIsSpeaking(false);
       setCurrentSpeakingId(null);
     }
+  };
+
+  // Chessboard modal functions
+  const openChessboardModal = (fen: string) => {
+    setSelectedFen(fen);
+    setChessboardModalOpen(true);
+  };
+
+  const openLibraryModal = () => {
+    setLibraryOpen(true);
+  }
+
+  const closeLibraryModal = () => {
+    setLibraryOpen(false);
+  }
+
+  const closeChessboardModal = () => {
+    setChessboardModalOpen(false);
+    setSelectedFen("");
   };
 
   // Resize handler
@@ -473,6 +547,139 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     </Box>
   );
 
+  const libraryContent = (
+    <Box sx={{ width: 400, height: "100%" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 2,
+          borderBottom: `1px solid rgba(255,255,255,0.1)`,
+          backgroundColor: "#1a1a1a",
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ color: "white", fontWeight: 600 }}>
+          Position Library ({savedPositions.length})
+        </Typography>
+      </Box>
+      
+      <Box sx={{ 
+        height: "calc(100% - 80px)", 
+        overflowY: "auto",
+        backgroundColor: "#1a1a1a",
+        p: 1,
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: '#2a2a2a',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: '#555',
+          borderRadius: '3px',
+          '&:hover': {
+            background: '#666',
+          },
+        },
+      }}>
+        {savedPositions.length === 0 ? (
+          <Box sx={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            height: "100%",
+            p: 2
+          }}>
+            <Bookmark sx={{ fontSize: 48, color: "grey.600", mb: 2 }} />
+            <Typography variant="body2" sx={{ color: "grey.400", textAlign: "center" }}>
+              No saved positions yet
+            </Typography>
+            <Typography variant="caption" sx={{ color: "grey.500", textAlign: "center", mt: 1 }}>
+              Save assistant messages with positions to build your analysis library
+            </Typography>
+          </Box>
+        ) : (
+          <Stack spacing={1}>
+            {savedPositions.map((position) => (
+              <Card 
+                key={position.id}
+                sx={{ 
+                  backgroundColor: "#2a2a2a",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "#333",
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 1.5, pb: 1 }}>
+                  <Typography variant="body2" sx={{ color: "white", mb: 1, fontWeight: 500 }}>
+                    {position.title}
+                  </Typography>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: "grey.400",
+                      display: "block",
+                      mb: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      lineHeight: 1.3
+                    }}
+                  >
+                    {position.analysis}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "grey.500" }}>
+                    {new Date(position.timestamp).toLocaleDateString()}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ p: 1, pt: 0, justifyContent: "space-between" }}>
+                  <Button
+                    size="small"
+                    onClick={() => viewPositionFromLibrary(position)}
+                    sx={{ color: "#9c27b0", fontSize: "11px" }}
+                  >
+                    View Position
+                  </Button>
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deletePositionFromLibrary(position.id);
+                    }}
+                    size="small"
+                    sx={{ 
+                      color: "rgba(255, 255, 255, 0.5)",
+                      "&:hover": {
+                        color: "#ff6b6b",
+                        backgroundColor: "rgba(255, 107, 107, 0.1)"
+                      }
+                    }}
+                  >
+                    <DeleteOutline />
+                  </IconButton>
+                </CardActions>
+              </Card>
+            ))}
+          </Stack>
+        )}
+      </Box>
+      
+      <Box sx={{ p: 2, borderTop: `1px solid rgba(255,255,255,0.1)`, backgroundColor: "#1a1a1a" }}>
+        <Typography variant="caption" sx={{ color: "grey.400", fontStyle: "italic" }}>
+         Your local saved position analyses
+        </Typography>
+      </Box>
+    </Box>
+  );
+
   return (
     <Box
       ref={containerRef}
@@ -522,6 +729,41 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 size="small"
               >
                 <MenuBook fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Position Library" arrow>
+              <IconButton
+                onClick={openLibraryModal}
+                sx={{ 
+                  color: savedPositions.length > 0 ? "#9c27b0" : "white", 
+                  p: 0.5,
+                  position: "relative"
+                }}
+                size="small"
+              >
+                <Bookmark fontSize="small" />
+                {savedPositions.length > 0 && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -2,
+                      right: -2,
+                      width: 12,
+                      height: 12,
+                      backgroundColor: "#9c27b0",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "8px",
+                      fontWeight: "bold",
+                      color: "white"
+                    }}
+                  >
+                    {savedPositions.length > 9 ? "9+" : savedPositions.length}
+                  </Box>
+                )}
               </IconButton>
             </Tooltip>
 
@@ -838,6 +1080,50 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         gap: 0.5,
                       }}
                     >
+                       {/* Save to Library icon - only show for assistant messages with FEN */}
+                      {message.fen && (
+                        <Tooltip title={isPositionSaved(message.fen) ? "Position already saved" : "Save to position library"} arrow>
+                          <IconButton
+                            onClick={() => savePositionToLibrary(message)}
+                            disabled={isPositionSaved(message.fen)}
+                            sx={{
+                              color: isPositionSaved(message.fen) ? "rgba(156, 39, 176, 0.5)" : "rgba(255, 255, 255, 0.7)",
+                              backgroundColor: "rgba(0, 0, 0, 0.2)",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.4)",
+                                color: isPositionSaved(message.fen) ? "rgba(156, 39, 176, 0.7)" : "#9c27b0",
+                              },
+                              "&:disabled": {
+                                color: "rgba(156, 39, 176, 0.5)",
+                              }
+                            }}
+                            size="small"
+                          >
+                            <BookmarkAdd fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      {/* Eye icon for viewing chessboard - only show if FEN exists */}
+                      {message.fen && (
+                        <Tooltip title="View position on board" arrow>
+                          <IconButton
+                            onClick={() => openChessboardModal(message.fen)}
+                            sx={{
+                              color: "rgba(255, 255, 255, 0.7)",
+                              backgroundColor: "rgba(0, 0, 0, 0.2)",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.4)",
+                                color: "white",
+                              },
+                            }}
+                            size="small"
+                          >
+                            <Visibility fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      
                       {speechEnabled && (
                         <Tooltip title={currentSpeakingId === message.id && isSpeaking ? "Stop speaking" : "Listen to message"} arrow>
                           <IconButton
@@ -1120,6 +1406,110 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           }} 
         />
       </Box>
+
+      {/* Library Modal */}
+      <Dialog
+        open={libraryOpen}
+        onClose={closeLibraryModal}
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            backgroundColor: "#1a1a1a",
+            color: "white",
+            minWidth: 450,
+            maxHeight: "80vh"
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          pb: 1
+        }}>
+         Agine Position Library
+        </DialogTitle>
+        <DialogContent sx={{ p: 2 }}>
+          {libraryContent}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeLibraryModal} sx={{ color: "#9c27b0" }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Chessboard Modal */}
+      <Dialog
+        open={chessboardModalOpen}
+        onClose={closeChessboardModal}
+        maxWidth="md"
+       PaperProps={{
+          sx: {
+            backgroundColor: "#1a1a1a",
+            color: "white",
+            minWidth: 450,
+            maxHeight: "80vh"
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          pb: 1
+        }}>
+          <Typography variant="h6" sx={{ color: "white" }}>
+            Position View
+          </Typography>
+          <IconButton onClick={closeChessboardModal} sx={{ color: "white" }}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2 }}>
+          <Box sx={{ 
+            display: "flex", 
+            justifyContent: "center",
+            maxWidth: 400,
+            mx: "auto"
+          }}>
+            {selectedFen && (
+              <Chessboard 
+                position={selectedFen}
+                arePiecesDraggable={false}
+                boardWidth={350}
+                customBoardStyle={{
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                }}
+              />
+            )}
+          </Box>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              color: "grey.400", 
+              display: "block", 
+              textAlign: "center", 
+              mt: 2,
+              fontFamily: "monospace"
+            }}
+          >
+            FEN: {selectedFen}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => copyToClipboard(selectedFen)} 
+            sx={{ color: "#9c27b0" }}
+          >
+            Copy FEN
+          </Button>
+          <Button onClick={closeChessboardModal} sx={{ color: "#9c27b0" }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Settings Dialog */}
       <Dialog

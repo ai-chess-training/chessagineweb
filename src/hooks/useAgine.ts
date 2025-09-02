@@ -23,6 +23,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   maxTokens?: number,
   provider?: string,
+  fen: string,
   model?: string,
   content: string;
   timestamp: Date;
@@ -79,6 +80,7 @@ const isValidFEN = (fen: string): boolean => {
 
 const createChatMessage = (
   role: "user" | "assistant", 
+  fen: string,
   content: string,
   maxTokens?: number,
   provider?: string,
@@ -89,6 +91,7 @@ const createChatMessage = (
   role,
   maxTokens,
   provider,
+  fen,
   model,
   content,
   timestamp: new Date(),
@@ -346,7 +349,7 @@ export default function useAgine(fen: string) {
       abortControllerRef.current = null;
 
       updateState({ chatLoading: false });
-      addChatMessage(createChatMessage("assistant", "Message generation was cancelled."));
+      addChatMessage(createChatMessage("assistant", "","Message generation was cancelled.", ));
     }
   }, [updateState, addChatMessage]);
 
@@ -585,7 +588,7 @@ ${board.toString()}
     ): Promise<void> => {
       if (!state.chatInput.trim()) return;
 
-      const userMessage = createChatMessage("user", state.chatInput);
+      const userMessage = createChatMessage("user", fen, state.chatInput);
       const currentInput = state.chatInput;
       
       updateState({ 
@@ -618,7 +621,7 @@ ${board.toString()}
           : "position";
           
         const result = await makeApiRequest(currentFen, query, mode);
-        const assistantMessage = createChatMessage("assistant", result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
+        const assistantMessage = createChatMessage("assistant", fen,result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
 
         updateState({ 
           chatMessages: [...state.chatMessages, userMessage, assistantMessage],
@@ -629,6 +632,7 @@ ${board.toString()}
         if (!(error instanceof Error && error.message === "Request cancelled")) {
           const errorMessage = createChatMessage(
             "assistant",
+            "",
             "Sorry, there was an error processing your message. Please try again.",
             undefined,
             undefined,
@@ -980,9 +984,9 @@ ${board.toString()}
             break;
         }
 
-        const userMessage = createChatMessage("user", messageContent);
+        const userMessage = createChatMessage("user", fen, messageContent);
         const result = await makeApiRequest(currentFen, query, analysisType === "annotation" ? "annotation" : "position");
-        const assistantMessage = createChatMessage("assistant", result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
+        const assistantMessage = createChatMessage("assistant", fen, result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
 
 
         if(analysisType === "moveCoach"){
@@ -1003,6 +1007,7 @@ ${board.toString()}
         if (!(error instanceof Error && error.message === "Request cancelled")) {
           const errorMessage = createChatMessage(
             "assistant",
+            "",
             `Sorry, there was an error analyzing the ${analysisType}. Please try again.`,
             undefined,
             undefined,
@@ -1108,9 +1113,9 @@ Be concise but thorough, and use clear chess language.`;
 
         query += `\n\nAnalyze this move from different points of view.`;
 
-        const userMessage = createChatMessage("user", `Analyze move: ${move}`);
+        const userMessage = createChatMessage("user", fen, `Analyze move: ${move}`);
         const result = await makeApiRequest(futureFen, query, "position");
-        const assistantMessage = createChatMessage("assistant", result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
+        const assistantMessage = createChatMessage("assistant", fen, result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
 
 
         updateState({ 
@@ -1122,6 +1127,7 @@ Be concise but thorough, and use clear chess language.`;
         if (!(error instanceof Error && error.message === "Request cancelled")) {
           const errorMessage = createChatMessage(
             "assistant",
+            "",
             "Sorry, there was an error analyzing the move. Please try again."
           );
           updateState({ 
@@ -1182,6 +1188,7 @@ Be concise but thorough, and use clear chess language.`;
 
       const summaryMessage = createChatMessage(
         "user",
+        fen,
         `Starting game review analysis for ${keyMoves.length} key moves from: ${gameInfo}`
       );
       const chathistory: ChatMessage[] = state.chatMessages;
@@ -1205,6 +1212,7 @@ Be concise but thorough, and use clear chess language.`;
 
       const finalMessage = createChatMessage(
         "assistant",
+        "",
         `Game review complete! Analyzed ${keyMoves.length} key moves. The analysis above covers the most important moments in your game, focusing on critical mistakes and excellent moves. Review each analysis to understand the key concepts and improve your play.`,
         undefined,
         undefined,

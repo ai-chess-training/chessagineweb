@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Send, MenuBook, Close, ContentCopy, History, Stop, Settings as SettingsIcon, VolumeUp, VolumeOff, Visibility, DeleteOutline } from "@mui/icons-material";
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import { Delete, DeleteIcon } from "lucide-react";
 import { BookmarkAdd } from "@mui/icons-material";
 import { Bookmark } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";

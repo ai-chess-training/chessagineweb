@@ -80,6 +80,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     const handleDepthChange = (newDepth: number) => {
         setIsTransitioning(true);
         setEngineDepth(newDepth);
+        setSettingsOpen(false);
         
         // Restart analysis with new settings
         setTimeout(() => {
@@ -93,6 +94,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     const handleLinesChange = (newLines: number) => {
         setIsTransitioning(true);
         setEngineLines(newLines);
+        setSettingsOpen(false);
         
         // Restart analysis with new settings
         setTimeout(() => {
@@ -106,6 +108,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     const handleEngineChange = (newEngine: EngineName) => {
         setIsTransitioning(true);
         setEnginePicked(newEngine);
+        setSettingsOpen(false);
         
         // Restart analysis with new engine
         setTimeout(() => {
@@ -114,11 +117,13 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
             }
             setIsTransitioning(false);
         }, 300);
+
     };
 
     const handleEngineToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
         setIsTransitioning(true);
         setEngineEnabled(event.target.checked);
+
         
         if (event.target.checked) {
             setTimeout(() => {

@@ -644,9 +644,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   <Box sx={{ display: "flex", gap: 0.5 }}>
                     <Tooltip title="View position on board" arrow>
                           <IconButton
-                            onClick={() => openChessboardModal(position.fen)}
+                            onClick={() => viewPositionFromLibrary(position)}
                             sx={{
                               color: "rgba(255, 255, 255, 0.7)",
+                              backgroundColor: "rgba(0, 0, 0, 0.2)",
                               "&:hover": {
                                 backgroundColor: "rgba(0, 0, 0, 0.4)",
                                 color: "white",

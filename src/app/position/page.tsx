@@ -247,7 +247,7 @@ export default function PositionPage() {
                             fontWeight: 600,
                           }}
                         >
-                          Stockfish 17 NNUE Analysis
+                          Stockfish Analysis
                         </Typography>
                       </Box>
                     </AccordionSummary>

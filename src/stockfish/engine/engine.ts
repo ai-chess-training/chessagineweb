@@ -1,6 +1,7 @@
 /** The name of an available engine. */
 export enum EngineName {
     Stockfish17 = 'stockfish_17',
+    Stockfish17Point = 'stockfish_17_point',
     Stockfish16 = 'stockfish_16',
     Stockfish11 = 'stockfish_11',
 }

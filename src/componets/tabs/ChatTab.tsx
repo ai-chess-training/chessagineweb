@@ -641,14 +641,42 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   </Typography>
                 </CardContent>
                 <CardActions sx={{ p: 1, pt: 0, justifyContent: "space-between" }}>
-                  <Button
-                    size="small"
-                    onClick={() => viewPositionFromLibrary(position)}
-                    sx={{ color: "#9c27b0", fontSize: "11px" }}
-                  >
-                    View Position
-                  </Button>
-                  <IconButton
+                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                    <Tooltip title="View position on board" arrow>
+                          <IconButton
+                            onClick={() => openChessboardModal(position.fen)}
+                            sx={{
+                              color: "rgba(255, 255, 255, 0.7)",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.4)",
+                                color: "white",
+                              },
+                            }}
+                            size="small"
+                          >
+                            <Visibility fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                    <Tooltip title="Copy analysis" arrow>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyMessage(position.analysis);
+                        }}
+                        size="small"
+                        sx={{ 
+                          color: "rgba(255, 255, 255, 0.7)",
+                          "&:hover": {
+                            backgroundColor: "rgba(0, 0, 0, 0.4)",
+                            color: "white",
+                          }
+                        }}
+                      >
+                        <ContentCopy fontSize="inherit" />
+                      </IconButton>
+                    </Tooltip>
+                     <Tooltip title="Delete from history" arrow>
+                      <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
                       deletePositionFromLibrary(position.id);
@@ -664,6 +692,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   >
                     <DeleteOutline />
                   </IconButton>
+                    </Tooltip>
+                  </Box>
                 </CardActions>
               </Card>
             ))}

@@ -126,9 +126,14 @@ export default function useAgine(fen: string) {
     DEFAULT_ENGINE_LINES
   );
 
+  const [enginePicked] = useLocalStorage<EngineName>(
+    "stockfish-engine-picked",
+    EngineName.Stockfish17Point
+  )
+
   // Hooks
   const { session } = useSession();
-  const engine = useEngine(true, EngineName.Stockfish17);
+  const engine = useEngine(true, enginePicked);
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
   const {
     gameReview,

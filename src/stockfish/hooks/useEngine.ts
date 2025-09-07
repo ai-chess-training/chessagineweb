@@ -4,6 +4,7 @@ import { Stockfish11 } from '../engine/Stockfish11';
 import { Stockfish16 } from '../engine/Stockfish16';
 import { Stockfish17 } from '../engine/Stockfish17';
 import { UciEngine } from '../engine/UciEngine';
+import { Stockfish17Point } from '../engine/Stockfish17Point';
 
 export const useEngine = (enabled: boolean, engineName: EngineName | undefined) => {
     const [engine, setEngine] = useState<UciEngine>();
@@ -22,13 +23,15 @@ export const useEngine = (enabled: boolean, engineName: EngineName | undefined) 
             engine.shutdown();
             setEngine(undefined);
         };
-    }, [enabled, engineName]);
+    }, [engineName]);
 
     return engine;
 };
 
 const pickEngine = (engine: EngineName): UciEngine => {
     switch (engine) {
+        case EngineName.Stockfish17Point:
+            return new Stockfish17Point();
         case EngineName.Stockfish17:
             return new Stockfish17();
         case EngineName.Stockfish16:

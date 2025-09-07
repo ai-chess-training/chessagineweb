@@ -1018,7 +1018,7 @@ export default function PGNUploaderPage() {
                                 fontWeight: 600,
                               }}
                             >
-                              Stockfish 17 NNUE Analysis
+                              Stockfish Analysis
                             </Typography>
                           </AccordionSummary>
                           <AccordionDetails

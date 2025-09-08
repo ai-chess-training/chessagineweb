@@ -15,6 +15,10 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -24,7 +28,7 @@ import {
   Upload,
   Gamepad,
 } from "@mui/icons-material";
-import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { Chessboard } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -40,7 +44,18 @@ import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
 import { Board } from "../../libs/tacticalboard/board";
 import { useLocalStorage } from "usehooks-ts";
-import { DEFAULT_BOARD_ANIMATION_DURATION, DEFAULT_BOARD_FLIPPED, DEFAULT_BOARD_HANGING_PIECE, DEFAULT_BOARD_PANEL_DIMENSIONS, DEFAULT_BOARD_SEMI_PROTECTED_PIECE, DEFAULT_BOARD_SHOW_COORDINATE, DEFAULT_BOARD_SHOW_FEN, DEFAULT_BOARD_SIZE } from "@/libs/setting/helper";
+import {
+  BOARD_THEMES,
+  DEFAULT_BOARD_ANIMATION_DURATION,
+  DEFAULT_BOARD_FLIPPED,
+  DEFAULT_BOARD_HANGING_PIECE,
+  DEFAULT_BOARD_PANEL_DIMENSIONS,
+  DEFAULT_BOARD_SEMI_PROTECTED_PIECE,
+  DEFAULT_BOARD_SHOW_COORDINATE,
+  DEFAULT_BOARD_SHOW_FEN,
+  DEFAULT_BOARD_SIZE,
+  getCurrentThemeColors,
+} from "@/libs/setting/helper";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -104,7 +119,7 @@ export default function AiChessboardPanel({
   const [isFlipped, setIsFlipped] = useLocalStorage<boolean>(
     "board_ui_flipped",
     DEFAULT_BOARD_FLIPPED
-  )
+  );
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -115,37 +130,42 @@ export default function AiChessboardPanel({
   const [boardSize, setBoardSize] = useLocalStorage<number>(
     "board_ui_size",
     DEFAULT_BOARD_SIZE
-  )
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showCoordinates, setShowCoordinates] = useLocalStorage<boolean>(
     "board_show_coordinates",
     DEFAULT_BOARD_SHOW_COORDINATE
-  )
+  );
+  const [boardTheme, setBoardTheme] = useLocalStorage<string>(
+    "board_theme",
+    "purple" // Default to purple theme
+  );
   const [animationDuration, setAnimationDuration] = useLocalStorage<number>(
     "board_ui_animation_duration",
     DEFAULT_BOARD_ANIMATION_DURATION
-  )
-  
+  );
+
   const [showFen, setShowFen] = useLocalStorage<boolean>(
     "board_ui_show_fen",
     DEFAULT_BOARD_SHOW_FEN
-  )
+  );
 
   // Piece highlighting settings
   const [showHangingPieces, setShowHangingPieces] = useLocalStorage<boolean>(
     "board_ui_show_hanging_piece",
     DEFAULT_BOARD_HANGING_PIECE
-  )
-  const [showSemiProtectedPieces, setShowSemiProtectedPieces] = useLocalStorage<boolean>(
-    "board_ui_show_semiprotectedpiece",
-    DEFAULT_BOARD_SEMI_PROTECTED_PIECE
-  )
+  );
+  const [showSemiProtectedPieces, setShowSemiProtectedPieces] =
+    useLocalStorage<boolean>(
+      "board_ui_show_semiprotectedpiece",
+      DEFAULT_BOARD_SEMI_PROTECTED_PIECE
+    );
 
   // Resize functionality
-  const [panelDimensions, setPanelDimensions] = useLocalStorage<{width: number, height: number}>(
-    "board_ui_show_panel_dimensions",
-    DEFAULT_BOARD_PANEL_DIMENSIONS
-  )
+  const [panelDimensions, setPanelDimensions] = useLocalStorage<{
+    width: number;
+    height: number;
+  }>("board_ui_show_panel_dimensions", DEFAULT_BOARD_PANEL_DIMENSIONS);
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
@@ -167,12 +187,12 @@ export default function AiChessboardPanel({
   // Memoized piece highlighting styles
   const pieceHighlightStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
-    
+
     if (!boardAnalysis) return styles;
 
     // Hanging pieces - Critical (red)
     if (showHangingPieces) {
-      boardAnalysis.HangingPieceCoordinates.forEach(coord => {
+      boardAnalysis.HangingPieceCoordinates.forEach((coord) => {
         styles[coord] = {
           backgroundColor: "rgba(244, 67, 54, 0.6)", // Red with transparency
           boxShadow: "inset 0 0 0 3px rgba(244, 67, 54, 0.8)",
@@ -180,10 +200,9 @@ export default function AiChessboardPanel({
       });
     }
 
-   
     // Semi-protected pieces - Medium priority (yellow)
     if (showSemiProtectedPieces) {
-      boardAnalysis.SemiProtectedPieceCoordinates.forEach(coord => {
+      boardAnalysis.SemiProtectedPieceCoordinates.forEach((coord) => {
         // Don't override hanging or unprotected pieces
         if (!styles[coord]) {
           styles[coord] = {
@@ -198,41 +217,50 @@ export default function AiChessboardPanel({
   }, [boardAnalysis, showHangingPieces, showSemiProtectedPieces]);
 
   // Resize handler
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    startPosRef.current = { x: e.clientX, y: e.clientY };
-    startDimensionsRef.current = { ...panelDimensions };
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizing(true);
+      startPosRef.current = { x: e.clientX, y: e.clientY };
+      startDimensionsRef.current = { ...panelDimensions };
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startPosRef.current.x;
-      const deltaY = e.clientY - startPosRef.current.y;
-      
-      // Set min and max limits
-      const minWidth = 400;
-      const maxWidth = 800;
-      const minHeight = 500;
-      const maxHeight = 800;
-      
-      const newWidth = Math.min(maxWidth, Math.max(minWidth, startDimensionsRef.current.width + deltaX));
-      const newHeight = Math.min(maxHeight, Math.max(minHeight, startDimensionsRef.current.height + deltaY));
-      
-      // Auto-adjust board size based on panel width
-      const newBoardSize = Math.min(800, Math.max(300, newWidth - 70));
-      setBoardSize(newBoardSize);
-      
-      setPanelDimensions({ width: newWidth, height: newHeight });
-    };
+      const handleMouseMove = (e: MouseEvent) => {
+        const deltaX = e.clientX - startPosRef.current.x;
+        const deltaY = e.clientY - startPosRef.current.y;
 
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
+        // Set min and max limits
+        const minWidth = 400;
+        const maxWidth = 800;
+        const minHeight = 500;
+        const maxHeight = 800;
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [panelDimensions]);
+        const newWidth = Math.min(
+          maxWidth,
+          Math.max(minWidth, startDimensionsRef.current.width + deltaX)
+        );
+        const newHeight = Math.min(
+          maxHeight,
+          Math.max(minHeight, startDimensionsRef.current.height + deltaY)
+        );
+
+        // Auto-adjust board size based on panel width
+        const newBoardSize = Math.min(800, Math.max(300, newWidth - 70));
+        setBoardSize(newBoardSize);
+
+        setPanelDimensions({ width: newWidth, height: newHeight });
+      };
+
+      const handleMouseUp = () => {
+        setIsResizing(false);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [panelDimensions]
+  );
 
   // Memoize the initial game setup to avoid recalculation
   const gameHistory = useMemo(() => {
@@ -567,7 +595,7 @@ export default function AiChessboardPanel({
 
     // Then apply move squares
     Object.entries(moveSquares).forEach(([square, color]) => {
-      styles[square] = { 
+      styles[square] = {
         ...styles[square],
         backgroundColor: color,
       };
@@ -695,32 +723,32 @@ export default function AiChessboardPanel({
       sx={{
         width: `${panelDimensions.width}px`,
         height: `${panelDimensions.height}px`,
-        position: 'relative',
-        border: '1px solid #444',
+        position: "relative",
+        border: "1px solid #444",
         borderRadius: 2,
-        backgroundColor: '#1a1a1a',
-        overflow: 'hidden',
-        userSelect: isResizing ? 'none' : 'auto',
+        backgroundColor: "#1a1a1a",
+        overflow: "hidden",
+        userSelect: isResizing ? "none" : "auto",
       }}
     >
       <Box
         sx={{
-          height: '100%',
-          overflowY: 'auto',
-          overflowX: 'hidden',
+          height: "100%",
+          overflowY: "auto",
+          overflowX: "hidden",
           p: 2,
-          '&::-webkit-scrollbar': {
-            width: '6px',
+          "&::-webkit-scrollbar": {
+            width: "6px",
           },
-          '&::-webkit-scrollbar-track': {
-            background: '#2a2a2a',
-            borderRadius: '3px',
+          "&::-webkit-scrollbar-track": {
+            background: "#2a2a2a",
+            borderRadius: "3px",
           },
-          '&::-webkit-scrollbar-thumb': {
-            background: '#555',
-            borderRadius: '3px',
-            '&:hover': {
-              background: '#666',
+          "&::-webkit-scrollbar-thumb": {
+            background: "#555",
+            borderRadius: "3px",
+            "&:hover": {
+              background: "#666",
             },
           },
         }}
@@ -734,9 +762,14 @@ export default function AiChessboardPanel({
             mb: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={2}
+            sx={{ mb: 1.5 }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Gamepad sx={{ color: modeInfo.color, fontSize: '20px' }} />
+              <Gamepad sx={{ color: modeInfo.color, fontSize: "20px" }} />
               <Typography
                 variant="subtitle2"
                 sx={{ color: "white", fontWeight: 600 }}
@@ -788,6 +821,14 @@ export default function AiChessboardPanel({
             customSquareStyles={
               puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
             }
+            customDarkSquareStyle={{
+              backgroundColor:
+                getCurrentThemeColors(boardTheme).darkSquareColor,
+            }}
+            customLightSquareStyle={{
+              backgroundColor:
+                getCurrentThemeColors(boardTheme).lightSquareColor,
+            }}
             customArrows={customArrows}
             boardWidth={boardSize}
             boardOrientation={getBoardOrientation()}
@@ -874,100 +915,164 @@ export default function AiChessboardPanel({
             )}
 
             {/* Piece Analysis Display */}
-            {(showHangingPieces || showSemiProtectedPieces) && boardAnalysis && (
-              <Paper
-                sx={{
-                  p: 1.5,
-                  backgroundColor: "#1a1a1a",
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="caption" sx={{ color: "grey.300", mb: 1.5, display: "block" }}>
-                  Piece Analysis
-                </Typography>
-                
-                {showHangingPieces && boardAnalysis.HangingPieceDescriptions.length > 0 && (
-                  <Box sx={{ mb: 1 }}>
-                    <Typography variant="caption" sx={{ color: "#f44336", fontWeight: 600, fontSize: "0.7rem" }}>
-                      Hanging Pieces (Critical):
-                    </Typography>
-                    {boardAnalysis.HangingPieceDescriptions.map((desc, index) => (
-                      <Typography 
-                        key={index} 
-                        variant="caption" 
-                        sx={{ 
-                          color: "white", 
-                          fontSize: "0.65rem", 
-                          display: "block",
-                          ml: 1
-                        }}
-                      >
-                        • {desc} at {boardAnalysis.HangingPieceCoordinates[index]}
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
-
-
-                {showSemiProtectedPieces && boardAnalysis.SemiProtectedPieceDescriptions.length > 0 && (
-                  <Box sx={{ mb: 1 }}>
-                    <Typography variant="caption" sx={{ color: "#ffeb3b", fontWeight: 600, fontSize: "0.7rem" }}>
-                      Semi-Protected Pieces (Contested):
-                    </Typography>
-                    {boardAnalysis.SemiProtectedPieceDescriptions.map((desc, index) => (
-                      <Typography 
-                        key={index} 
-                        variant="caption" 
-                        sx={{ 
-                          color: "white", 
-                          fontSize: "0.65rem", 
-                          display: "block",
-                          ml: 1
-                        }}
-                      >
-                        • {desc} at {boardAnalysis.SemiProtectedPieceCoordinates[index]}
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
-
-                {/* Legend */}
-                <Box sx={{ mt: 1.5, pt: 1, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                  <Typography variant="caption" sx={{ color: "grey.400", fontSize: "0.6rem", display: "block" }}>
-                    Legend:
+            {(showHangingPieces || showSemiProtectedPieces) &&
+              boardAnalysis && (
+                <Paper
+                  sx={{
+                    p: 1.5,
+                    backgroundColor: "#1a1a1a",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "grey.300", mb: 1.5, display: "block" }}
+                  >
+                    Piece Analysis
                   </Typography>
-                  <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
-                    {showHangingPieces && (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <Box sx={{ 
-                          width: 8, 
-                          height: 8, 
-                          backgroundColor: "#f44336", 
-                          borderRadius: 0.5 
-                        }} />
-                        <Typography variant="caption" sx={{ color: "grey.400", fontSize: "0.6rem" }}>
-                          Critical
+
+                  {showHangingPieces &&
+                    boardAnalysis.HangingPieceDescriptions.length > 0 && (
+                      <Box sx={{ mb: 1 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#f44336",
+                            fontWeight: 600,
+                            fontSize: "0.7rem",
+                          }}
+                        >
+                          Hanging Pieces (Critical):
                         </Typography>
+                        {boardAnalysis.HangingPieceDescriptions.map(
+                          (desc, index) => (
+                            <Typography
+                              key={index}
+                              variant="caption"
+                              sx={{
+                                color: "white",
+                                fontSize: "0.65rem",
+                                display: "block",
+                                ml: 1,
+                              }}
+                            >
+                              • {desc} at{" "}
+                              {boardAnalysis.HangingPieceCoordinates[index]}
+                            </Typography>
+                          )
+                        )}
                       </Box>
                     )}
-                    
-                    {showSemiProtectedPieces && (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <Box sx={{ 
-                          width: 8, 
-                          height: 8, 
-                          backgroundColor: "#ffeb3b", 
-                          borderRadius: 0.5 
-                        }} />
-                        <Typography variant="caption" sx={{ color: "grey.400", fontSize: "0.6rem" }}>
-                          Contested
+
+                  {showSemiProtectedPieces &&
+                    boardAnalysis.SemiProtectedPieceDescriptions.length > 0 && (
+                      <Box sx={{ mb: 1 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#ffeb3b",
+                            fontWeight: 600,
+                            fontSize: "0.7rem",
+                          }}
+                        >
+                          Semi-Protected Pieces (Contested):
                         </Typography>
+                        {boardAnalysis.SemiProtectedPieceDescriptions.map(
+                          (desc, index) => (
+                            <Typography
+                              key={index}
+                              variant="caption"
+                              sx={{
+                                color: "white",
+                                fontSize: "0.65rem",
+                                display: "block",
+                                ml: 1,
+                              }}
+                            >
+                              • {desc} at{" "}
+                              {
+                                boardAnalysis.SemiProtectedPieceCoordinates[
+                                  index
+                                ]
+                              }
+                            </Typography>
+                          )
+                        )}
                       </Box>
                     )}
-                  </Stack>
-                </Box>
-              </Paper>
-            )}
+
+                  {/* Legend */}
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      pt: 1,
+                      borderTop: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "grey.400",
+                        fontSize: "0.6rem",
+                        display: "block",
+                      }}
+                    >
+                      Legend:
+                    </Typography>
+                    <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
+                      {showHangingPieces && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              backgroundColor: "#f44336",
+                              borderRadius: 0.5,
+                            }}
+                          />
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "grey.400", fontSize: "0.6rem" }}
+                          >
+                            Critical
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {showSemiProtectedPieces && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              backgroundColor: "#ffeb3b",
+                              borderRadius: 0.5,
+                            }}
+                          />
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "grey.400", fontSize: "0.6rem" }}
+                          >
+                            Contested
+                          </Typography>
+                        </Box>
+                      )}
+                    </Stack>
+                  </Box>
+                </Paper>
+              )}
 
             {/* PGN View */}
             {shouldShowPGN && pgnMoves.length > 0 && (
@@ -988,30 +1093,30 @@ export default function AiChessboardPanel({
       <Box
         onMouseDown={handleMouseDown}
         sx={{
-          position: 'absolute',
+          position: "absolute",
           bottom: 0,
           left: 0,
-          width: '16px',
-          height: '16px',
-          cursor: 'nw-resize',
-          backgroundColor: '#555',
-          borderTopRightRadius: '3px',
+          width: "16px",
+          height: "16px",
+          cursor: "nw-resize",
+          backgroundColor: "#555",
+          borderTopRightRadius: "3px",
           opacity: 0.7,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          '&:hover': {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          "&:hover": {
             opacity: 1,
-            backgroundColor: '#666',
+            backgroundColor: "#666",
           },
         }}
       >
-        <OpenInFullIcon 
-          sx={{ 
-            fontSize: '10px', 
-            color: '#ccc',
-            transform: 'rotate(180deg)'
-          }} 
+        <OpenInFullIcon
+          sx={{
+            fontSize: "10px",
+            color: "#ccc",
+            transform: "rotate(180deg)",
+          }}
         />
       </Box>
 
@@ -1023,7 +1128,8 @@ export default function AiChessboardPanel({
           sx: {
             backgroundColor: "#1a1a1a",
             color: "white",
-            minWidth: 400,
+            minWidth: 450,
+            maxHeight: "90vh",
           },
         }}
       >
@@ -1044,6 +1150,47 @@ export default function AiChessboardPanel({
                   color: "#9c27b0",
                 }}
               />
+            </Box>
+
+            {/* Board Theme Selection */}
+            <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                Board Theme
+              </Typography>
+              <FormControl size="small" fullWidth>
+                <InputLabel sx={{ color: "grey.300" }}>Voice</InputLabel>
+                <Select
+                  value={boardTheme}
+                  onChange={(e) => setBoardTheme(e.target.value)}
+                  label="Voice"
+                  sx={{
+                    color: "white",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255,255,255,0.2)",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255,255,255,0.3)",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#9c27b0",
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: "#2a2a2a",
+                        color: "white",
+                      },
+                    },
+                  }}
+                >
+                  {Object.entries(BOARD_THEMES).map(([key, theme]) => (
+                    <MenuItem key={key} value={key}>
+                      {theme.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Box>
 
             <Box>
@@ -1155,7 +1302,10 @@ export default function AiChessboardPanel({
                     <Typography variant="body2" sx={{ color: "grey.300" }}>
                       Hanging Pieces
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.7rem" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "grey.500", fontSize: "0.7rem" }}
+                    >
                       Critical threats - undefended pieces
                     </Typography>
                   </Box>
@@ -1174,8 +1324,6 @@ export default function AiChessboardPanel({
                   />
                 </Stack>
 
-               
-
                 <Stack
                   direction="row"
                   justifyContent="space-between"
@@ -1185,13 +1333,18 @@ export default function AiChessboardPanel({
                     <Typography variant="body2" sx={{ color: "grey.300" }}>
                       Semi-Protected Pieces
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.7rem" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "grey.500", fontSize: "0.7rem" }}
+                    >
                       Equal attackers and defenders
                     </Typography>
                   </Box>
                   <Switch
                     checked={showSemiProtectedPieces}
-                    onChange={(e) => setShowSemiProtectedPieces(e.target.checked)}
+                    onChange={(e) =>
+                      setShowSemiProtectedPieces(e.target.checked)
+                    }
                     sx={{
                       "& .MuiSwitch-switchBase.Mui-checked": {
                         color: "#ffeb3b",

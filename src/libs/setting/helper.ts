@@ -41,3 +41,56 @@ export const DEFAULT_PGN_PANEL_DIMENSIONS = {
     width: 550,
     height: 200
 }
+
+export const DEFAULT_BOARD_COLOR_SETTINGS = {
+  lightSquareColor: "#f0d9b5",
+  darkSquareColor: "#b58863",
+}
+
+export const BOARD_THEMES = {
+  classic: {
+    name: "Classic",
+    lightSquareColor: "#f0d9b5",
+    darkSquareColor: "#b58863",
+    bestMoveArrowColor: "#2e7d32",
+    squareClickLegalColor: "rgba(86, 65, 6, 0.5)",
+    selectedSquareColor: "rgba(255, 215, 0, 0.6)", // golden highlight
+  },
+  green: {
+    name: "Forest",
+    lightSquareColor: "#eeeed2",
+    darkSquareColor: "#769656",
+    bestMoveArrowColor: "#1b5e20",
+    squareClickLegalColor: "rgba(27, 94, 32, 0.5)",
+    selectedSquareColor: "rgba(255, 193, 7, 0.6)", // amber for contrast
+  },
+  blue: {
+    name: "Ocean",
+    lightSquareColor: "#dee3e6",
+    darkSquareColor: "#8ca2ad",
+    bestMoveArrowColor: "#2e7d32",
+    squareClickLegalColor: "rgba(46, 125, 50, 0.5)",
+    selectedSquareColor: "rgba(255, 235, 59, 0.6)", // bright yellow
+  },
+  gray: {
+    name: "Modern",
+    lightSquareColor: "#f5f5f5",
+    darkSquareColor: "#504d4dff",
+    bestMoveArrowColor: "#4caf50",
+    squareClickLegalColor: "rgba(76, 175, 80, 0.5)",
+    selectedSquareColor: "rgba(255, 193, 7, 0.6)", // amber pop
+  },
+  wood: {
+    name: "Wooden",
+    lightSquareColor: "#deb887",
+    darkSquareColor: "#6d4d35ff",
+    bestMoveArrowColor: "#2e7d32",
+    squareClickLegalColor: "rgba(46, 125, 50, 0.5)",
+    selectedSquareColor: "rgba(255, 235, 59, 0.6)", // warm yellow
+  },
+} as const;
+
+
+export const getCurrentThemeColors = (themeName: string) => {
+  return BOARD_THEMES[themeName as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;
+};

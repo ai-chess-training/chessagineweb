@@ -547,168 +547,189 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   );
 
   const libraryContent = (
-    <Box sx={{ width: 400, height: "100%" }}>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          p: 2,
-          borderBottom: `1px solid rgba(255,255,255,0.1)`,
-          backgroundColor: "#1a1a1a",
-        }}
-      >
-        <Typography variant="subtitle1" sx={{ color: "white", fontWeight: 600 }}>
-          Position Library ({savedPositions.length})
-        </Typography>
-      </Box>
-      
-      <Box sx={{ 
-        height: "calc(100% - 80px)", 
-        overflowY: "auto",
-        backgroundColor: "#1a1a1a",
-        p: 1,
-        '&::-webkit-scrollbar': {
-          width: '6px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: '#2a2a2a',
-          borderRadius: '3px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: '#555',
-          borderRadius: '3px',
-          '&:hover': {
-            background: '#666',
-          },
-        },
-      }}>
-        {savedPositions.length === 0 ? (
-          <Box sx={{ 
-            display: "flex", 
-            flexDirection: "column", 
-            alignItems: "center", 
-            justifyContent: "center", 
-            height: "100%",
-            p: 2
-          }}>
-            <Bookmark sx={{ fontSize: 48, color: "grey.600", mb: 2 }} />
-            <Typography variant="body2" sx={{ color: "grey.400", textAlign: "center" }}>
-              No saved positions yet
-            </Typography>
-            <Typography variant="caption" sx={{ color: "grey.500", textAlign: "center", mt: 1 }}>
-              Save assistant messages with positions to build your analysis library
-            </Typography>
-          </Box>
-        ) : (
-          <Stack spacing={1}>
-            {savedPositions.map((position) => (
-              <Card 
-                key={position.id}
-                sx={{ 
-                  backgroundColor: "#2a2a2a",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    backgroundColor: "#333",
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 1.5, pb: 1 }}>
-                  <Typography variant="body2" sx={{ color: "white", mb: 1, fontWeight: 500 }}>
+  <Box sx={{ width: 800, height: "100%", display: "flex", flexDirection: "column" }}>
+    {/* Content Area */}
+    <Box sx={{ 
+      flex: 1,
+      overflowY: "auto",
+      backgroundColor: "#1a1a1a",
+      '&::-webkit-scrollbar': {
+        width: '6px',
+      },
+      '&::-webkit-scrollbar-track': {
+        background: '#2a2a2a',
+      },
+      '&::-webkit-scrollbar-thumb': {
+        background: '#555',
+        borderRadius: '3px',
+      },
+    }}>
+      {savedPositions.length === 0 ? (
+        <Box sx={{ 
+          display: "flex", 
+          flexDirection: "column", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          height: "100%",
+          p: 3,
+          color: "#888"
+        }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            No saved positions
+          </Typography>
+          <Typography variant="body2" sx={{ textAlign: "center" }}>
+            Save positions with analysis to build your library
+          </Typography>
+        </Box>
+      ) : (
+        <Stack spacing={0}>
+          {savedPositions.map((position, index) => (
+            <Box 
+              key={position.id}
+              sx={{ 
+                display: "flex",
+                minHeight: 140,
+                borderBottom: index < savedPositions.length - 1 ? "1px solid #333" : "none",
+                "&:hover": {
+                  backgroundColor: "#252525"
+                }
+              }}
+            >
+              {/* Left side - Actual Chessboard */}
+              <Box sx={{ 
+                width: 200, 
+                height: 200, 
+                p: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#222",
+                borderRight: "1px solid #333"
+              }}>
+                <Box 
+                  onClick={() => viewPositionFromLibrary(position)}
+                  sx={{
+                    cursor: "pointer",
+                    "&:hover": {
+                      opacity: 0.8
+                    }
+                  }}
+                >
+                  <Chessboard
+                    position={position.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}
+                    arePiecesDraggable={false}
+                    boardWidth={190}
+                    customBoardStyle={{
+                      borderRadius: "4px",
+                      border: "1px solid #444"
+                    }}
+
+                  />
+                </Box>
+              </Box>
+
+              {/* Right side - Position info */}
+              <Box sx={{ 
+                flex: 1, 
+                p: 2,
+                display: "flex",
+                flexDirection: "column"
+              }}>
+                {/* Title and date */}
+                <Box sx={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "flex-start",
+                  mb: 1
+                }}>
+                  <Typography variant="subtitle1" sx={{ 
+                    color: "white", 
+                    fontWeight: 600,
+                    flex: 1
+                  }}>
                     {position.title}
                   </Typography>
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      color: "grey.400",
-                      display: "block",
-                      mb: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      lineHeight: 1.3
-                    }}
-                  >
-                    {position.analysis}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "grey.500" }}>
+                  <Typography variant="caption" sx={{ 
+                    color: "#888",
+                    ml: 2
+                  }}>
                     {new Date(position.timestamp).toLocaleDateString()}
                   </Typography>
-                </CardContent>
-                <CardActions sx={{ p: 1, pt: 0, justifyContent: "space-between" }}>
-                  <Box sx={{ display: "flex", gap: 0.5 }}>
-                    <Tooltip title="View position on board" arrow>
-                          <IconButton
-                            onClick={() => viewPositionFromLibrary(position)}
-                            sx={{
-                              color: "rgba(255, 255, 255, 0.7)",
-                              backgroundColor: "rgba(0, 0, 0, 0.2)",
-                              "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.4)",
-                                color: "white",
-                              },
-                            }}
-                            size="small"
-                          >
-                            <Visibility fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                    <Tooltip title="Copy analysis" arrow>
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyMessage(position.analysis);
-                        }}
-                        size="small"
-                        sx={{ 
-                          color: "rgba(255, 255, 255, 0.7)",
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.4)",
-                            color: "white",
-                          }
-                        }}
-                      >
-                        <ContentCopy fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                     <Tooltip title="Delete from history" arrow>
-                      <IconButton
+                </Box>
+
+                {/* Analysis text */}
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: "#ccc",
+                    lineHeight: 1.5,
+                    flex: 1,
+                    overflow: "hidden",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical"
+                  }}
+                >
+                  {position.analysis}
+                </Typography>
+
+                {/* Action buttons */}
+                <Box sx={{ 
+                  display: "flex", 
+                  gap: 1, 
+                  mt: 1,
+                  justifyContent: "flex-end"
+                }}>
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewPositionFromLibrary(position);
+                    }}
+                    size="small"
+                    sx={{ 
+                      color: "#aaa",
+                      "&:hover": { color: "white" }
+                    }}
+                  >
+                    <Visibility fontSize="small" />
+                  </IconButton>
+                  
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyMessage(position.analysis);
+                    }}
+                    size="small"
+                    sx={{ 
+                      color: "#aaa",
+                      "&:hover": { color: "white" }
+                    }}
+                  >
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                  
+                  <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
                       deletePositionFromLibrary(position.id);
                     }}
                     size="small"
                     sx={{ 
-                      color: "rgba(255, 255, 255, 0.5)",
-                      "&:hover": {
-                        color: "#ff6b6b",
-                        backgroundColor: "rgba(255, 107, 107, 0.1)"
-                      }
+                      color: "#aaa",
+                      "&:hover": { color: "#ff6b6b" }
                     }}
                   >
-                    <DeleteOutline />
+                    <DeleteOutline fontSize="small" />
                   </IconButton>
-                    </Tooltip>
-                  </Box>
-                </CardActions>
-              </Card>
-            ))}
-          </Stack>
-        )}
-      </Box>
-      
-      <Box sx={{ p: 2, borderTop: `1px solid rgba(255,255,255,0.1)`, backgroundColor: "#1a1a1a" }}>
-        <Typography variant="caption" sx={{ color: "grey.400", fontStyle: "italic" }}>
-         Your local saved position analyses
-        </Typography>
-      </Box>
+                </Box>
+              </Box>
+            </Box>
+          ))}
+        </Stack>
+      )}
     </Box>
-  );
+  </Box>
+);
 
   return (
     <Box

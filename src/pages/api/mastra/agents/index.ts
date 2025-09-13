@@ -7,8 +7,6 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { RuntimeContext } from "@mastra/core/di";
 import { agineSystemPrompt } from './prompt';
 import {
-    analyzeFenTool,
-    analyzeTargetMoveTool,
     chessKnowledgeBaseTool,
     getStockfishAnalysisTool,
     getStockfishMoveAnalysisTool,
@@ -105,8 +103,6 @@ export const chessAgine = new Agent({
         searchWeb,
         isLegalMoveTool,
         chessKnowledgeBaseTool,
-        analyzeFenTool,
-        analyzeTargetMoveTool,
         getStockfishAnalysisTool,
         getStockfishMoveAnalysisTool,
     },
@@ -124,8 +120,6 @@ export const chessAnnotationAgent = new Agent({
         searchWeb,
         isLegalMoveTool,
         chessKnowledgeBaseTool,
-        analyzeFenTool,
-        analyzeTargetMoveTool,
         getStockfishAnalysisTool,
         getStockfishMoveAnalysisTool,
     },
@@ -144,8 +138,6 @@ export const chessPuzzleAssistant = new Agent({
         searchWeb,
         isLegalMoveTool,
         chessKnowledgeBaseTool,
-        analyzeFenTool,
-        analyzeTargetMoveTool,
         getStockfishAnalysisTool,
         getStockfishMoveAnalysisTool,
     },

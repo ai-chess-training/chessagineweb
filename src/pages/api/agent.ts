@@ -1,75 +1,175 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { encrypt } from '@/utils/crypto';
+import { chessAgine, chessAnnotationAgent, chessPuzzleAssistant } from '@/pages/api/mastra/agents';
+import { boardStateToPrompt, getBoardState } from '@/pages/api/mastra/tools/state';
+import { RuntimeContext } from '@mastra/core/di';
+import { decrypt } from '@/utils/dicrypt';
 
 interface ApiSettings {
-  provider: 'openai' | 'anthropic' | 'google';
-  model: string;
-  apiKey: string;
-  language: string,
+    provider: 'openai' | 'anthropic' | 'google';
+    model: string;
+    apiKey: string;
+    language: string;
 }
 
-export type ResponseData = {
-  message: string
+interface ResponseData {
+    message: string;
+    maxTokens?: number;
+    provider?: string;
+    model?: string;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
- 
-  const token = req.headers.authorization || "";
-  const { query, fen, mode, apiSettings } = req.body;
-  const apiSettings1: ApiSettings = apiSettings;
-  
-  // Validate API settings
-  if (!apiSettings1 || !apiSettings1.provider || !apiSettings1.model || !apiSettings1.apiKey) {
-    return res.status(400).json({
-      message: "API settings are required. Please configure your provider settings."
-    });
-  }
- 
-  try {
-    // Encrypt the API key before sending to Lambda
-    const encryptedApiSettings = {
-      ...apiSettings1,
-      apiKey: encrypt(apiSettings1.apiKey)
-    };
+interface ErrorResponseData {
+    message: string;
+    maxTokens?: number;
+    provider?: string;
+    model?: string;
+    stack?: string;
+}
 
+export default async function handler(
+    req: NextApiRequest, 
+    res: NextApiResponse<ResponseData | ErrorResponseData>
+) {
+    
 
-    const lambdaResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/Prod/agent/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token,
-          // Optional: Add a header to indicate encryption is used
-        },
-        body: JSON.stringify({
-          query,
-          fen,
-          mode,
-          // Pass encrypted API settings to Lambda
-          apiSettings1: encryptedApiSettings
-        }),
-      }
-    );
-   
-    const responseText = await lambdaResponse.text();
-   
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.log(e);
-      data = { message: 'Non-JSON response from Lambda', raw: responseText };
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ 
+            message: 'Method not allowed' 
+        });
     }
-   
-    res.status(lambdaResponse.status).json(data);
-  } catch (error) {
-    console.error("Proxy error:", error);
-    res.status(500).json({
-      message: "Internal proxy error",
-    });
-  }
+
+
+    try {
+        const { query, fen, mode, apiSettings } = req.body;
+        console.log(req.body);
+
+        const rawApiSettings = apiSettings as ApiSettings;
+
+        if (!rawApiSettings || !rawApiSettings.provider || !rawApiSettings.model || !rawApiSettings.apiKey) {
+            return res.status(400).json({
+                message: 'API settings are required (provider, model, apiKey)',
+            });
+        }
+
+      
+
+        // Create API settings with decrypted key
+        
+        // Log the extracted values for debugging (but not the API key!)
+      
+
+        if (!query || typeof query !== 'string') {
+            return res.status(400).json({
+                message: 'Missing or invalid "query" field in body (must be a non-empty string)',
+            });
+        }
+
+        if (!fen || typeof fen !== 'string') {
+            return res.status(400).json({
+                message: 'Missing or invalid "fen" field in body (must be a non-empty string)',
+            });
+        }
+
+        if (!mode || typeof mode !== 'string') {
+            return res.status(400).json({
+                message: 'Missing or invalid "mode" field in body (must be a non-empty string)',
+            });
+        }
+
+        console.log('Processing FEN:', fen);
+
+        let boardState;
+        try {
+            boardState = getBoardState(fen);
+        } catch (boardStateError) {
+            console.error('Error getting board state:', boardStateError);
+            return res.status(400).json({
+                message: 'Error processing FEN string',
+            });
+        }
+
+        if (!boardState || !boardState.validfen) {
+            console.log('Invalid FEN provided:', fen);
+            return res.status(400).json({
+                message: 'Invalid FEN string provided',
+            });
+        }
+
+        console.log('Board state valid, generating state prompt...');
+
+        let statePrompt;
+        try {
+            statePrompt = boardStateToPrompt(boardState);
+        } catch (promptError) {
+            console.error('Error generating state prompt:', promptError);
+            return res.status(500).json({
+                message: 'Error processing board state',
+            });
+        }
+
+        const lang = apiSettings.language;
+        const aginePromptInject = `${query} \n ${statePrompt}`;
+        console.log('Final prompt:', aginePromptInject);
+        
+        const runtimeContext = new RuntimeContext();
+        runtimeContext.set('provider', apiSettings.provider);
+        runtimeContext.set('model', apiSettings.model);
+        runtimeContext.set('apiKey', apiSettings.apiKey);
+        runtimeContext.set('lang', lang);
+
+        let response;
+        let maxTokens;
+      
+        try {
+            switch (mode) {
+                case 'position':
+                    response = await chessAgine.generate([{ role: 'user', content: aginePromptInject }], {
+                        runtimeContext,
+                    });
+                    maxTokens = response.usage.totalTokens || 0;
+                    break;
+                case 'annotation':
+                    response = await chessAnnotationAgent.generate([{ role: 'user', content: aginePromptInject }], {
+                        runtimeContext
+                    });
+                    maxTokens = response.usage.totalTokens || 0;
+                    break;
+                case 'puzzle':
+                    response = await chessPuzzleAssistant.generate([{ role: 'user', content: aginePromptInject }], {
+                        runtimeContext,
+                    });
+                    maxTokens = response.usage.totalTokens || 0;
+                    break;
+                default:
+                    return res.status(400).json({
+                        message: 'Invalid mode specified',
+                    });
+            }
+        } catch (agentError) {
+            console.error('Error from chess agent:', agentError);
+            return res.status(500).json({
+                message: `An error occurred on the ${apiSettings.provider} API, check the credit balance or try with new API key, make sure your API key is correct`,
+                maxTokens,
+                provider: apiSettings.provider,
+                model: apiSettings.model
+            });
+        }
+
+        return res.status(200).json({
+            message: response.text,
+            maxTokens,
+            provider: apiSettings.provider,
+            model: apiSettings.model
+        });
+
+    } catch (error: any) {
+        console.error('❌ Unexpected error in API route:', error);
+
+        return res.status(500).json({
+            message: error?.message || 'Internal server error',
+            // Only include stack trace in development
+            ...(process.env.NODE_ENV === 'development' && { stack: error?.stack }),
+        });
+    }
 }

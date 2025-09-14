@@ -56,6 +56,7 @@ import {
   DEFAULT_BOARD_SIZE,
   getCurrentThemeColors,
 } from "@/libs/setting/helper";
+import PlayerInfoBar from "../tabs/PlayerInfoTab";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -84,8 +85,8 @@ interface AiChessboardPanelProps {
   side?: BoardOrientation;
   moves?: string[];
   stockfishAnalysisResult?: PositionEval | null;
+  gameInfo?: Record<string, string>;
   setMoveSquares: (square: { [square: string]: string }) => void;
-  // Play mode specific props
   gameStatus?: string;
   playerSide?: "white" | "black";
   engineThinking?: boolean;
@@ -113,6 +114,7 @@ export default function AiChessboardPanel({
   gameStatus = "waiting",
   playerSide = "white",
   gameReviewMode,
+  gameInfo,
   engineThinking = false,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
@@ -230,9 +232,9 @@ export default function AiChessboardPanel({
 
         // Set min and max limits
         const minWidth = 400;
-        const maxWidth = 800;
+        const maxWidth = 900;
         const minHeight = 500;
-        const maxHeight = 800;
+        const maxHeight = 900;
 
         const newWidth = Math.min(
           maxWidth,
@@ -709,13 +711,20 @@ export default function AiChessboardPanel({
   const getModeInfo = () => {
     if (puzzleMode) return { label: "Puzzle Mode", color: "#ff9800" };
     if (playMode) return { label: "Play Mode", color: "#4caf50" };
-    return { label: "Analysis Mode", color: "#9c27b0" };
+    if (gameReviewMode) return {label: "Game Analysis Mode", color: "#eaeb96ff"};
+    return { label: "Analysis Mode", color: "#bc58ceff" };
   };
 
   const modeInfo = getModeInfo();
 
   // Determine if PGN should be shown
   const shouldShowPGN = !gameReviewMode && !puzzleMode && !playMode;
+
+  const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({ 
+  gameInfo, 
+  boardOrientation: getBoardOrientation() 
+});
+
 
   return (
     <Box
@@ -768,15 +777,7 @@ export default function AiChessboardPanel({
             spacing={2}
             sx={{ mb: 1.5 }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Gamepad sx={{ color: modeInfo.color, fontSize: "20px" }} />
-              <Typography
-                variant="subtitle2"
-                sx={{ color: "white", fontWeight: 600 }}
-              >
-                Chessboard
-              </Typography>
-            </Box>
+            
             <Chip
               label={modeInfo.label}
               size="small"
@@ -801,12 +802,15 @@ export default function AiChessboardPanel({
           <Stack direction="row" alignItems="center" spacing={2}>
             {(puzzleMode || playMode) && (
               <Typography variant="caption" sx={{ color: "grey.400" }}>
-                Orientation: {getBoardOrientation()}
+                {getBoardOrientation()} To Play
               </Typography>
             )}
           </Stack>
         </Paper>
 
+        {gameReviewMode && gameInfo && (
+          <TopPlayerBar/>
+        )}
         {/* Chessboard */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
           <Chessboard
@@ -834,6 +838,9 @@ export default function AiChessboardPanel({
             boardOrientation={getBoardOrientation()}
           />
         </Box>
+        {gameReviewMode && gameInfo && (
+          <BottomPlayerBar/>
+        )}
 
         {/* Navigation Controls */}
         {!playMode && !gameReviewMode && !puzzleMode && (
@@ -1158,7 +1165,7 @@ export default function AiChessboardPanel({
                 Board Theme
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel sx={{ color: "grey.300" }}>Voice</InputLabel>
+                <InputLabel sx={{ color: "grey.300" }}>theme</InputLabel>
                 <Select
                   value={boardTheme}
                   onChange={(e) => setBoardTheme(e.target.value)}

@@ -776,6 +776,7 @@ export default function PGNUploaderPage() {
                 engine={engine}
                 setMoveSquares={setMoveSquares}
                 setFen={setFen}
+                gameInfo={gameInfo}
                 setGame={setGame}
                 reviewMove={gameReview[currentMoveIndex]}
                 gameReviewMode={true}

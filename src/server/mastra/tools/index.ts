@@ -1,4 +1,4 @@
-
+"use server";
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { boardStateToPrompt, calculateDeep,  getBoardState } from "./state";

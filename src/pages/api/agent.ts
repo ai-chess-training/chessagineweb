@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { chessAgine, chessAnnotationAgent, chessPuzzleAssistant } from '@/pages/api/mastra/agents';
-import { boardStateToPrompt, getBoardState } from '@/pages/api/mastra/tools/state';
+import { chessAgine, chessAnnotationAgent, chessPuzzleAssistant } from '@/server/mastra/agents';
+import { boardStateToPrompt, getBoardState } from '@/server/mastra/tools/state';
 import { RuntimeContext } from '@mastra/core/di';
 
 
@@ -96,7 +96,7 @@ export default async function handler(
             });
         }
 
-        console.log('Board state valid, generating state prompt...');
+        //console.log('Board state valid, generating state prompt...');
 
         let statePrompt;
         try {
@@ -110,7 +110,7 @@ export default async function handler(
 
         const lang = apiSettings.language;
         const aginePromptInject = `${query} \n ${statePrompt}`;
-        console.log('Final prompt:', aginePromptInject);
+        //console.log('Final prompt:', aginePromptInject);
         
         const runtimeContext = new RuntimeContext();
         runtimeContext.set('provider', apiSettings.provider);

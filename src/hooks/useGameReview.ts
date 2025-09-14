@@ -416,7 +416,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   return { 
     gameReview,
     gameReviewLoading,
-    gameReviewProgress, // Add this to the return
+    gameReviewProgress,
     setGameReview,
     setGameReviewLoading,
     generateGameReview,

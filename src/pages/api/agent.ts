@@ -42,7 +42,7 @@ export default async function handler(
 
     try {
         const { query, fen, mode, apiSettings } = req.body;
-        console.log(req.body);
+       
 
         const rawApiSettings = apiSettings as ApiSettings;
 

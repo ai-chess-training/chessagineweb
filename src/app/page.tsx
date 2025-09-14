@@ -12,6 +12,7 @@ import {
   Avatar,
   Chip,
   Grid,
+  CardMedia,
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -193,7 +194,7 @@ export default function HomePage() {
                     mt: 2
                   }}
                 >
-                  Your AI-Powered Chess Training Partner
+                  Your AI-Powered Chess buddy
                 </Typography>
               </Box>
               
@@ -206,18 +207,18 @@ export default function HomePage() {
                   fontSize: { xs: '1.2rem', md: '1.5rem' }
                 }}
               >
-                Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware ChessAgine and get personalized live chat training powered by Stockfish 17.
+                Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine, chess databases and to better align with position context, making LLMs chess aware.
               </Typography>
             </Stack>
 
             {/* Feature Pills */}
             <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center" sx={{ mt: 4 }}>
               {[
-                'Stockfish 17 Engine',
+                'Stockfish 17.1 Engine',
                 'Web Chess Search',
                 'Lichess Integration', 
                 'Free Game Reviews',
-                'AI Powered Puzzles'
+                'Interactive Puzzles'
               ].map((feature) => (
                 <Chip
                   key={feature}
@@ -256,7 +257,7 @@ export default function HomePage() {
                 }}
                 onClick={() => clerk.openSignUp()}
               >
-                Start Training with ChessAgine
+                Start Chatting with ChessAgine
               </Button>
               <Button 
                 variant="outlined" 
@@ -286,8 +287,107 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Plug & Play Section */}
+      {/* UI Preview Section */}
       <Box py={16} bgcolor="white">
+        <Container maxWidth="lg">
+          <Stack spacing={8} alignItems="center">
+            <Box textAlign="center">
+              <Typography 
+                variant="h2" 
+                fontWeight="bold" 
+                color="#7c3aed"
+                sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
+                gutterBottom
+              >
+                See ChessAgine in Action
+              </Typography>
+              <Typography 
+                variant="h5" 
+                color="#5b21b6" 
+                sx={{ opacity: 0.8, fontSize: { xs: '1.2rem', md: '1.5rem' } }}
+              >
+                Get a glimpse of the interactive chess analysis interface
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction={{ xs: 'column', md: 'row' }} 
+              spacing={6} 
+              sx={{ width: '100%' }}
+            >
+              {/* Opening Analysis Preview */}
+              <Card 
+                elevation={12}
+                sx={{
+                  flex: 1,
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 24px 48px rgba(124, 58, 237, 0.2)',
+                  },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  image="/static/images/aginepreview1.png"
+                  alt="Opening Position Analysis"
+                  sx={{
+                    
+                    objectFit: 'cover',
+                  }}
+                />
+                <CardContent sx={{ p: 4, bgcolor: '#f8f9ff' }}>
+                  <Typography variant="h5" fontWeight="bold" color="#7c3aed" gutterBottom>
+                    Opening Analysis
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                    Analyze opening positions with Agine's guidance. Get explanations about opening principles, 
+                    typical plans, and strategic ideas backed by the Lichess master database.
+                  </Typography>
+                </CardContent>
+              </Card>
+
+              {/* Middlegame Analysis Preview */}
+              <Card 
+                elevation={12}
+                sx={{
+                  flex: 1,
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 24px 48px rgba(124, 58, 237, 0.2)',
+                  },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  image="/static/images/aginepreview2.png"
+                  alt="Middlegame Position Analysis"
+                  sx={{
+                    objectFit: 'cover',
+                  }}
+                />
+                <CardContent sx={{ p: 4, bgcolor: '#f8f9ff' }}>
+                  <Typography variant="h5" fontWeight="bold" color="#7c3aed" gutterBottom>
+                    Middlegame Strategy
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                    Dive deep into complex middlegame positions. Understand tactical patterns, 
+                    strategic concepts, and key moves with Stockfish engine analysis and AI explanations.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Stack>
+        </Container>
+      </Box>
+
+      {/* Plug & Play Section */}
+      <Box py={16} bgcolor="#f5deb3">
         <Container maxWidth="lg">
           <Stack spacing={8} alignItems="center">
             <Box textAlign="center">
@@ -362,7 +462,7 @@ export default function HomePage() {
       </Box>
 
       {/* Features Section */}
-      <Box py={16} bgcolor="#f5deb3">
+      <Box py={16} bgcolor="white">
         <Container maxWidth="lg">
           <Stack spacing={12}>
             <Box textAlign="center">
@@ -389,7 +489,7 @@ export default function HomePage() {
                 {
                   icon: <SearchIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
                   title: 'Web Chess Search',
-                  description: 'Access real-time chess databases and opening theory from across the web for comprehensive position analysis.',
+                  description: 'Access real-time chess data like blogs, YouTube, notes from across the web for comprehensive position analysis.',
                 },
                 {
                   icon: <StorageIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
@@ -398,8 +498,8 @@ export default function HomePage() {
                 },
                 {
                   icon: <PsychologyIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
-                  title: 'Stockfish 17 Engine',
-                  description: 'Powered by the latest Stockfish 17 engine for world-class position evaluation and tactical analysis.',
+                  title: 'Stockfish 17.1 Engine',
+                  description: 'Powered by the latest Stockfish 17.1 engine for world-class position evaluation and tactical analysis.',
                 },
                 {
                   icon: <FaPuzzlePiece style={{ fontSize: 64, color: '#7c3aed', marginBottom: 24 }} />,
@@ -414,7 +514,7 @@ export default function HomePage() {
                 {
                   icon: <ChatIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
                   title: 'Natural Conversation',
-                  description: 'Ask questions in plain language and get clear explanations about positions, moves, and strategies.',
+                  description: 'Ask questions about positions in plain language and get explanations about positions, moves, and strategies.',
                 },
               ].map((card) => (
                 <Grid size={{ xs: 12, md: 6, lg: 4 }} key={card.title}>
@@ -426,7 +526,7 @@ export default function HomePage() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       textAlign: 'center',
-                      bgcolor: 'white',
+                      bgcolor: '#f8f9ff',
                       borderRadius: 4,
                       height: '100%',
                       minHeight: 320,
@@ -457,7 +557,7 @@ export default function HomePage() {
       </Box>
 
       {/* Why Choose Section */}
-      <Box py={16} bgcolor="white">
+      <Box py={16} bgcolor="#f5deb3">
         <Container maxWidth="lg">
           <Stack spacing={12}>
             <Box textAlign="center">
@@ -489,7 +589,7 @@ export default function HomePage() {
                 {
                   icon: <SportsEsportsIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
                   title: 'Interactive Training',
-                  description: 'Practice scenarios, work through puzzles, and get personalized feedback based on your playing style and level.',
+                  description: 'Ask for puzzle hints, generate annotation boilerplate',
                 },
                 {
                   icon: <SchoolIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
@@ -499,7 +599,7 @@ export default function HomePage() {
                 {
                   icon: <ApiIcon sx={{ fontSize: 64, color: '#7c3aed', mb: 3 }} />,
                   title: 'Cost Effective',
-                  description: 'Pay only for the AI you use with your own API key. No subscription fees or hidden costs - complete transparency.',
+                  description: 'Pay only for the AI you use with your own API key. No subscription fees or hidden costs, complete transparency.',
                 },
               ].map((card) => (
                 <Paper
@@ -511,7 +611,7 @@ export default function HomePage() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    bgcolor: '#f8f9ff',
+                    bgcolor: 'white',
                     borderRadius: 4,
                     flex: 1,
                     minWidth: 0,
@@ -553,7 +653,7 @@ export default function HomePage() {
                 sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
                 gutterBottom
               >
-                Ready to Improve?
+                Ready to experience the Next-gen of chess analysis?
               </Typography>
               <Typography 
                 variant="h5" 

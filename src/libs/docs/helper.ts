@@ -247,7 +247,12 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "Can ChessAgine make mistakes or give incorrect analysis?",
-    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1.",
+    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1 or GPT-5.",
+    category: "technical"
+  },
+   {
+    question: "Is Chessagine trained on millions of data to output a better analysis?",
+    answer: "ChessAgine itself is not trained, it uses the base model's training to predict the next token, chessagine uses various AI engineering techniques to convert AI models into chess aware models",
     category: "technical"
   },
   {
@@ -273,6 +278,11 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "How much does it typically cost to use ChessAgine?",
     answer: "Costs vary by model and usage. For casual use (a few analyses per day), expect $0.50-$3 per month. Heavy users might spend $5-$15 monthly. The cost analysis tab shows detailed breakdowns for different usage patterns and models.",
+    category: "cost"
+  },
+  {
+    question: "Where do I set up payment information to use Agine?",
+    answer: "In agine UI you can not set up payment method, you need to use the AI provider's Billing interface",
     category: "cost"
   },
   {

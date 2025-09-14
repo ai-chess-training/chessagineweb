@@ -207,7 +207,7 @@ export default function HomePage() {
                   fontSize: { xs: '1.2rem', md: '1.5rem' }
                 }}
               >
-                Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine, chess databases and to better align with position context, making LLMs chess aware.
+                Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine and chess databases to better align with position context, making LLMs chess aware.
               </Typography>
             </Stack>
 

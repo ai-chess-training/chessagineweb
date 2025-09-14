@@ -165,3 +165,8 @@ g. How can I advance (if none of the other six questions have compelling answers
 - "When in doubt, improve your worst piece" – GM advice
 - "Look for checks, captures, and threats" – Basic calculation order
     `.trim();
+
+
+export function getKnowledgeBase(){
+    return knowledgebase;
+}

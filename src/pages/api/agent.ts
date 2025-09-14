@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { chessAgine, chessAnnotationAgent, chessPuzzleAssistant } from '@/pages/api/mastra/agents';
 import { boardStateToPrompt, getBoardState } from '@/pages/api/mastra/tools/state';
 import { RuntimeContext } from '@mastra/core/di';
-import { decrypt } from '@/utils/dicrypt';
+
 
 interface ApiSettings {
     provider: 'openai' | 'anthropic' | 'google';
@@ -163,13 +163,13 @@ export default async function handler(
             model: apiSettings.model
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('❌ Unexpected error in API route:', error);
 
         return res.status(500).json({
-            message: error?.message || 'Internal server error',
+            message: 'Internal server error',
             // Only include stack trace in development
-            ...(process.env.NODE_ENV === 'development' && { stack: error?.stack }),
+            ...(process.env.NODE_ENV === 'development' && { stack: error}),
         });
     }
 }

@@ -772,7 +772,7 @@ const PGNView: React.FC<PGNViewProps> = ({
         <Box
           onMouseDown={handleMouseDown}
           sx={{
-            position: 'absolute',
+            position: 'sticky',
             bottom: 0,
             left: 0,
             width: '16px',

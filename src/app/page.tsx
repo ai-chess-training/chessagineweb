@@ -343,7 +343,7 @@ export default function HomePage() {
                     Opening Analysis
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                    Analyze opening positions with Agine's guidance. Get explanations about opening principles, 
+                    Analyze opening positions with Agines guidance. Get explanations about opening principles, 
                     typical plans, and strategic ideas backed by the Lichess master database.
                   </Typography>
                 </CardContent>

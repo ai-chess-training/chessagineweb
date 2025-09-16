@@ -47,6 +47,8 @@ interface GameReviewTabProps {
   currentMoveIndex: number;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   gameInfo: string;
+  whiteTitle: string;
+  blackTitle: string;
   whitePlayer: string;
   blackPlayer: string;
   handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
@@ -113,6 +115,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   handleGameReviewClick,
   chatLoading,
   comment,
+  whiteTitle,
+  blackTitle,
   whitePlayer,
   blackPlayer,
   gameReviewProgress,
@@ -402,7 +406,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               <Grid container spacing={2}>
                 <Grid >
                   <Typography variant="caption" sx={{ color: "#999", display: "block", mb: 1 }}>
-                    {whitePlayer} (White) - {calculateAccuracy(stats.whiteStats)}% Accuracy
+                    {whiteTitle} {whitePlayer} (White) - {calculateAccuracy(stats.whiteStats)}% Accuracy
                   </Typography>
                   <Stack spacing={0.5}>
                     {Object.entries(stats.whiteStats).map(([classification, count]) => {
@@ -423,7 +427,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                 </Grid>
                 <Grid >
                   <Typography variant="caption" sx={{ color: "#999", display: "block", mb: 1 }}>
-                    {blackPlayer} (Black) - {calculateAccuracy(stats.blackStats)}% Accuracy
+                    {blackTitle} {blackPlayer} (Black) - {calculateAccuracy(stats.blackStats)}% Accuracy
                   </Typography>
                   <Stack spacing={0.5}>
                     {Object.entries(stats.blackStats).map(([classification, count]) => {

@@ -229,6 +229,8 @@ function GameInfoTab({
           chatLoading={chatLoading}
           gameReviewProgress={gameReviewProgress}
           comment={comment}
+          whiteTitle={gameInfo.WhiteTitle || ''}
+          blackTitle={gameInfo.BlackTitle || ''}
           whitePlayer={gameInfo.White || "Unknown"}
           blackPlayer={gameInfo.Black || "Unknown"}
           gameInfo={generateGameInfoPrompt(gameInfo)}

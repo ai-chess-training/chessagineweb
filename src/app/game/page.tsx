@@ -729,8 +729,12 @@ export default function PGNUploaderPage() {
                   variant="contained"
                   fullWidth
                   onClick={() => {
-                    loadPGN();
-                    setInputsVisible(false);
+                    if(pgnText !== ''){
+                      loadPGN();
+                      setInputsVisible(false);
+                    }else{
+                      alert("Invalid PGN input!")
+                    }
                   }}
                   sx={{
                     backgroundColor: purpleTheme.primary,

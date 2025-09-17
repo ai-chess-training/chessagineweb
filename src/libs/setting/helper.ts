@@ -32,6 +32,7 @@ export const DEFAULT_BOARD_SHOW_FEN = false;
 export const DEFAULT_BOARD_HANGING_PIECE = false;
 export const DEFAULT_BOARD_SEMI_PROTECTED_PIECE = false;
 
+
 export const DEFAULT_BOARD_PANEL_DIMENSIONS = {
     width: 600,
     height: 800

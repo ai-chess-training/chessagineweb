@@ -26,7 +26,6 @@ import {
   NavigateNext,
   RotateLeft,
   Upload,
-  Gamepad,
 } from "@mui/icons-material";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { Chessboard } from "react-chessboard";
@@ -139,6 +138,7 @@ export default function AiChessboardPanel({
     "board_show_coordinates",
     DEFAULT_BOARD_SHOW_COORDINATE
   );
+
   const [boardTheme, setBoardTheme] = useLocalStorage<string>(
     "board_theme",
     "purple" // Default to purple theme
@@ -147,6 +147,11 @@ export default function AiChessboardPanel({
     "board_ui_animation_duration",
     DEFAULT_BOARD_ANIMATION_DURATION
   );
+
+  const [showEvalBar, setEvalBar] = useLocalStorage<boolean>(
+    "board_ui_show_eval_bar",
+    true
+  )
 
   const [showFen, setShowFen] = useLocalStorage<boolean>(
     "board_ui_show_fen",
@@ -811,11 +816,11 @@ export default function AiChessboardPanel({
         {gameReviewMode && gameInfo && <TopPlayerBar />}
         {/* Chessboard */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
-          <EvalBar
+          {showEvalBar && !puzzleMode && <EvalBar
             lineEval={stockfishAnalysisResult?.lines[0]} // Your position evaluation data
             boardOrientation={getBoardOrientation()}
             height={boardSize} // Match the board height
-          />
+          />}
           <Chessboard
             position={fen}
             onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
@@ -1280,6 +1285,32 @@ export default function AiChessboardPanel({
                     <Switch
                       checked={showArrows}
                       onChange={(e) => setShowArrows(e.target.checked)}
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: "#9c27b0",
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: "#9c27b0",
+                          },
+                      }}
+                    />
+                  </Stack>
+                )}
+
+                
+                {!puzzleMode && (
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                      Show Eval Bar
+                    </Typography>
+                    <Switch
+                      checked={showEvalBar}
+                      onChange={(e) => setEvalBar(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
                           color: "#9c27b0",

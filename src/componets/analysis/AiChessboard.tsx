@@ -57,6 +57,7 @@ import {
   getCurrentThemeColors,
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
+import { EvalBar } from "./EvalBar";
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -711,7 +712,8 @@ export default function AiChessboardPanel({
   const getModeInfo = () => {
     if (puzzleMode) return { label: "Puzzle Mode", color: "#ff9800" };
     if (playMode) return { label: "Play Mode", color: "#4caf50" };
-    if (gameReviewMode) return {label: "Game Analysis Mode", color: "#eaeb96ff"};
+    if (gameReviewMode)
+      return { label: "Game Analysis Mode", color: "#eaeb96ff" };
     return { label: "Analysis Mode", color: "#bc58ceff" };
   };
 
@@ -720,11 +722,10 @@ export default function AiChessboardPanel({
   // Determine if PGN should be shown
   const shouldShowPGN = !gameReviewMode && !puzzleMode && !playMode;
 
-  const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({ 
-  gameInfo, 
-  boardOrientation: getBoardOrientation() 
-});
-
+  const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({
+    gameInfo,
+    boardOrientation: getBoardOrientation(),
+  });
 
   return (
     <Box
@@ -777,7 +778,6 @@ export default function AiChessboardPanel({
             spacing={2}
             sx={{ mb: 1.5 }}
           >
-            
             <Chip
               label={modeInfo.label}
               size="small"
@@ -808,11 +808,14 @@ export default function AiChessboardPanel({
           </Stack>
         </Paper>
 
-        {gameReviewMode && gameInfo && (
-          <TopPlayerBar/>
-        )}
+        {gameReviewMode && gameInfo && <TopPlayerBar />}
         {/* Chessboard */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
+          <EvalBar
+            lineEval={stockfishAnalysisResult?.lines[0]} // Your position evaluation data
+            boardOrientation={getBoardOrientation()}
+            height={boardSize} // Match the board height
+          />
           <Chessboard
             position={fen}
             onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
@@ -838,9 +841,7 @@ export default function AiChessboardPanel({
             boardOrientation={getBoardOrientation()}
           />
         </Box>
-        {gameReviewMode && gameInfo && (
-          <BottomPlayerBar/>
-        )}
+        {gameReviewMode && gameInfo && <BottomPlayerBar />}
 
         {/* Navigation Controls */}
         {!playMode && !gameReviewMode && !puzzleMode && (

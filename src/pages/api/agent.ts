@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { chessAgine, chessAnnotationAgent, chessPuzzleAssistant } from '@/server/mastra/agents';
-import { boardStateToPrompt, getBoardState } from '@/server/mastra/tools/state';
+import { getBoardState } from '@/server/mastra/tools/state';
+import { boardStateToPrompt } from '@/server/mastra/tools/stateToPrompt';
 import { RuntimeContext } from '@mastra/core/di';
 
 

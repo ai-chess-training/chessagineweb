@@ -1,5 +1,6 @@
-import { Chess, Square } from 'chess.js';
-import { boardStateToPrompt, getBoardState } from './state';
+import { Chess} from 'chess.js';
+import { getBoardState } from './state';
+import { boardStateToPrompt } from './stateToPrompt';
 
 export interface StockfishResponse {
     success: boolean;

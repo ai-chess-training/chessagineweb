@@ -7,11 +7,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { RuntimeContext } from "@mastra/core/di";
 import { agineSystemPrompt } from './prompt';
 import {
-    chessKnowledgeBaseTool,
-    getStockfishAnalysisTool,
-    getStockfishMoveAnalysisTool,
-    isLegalMoveTool,
-    searchWeb,
+    AgineTools,
 } from '../tools';
 
 // Type definitions for supported models
@@ -99,13 +95,7 @@ export const chessAgine = new Agent({
         return formatSystemPrompt(provider, agineSystemPrompt).replace('ENGLISH', lang);
     },
     model: ({ runtimeContext }) => createModelFromContext(runtimeContext),
-    tools: {
-        searchWeb,
-        isLegalMoveTool,
-        chessKnowledgeBaseTool,
-        getStockfishAnalysisTool,
-        getStockfishMoveAnalysisTool,
-    },
+    tools: AgineTools
 });
 
 export const chessAnnotationAgent = new Agent({
@@ -116,13 +106,7 @@ export const chessAnnotationAgent = new Agent({
         return formatSystemPrompt(provider, agineSystemPrompt).replace('ENGLISH', lang);
     },
     model: ({ runtimeContext }) => createModelFromContext(runtimeContext),
-    tools: {
-        searchWeb,
-        isLegalMoveTool,
-        chessKnowledgeBaseTool,
-        getStockfishAnalysisTool,
-        getStockfishMoveAnalysisTool,
-    },
+    tools: AgineTools
 });
 
 
@@ -134,11 +118,5 @@ export const chessPuzzleAssistant = new Agent({
         return formatSystemPrompt(provider, agineSystemPrompt).replace('ENGLISH', lang);
     },
      model: ({ runtimeContext }) => createModelFromContext(runtimeContext),
-    tools: {
-        searchWeb,
-        isLegalMoveTool,
-        chessKnowledgeBaseTool,
-        getStockfishAnalysisTool,
-        getStockfishMoveAnalysisTool,
-    },
+    tools: AgineTools
 });

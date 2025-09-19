@@ -1,4 +1,4 @@
-export const knowledgebase = `
+const knowledgebase = `
     ### Silman Imbalances:
 a. Superior minor piece - Knight vs bishop advantages in specific positions
 b. Pawn structure - Doubled, isolated, backward, passed pawns and chains

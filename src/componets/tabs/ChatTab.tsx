@@ -35,9 +35,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Card,
-  CardContent,
-  CardActions
 } from "@mui/material";
 import ModelSetting from "./ModelSetting";
 import { ChatMessage } from "../../hooks/useAgine";

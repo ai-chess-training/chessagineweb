@@ -1,7 +1,7 @@
 "use server";
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { calculateDeep, getBoardState } from "./state";
+import { getBoardState } from "./state";
 import { boardStateToPrompt } from "./stateToPrompt";
 import { generateChessAnalysis, getChessEvaluation } from "./fish";
 import { searchWebAnswer } from "./search";

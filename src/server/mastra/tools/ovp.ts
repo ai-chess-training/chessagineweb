@@ -1,5 +1,6 @@
 import { Chess, Color } from "chess.js";
 import { PositionScorer } from "./stateScorer";
+import { STATE_THEMES } from "./types";
 
 interface ThemeScore {
     material: number;
@@ -46,11 +47,11 @@ function collectFenList(rootFen: string, moves: string[]): string[] {
 export function getThemeScores(fen: string, color: Color): ThemeScore {
     const scorer = new PositionScorer(fen, color);
     return {
-        material: scorer.calculateMaterialForSide,
-        mobility: scorer.calculateMobilityScore,
-        space: scorer.calculateSpaceScore,
-        positional: scorer.calculatePositionalScore,
-        kingSafety: scorer.calculateKingSafetyScore
+        material: scorer.getThemeScore(STATE_THEMES.MATERIAL),
+        mobility: scorer.getThemeScore(STATE_THEMES.MOBILITY),
+        space: scorer.getThemeScore(STATE_THEMES.SPACE),
+        positional: scorer.getThemeScore(STATE_THEMES.POSITIONAL),
+        kingSafety: scorer.getThemeScore(STATE_THEMES.KING_SAFETY)
     };
 }
 

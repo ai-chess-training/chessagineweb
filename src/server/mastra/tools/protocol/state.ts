@@ -1,23 +1,26 @@
 "use server";
-import {BLACK, QUEEN, KING, validateFen, WHITE, Chess } from "chess.js";
-import { BoardState, SideStateScores} from "./types";
-import { getGamePhase } from "./gamePhase";
-import { getMaterialInfo } from "./material";
-import { getSidePositionalCount } from "./positional";
-import { getSideAttackerDefenderInfo } from "./attackerDefender";
-import { getPiecePlacement } from "./piecePlacement";
-import { getSideSpaceControl } from "./spaceControl";
-import { getSideSquareControl } from "./sqaureControl";
-import { getKingSafety } from "./kingSafety";
-import { getPieceMobility } from "./pieceMobility";
+import { BLACK, QUEEN, KING, validateFen, WHITE, Chess } from "chess.js";
+import { BoardState, SideStateScores } from "../types";
+import { getGamePhase } from "../themes/gamePhase";
+import { getMaterialInfo } from "../themes/material";
+import { getSidePositionalCount } from "../themes/positional";
+import { getSideAttackerDefenderInfo } from "../themes/attackerDefender";
+import { getPiecePlacement } from "../themes/piecePlacement";
+import { getSideSpaceControl } from "../themes/spaceControl";
+import { getSideSquareControl } from "../themes/sqaureControl";
+import { getKingSafety } from "../themes/kingSafety";
+import { getPieceMobility } from "../themes/pieceMobility";
 
-export function calculateDeep(fen: string, move: string): BoardState | undefined{
-    const chess = new Chess(fen);
-    chess.move(move);
-    return getBoardState(chess.fen());
+export function calculateDeep(
+  fen: string,
+  move: string
+): BoardState | undefined {
+  const chess = new Chess(fen);
+  chess.move(move);
+  return getBoardState(chess.fen());
 }
 
-export function getBoardState(fen: string): BoardState{
+export function getBoardState(fen: string): BoardState {
   const chess = new Chess(fen);
   const validfen = validateFen(fen).ok;
   if (!validfen) {
@@ -28,7 +31,7 @@ export function getBoardState(fen: string): BoardState{
     queenside: chess.getCastlingRights(WHITE)[QUEEN],
     kingside: chess.getCastlingRights(WHITE)[KING],
   };
- 
+
   const blackcastlerights = {
     queenside: chess.getCastlingRights(BLACK)[QUEEN],
     kingside: chess.getCastlingRights(BLACK)[KING],
@@ -50,7 +53,7 @@ export function getBoardState(fen: string): BoardState{
     positionalScore: getSidePositionalCount(chess, WHITE),
     squareControlScore: getSideSquareControl(chess, WHITE),
     kingSafetyScore: getKingSafety(chess, WHITE),
-    pieceMobilityScore: getPieceMobility(fen, WHITE)
+    pieceMobilityScore: getPieceMobility(fen, WHITE),
   };
 
   const blackScores: SideStateScores = {
@@ -61,7 +64,7 @@ export function getBoardState(fen: string): BoardState{
     positionalScore: getSidePositionalCount(chess, BLACK),
     squareControlScore: getSideSquareControl(chess, BLACK),
     kingSafetyScore: getKingSafety(chess, BLACK),
-    pieceMobilityScore: getPieceMobility(fen, BLACK)
+    pieceMobilityScore: getPieceMobility(fen, BLACK),
   };
 
   return {

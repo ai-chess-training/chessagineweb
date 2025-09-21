@@ -1,6 +1,6 @@
 
 import { Chess } from "chess.js";
-import { PIECE_VALUES } from "./types";
+import { PIECE_VALUES } from "../types";
 
 export function getGamePhase(chess: Chess): 'opening' | 'middlegame' | 'endgame' {
   const fen = chess.fen();

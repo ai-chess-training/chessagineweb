@@ -1,4 +1,4 @@
-import { MaterialInfo, PIECE_VALUES } from "./types";
+import { MaterialInfo, PIECE_VALUES } from "../types";
 import { Chess, Color, PAWN, KNIGHT, BISHOP, ROOK, QUEEN } from "chess.js";
 import { getPiecePlacement } from "./piecePlacement";
 

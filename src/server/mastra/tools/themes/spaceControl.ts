@@ -1,5 +1,5 @@
 import { Chess, Color } from "chess.js";
-import { BOARD_CENTRE, BOARD_FLANK, SpaceControl } from "./types";
+import { BOARD_CENTRE, BOARD_FLANK, SpaceControl } from "../types";
 
 function getSpaceControl(chess: Chess, side: Color): number {
    let spaceMeasure = 0;

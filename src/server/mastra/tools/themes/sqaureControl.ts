@@ -1,7 +1,7 @@
 
 import { Chess, Color, Square } from "chess.js";
 import { getPiecePlacement } from "./piecePlacement";
-import { SideSquareControl } from "./types";
+import { SideSquareControl } from "../types";
 
 export function getSideSquareControl(chess: Chess, side: Color): SideSquareControl {
    const placement = getPiecePlacement(chess, side);

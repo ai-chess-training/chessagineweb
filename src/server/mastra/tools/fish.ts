@@ -1,6 +1,6 @@
 import { Chess} from 'chess.js';
-import { getBoardState } from './state';
-import { boardStateToPrompt } from './stateToPrompt';
+import { getBoardState } from './protocol/state';
+import { PositionPrompter } from './protocol/positionPrompter';
 
 export interface StockfishResponse {
     success: boolean;
@@ -57,7 +57,7 @@ export const generateChessAnalysis = (data: StockfishResponse, fen: string) => {
 
     return {
         bestMove: sanBestMove || 'Unknown',
-        reasoning: boardStateToPrompt(getBoardState(fen)),
+        reasoning: new PositionPrompter(getBoardState(fen)).generatePrompt(),
         topLine: sanVariation,
         numberEval: evalNumber,
     };

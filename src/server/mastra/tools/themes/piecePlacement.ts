@@ -1,5 +1,5 @@
 import { Chess, Color, KING, QUEEN, BISHOP, KNIGHT, ROOK, PAWN } from "chess.js"
-import { SidePiecePlacement } from "./types"
+import { SidePiecePlacement } from "../types"
 
 export function getPiecePlacement(chess: Chess, side: Color): SidePiecePlacement {
   return {

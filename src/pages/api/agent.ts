@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { chessAgine, chessAnnotationAgent, chessPuzzleAssistant } from '@/server/mastra/agents';
-import { getBoardState } from '@/server/mastra/tools/state';
-import { boardStateToPrompt } from '@/server/mastra/tools/stateToPrompt';
+import { getBoardState } from '@/server/mastra/tools/protocol/state';
 import { RuntimeContext } from '@mastra/core/di';
+import { PositionPrompter } from '@/server/mastra/tools/protocol/positionPrompter';
 
 
 interface ApiSettings {
@@ -54,12 +54,6 @@ export default async function handler(
         }
 
       
-
-        // Create API settings with decrypted key
-        
-        // Log the extracted values for debugging (but not the API key!)
-      
-
         if (!query || typeof query !== 'string') {
             return res.status(400).json({
                 message: 'Missing or invalid "query" field in body (must be a non-empty string)',
@@ -97,11 +91,12 @@ export default async function handler(
             });
         }
 
-        //console.log('Board state valid, generating state prompt...');
+        
 
-        let statePrompt;
+        let positionPrompt;
         try {
-            statePrompt = boardStateToPrompt(boardState);
+            const prompter = new PositionPrompter(boardState);
+            positionPrompt = prompter.generatePrompt();
         } catch (promptError) {
             console.error('Error generating state prompt:', promptError);
             return res.status(500).json({
@@ -109,15 +104,12 @@ export default async function handler(
             });
         }
 
-        const lang = apiSettings.language;
-        const aginePromptInject = `${query} \n ${statePrompt}`;
-        //console.log('Final prompt:', aginePromptInject);
-        
+        const aginePromptInject = `${query} \n ${positionPrompt}`;
         const runtimeContext = new RuntimeContext();
         runtimeContext.set('provider', apiSettings.provider);
         runtimeContext.set('model', apiSettings.model);
         runtimeContext.set('apiKey', apiSettings.apiKey);
-        runtimeContext.set('lang', lang);
+        runtimeContext.set('lang', apiSettings.language);
 
         let response;
         let maxTokens;
@@ -165,11 +157,10 @@ export default async function handler(
         });
 
     } catch (error) {
-        console.error('❌ Unexpected error in API route:', error);
+        console.error('Unexpected error in API route:', error);
 
         return res.status(500).json({
             message: 'Internal server error',
-            // Only include stack trace in development
             ...(process.env.NODE_ENV === 'development' && { stack: error}),
         });
     }

@@ -1,5 +1,5 @@
 import { Color, Chess, PAWN, WHITE, BLACK, Square, KING, QUEEN } from "chess.js";
-import { KingSafety } from "./types";
+import { KingSafety } from "../types";
 
 export function getKingSafety(chess: Chess, side: Color): KingSafety {
   const enemySide = side === WHITE ? BLACK : WHITE;

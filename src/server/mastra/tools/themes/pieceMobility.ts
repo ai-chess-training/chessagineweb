@@ -1,5 +1,5 @@
 import { Color, Chess, PAWN, WHITE, BLACK, Square, KING, QUEEN, ROOK, BISHOP, KNIGHT } from "chess.js";
-import { PieceMobility } from "./types";
+import { PieceMobility } from "../types";
 import { getPiecePlacement } from "./piecePlacement";
 
 

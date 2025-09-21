@@ -1,6 +1,6 @@
 import { Chess, Color } from "chess.js";
-import { PositionScorer } from "./stateScorer";
-import { STATE_THEMES } from "./types";
+import { PositionScorer } from "./positionScorer";
+import { STATE_THEMES } from "../types";
 
 interface ThemeScore {
     material: number;

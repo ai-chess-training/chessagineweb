@@ -1,8 +1,7 @@
 "use server";
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { calculateDeep, getBoardState } from "./state";
-import { boardStateToPrompt } from "./stateToPrompt";
+import { calculateDeep, getBoardState } from "./protocol/state";
 import { generateChessAnalysis, getChessEvaluation } from "./fish";
 import { searchWebAnswer } from "./search";
 import { getKnowledgeBase } from "../agents/knowlegebase";
@@ -12,8 +11,9 @@ import {
   analyzeVariationThemes,
   findCriticalMoments,
   compareVariations,
-} from "./ovp";
+} from "./protocol/ovp";
 import { Color } from "chess.js";
+import { PositionPrompter } from "./protocol/positionPrompter";
 
 const fenSchema = z
   .string()
@@ -324,8 +324,8 @@ export const boardStateToPromptTool = createTool({
         prompt: "Invalid move or FEN. Cannot generate board state prompt.",
       };
     }
-    // Simple prompt string, you can customize this as needed
-    const prompt = boardStateToPrompt(boardState);
+    
+    const prompt = new PositionPrompter(boardState).generatePrompt();
     return { prompt };
   },
 });

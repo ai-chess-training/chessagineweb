@@ -1,5 +1,5 @@
 import { Chess, Color, WHITE, BLACK, PAWN } from "chess.js";
-import { PositionalPawn } from "./types";
+import { PositionalPawn } from "../types";
 
 export function getSidePositionalCount(chess: Chess, side: Color): PositionalPawn {
   const pawnSquares = chess.findPiece({type: PAWN, color: side});

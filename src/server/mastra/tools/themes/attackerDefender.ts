@@ -1,5 +1,5 @@
 import { Chess, Color, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, PieceSymbol, Square } from "chess.js";
-import { SideAttackerDefenders, PieceAttackDefendInfo } from "./types";
+import { SideAttackerDefenders, PieceAttackDefendInfo } from "../types";
 
 export function getSideAttackerDefenderInfo(chess: Chess, side: Color): SideAttackerDefenders {
   const enemySide = side === WHITE ? BLACK : WHITE;

@@ -5,6 +5,7 @@ import {
   PieceMobility,
   PositionalPawn,
   SideAttackerDefenders,
+  SidePiecePlacement,
   SideSquareControl,
   SpaceControl,
 } from "../types";
@@ -177,7 +178,7 @@ export class PositionPrompter {
     this.sections.push("</piece_positions>");
   }
 
-  private addPlayerPiecePositions(color: string, placement: any): void {
+  private addPlayerPiecePositions(color: string, placement: SidePiecePlacement): void {
     this.sections.push(`${color} PIECE LOCATIONS:`);
     this.sections.push(`  King: ${placement.kingplacement[0] || "MISSING"}`);
     this.sections.push(

@@ -240,8 +240,8 @@ export default function useAgine(fen: string) {
       const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
       
       // Validate API settings
-      if (!apiSettings.provider || !apiSettings.model || !apiSettings.apiKey) {
-        throw new Error('Please configure your API settings in the Settings page before using the chess agent.');
+      if (!apiSettings.apiKey) {
+        throw new Error('Please configure your API Key in the Settings page before using ChessAgine.');
       }
       
       const response = await fetch(`/api/agent`, {

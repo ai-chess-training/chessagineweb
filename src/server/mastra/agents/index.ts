@@ -13,14 +13,14 @@ import {
 // Type definitions for supported models
 type OpenAIModel = 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4o-mini' | "o3" | "o3-mini" | "o1" | "o1-mini" | "o4-mini" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano";
 
-// Updated Claude models - latest available as of August 2025
+
 type AnthropicModel =
     | 'claude-sonnet-4-20250514'  
     | 'claude-opus-4-20250514'            
     | 'claude-3-5-sonnet-latest'  
     | 'claude-3-5-haiku-latest';  
 
-// Updated Gemini models - latest available
+
 type GoogleModel = 
     | 'gemini-1.5-pro' 
     | 'gemini-1.5-flash'
@@ -39,7 +39,7 @@ export type ApiSetting = {
     language: string
 }
 
-// Helper function to create the model with proper typing
+
 function createModelFromContext(runtimeContext: RuntimeContext) {
     const provider = runtimeContext.get('provider') as string;
     const modelName = runtimeContext.get('model') as string;
@@ -66,19 +66,18 @@ function createModelFromContext(runtimeContext: RuntimeContext) {
     }
 }
 
-// Provider-specific system prompt formatters
+
 function formatSystemPrompt(provider: Provider, basePrompt: string): string {
     switch (provider) {
         case 'anthropic':
             return basePrompt;
             
         case 'google':
-            // Gemini works well with structured prompts but prefers concise instructions
-            // Break down complex instructions into clear, actionable sections
-            return basePrompt.replace(/###/g, '##'); // Reduce heading levels for Gemini
+            
+            return basePrompt.replace(/###/g, '##'); 
             
         case 'openai':
-            // OpenAI models work well with the current format
+            
             return basePrompt;
             
         default:

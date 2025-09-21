@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## ChessAgine
 
-## Getting Started
+<p align="center">
+  <img src="/public/static/images/agineowl.png" alt="ChessAgine" width="200"/>
+</p>
 
-First, run the development server:
+Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine and chess databases to better align with position context, making LLMs chess aware.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+# Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Multi-AI Support: Compatible with OpenAI, Claude, and Gemini models
+- Chess-Aware AI: Advanced position analysis and contextual understanding via implementation of Chess Context Protocol (CCP)
+- Stockfish Integration: Powered by Stockfish 17.1 engine for accurate evaluation
+- Opening Explorer: Comprehensive opening database integration
+- Puzzle Training: Interactive chess puzzles for skill improvement
+- Game Review: Generate game review and ask Agine for specific move analysis
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Preview
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Open Source Software Credits:
 
-## Deploy on Vercel
+ChessAgine recognizes all the open source contributions made by various devs and I want to say thanks to everyone below who helped me get the ChessAgine to the current state, without this dev's work ChessAgine would be no where near to what have it acheived with LLMs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- The Stockfish developers (see AUTHORS file). Stockfish [Computer software]. https://github.com/official-stockfish/Stockfish
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The ChessDojo developers, who's modified UiEngine model and Stockfish UI components where used in the project. https://github.com/jackstenglein/chess-dojo-scheduler
+
+- The Stockfish.js/Chess.com developers https://github.com/nmrugg/stockfish.js/ for providing compiled stockfish 17.1 wasm and NNUE files that are being used in the project.
+
+- The Lichess developers who great work with API helped me with opening explorer, puzzle databases and game imports API https://lichess.org/api
+
+- The ChessKit developers https://github.com/GuillaumeSD/Chesskit for providing the UI and Stockfish engine setup code for stockfish 17.1. As well as the game review generation algo that was modified in this project.
+
+- The ChessDB developers who give ChessAgine access to billions of engine analyed position on cloud and helped 
+with game reviews also 
+
+- The Mastra devs who's Agent framework is being used to implement AI features https://mastra.ai/
+
+
+

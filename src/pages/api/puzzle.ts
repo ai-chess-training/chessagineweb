@@ -32,16 +32,16 @@ export default async function handler(
   try {
     const { themes, ratingFrom, ratingTo } = req.query;
    
-    // Build the external API URL
+   
     let url = "https://api.chessgubbins.com/puzzles/random";
     const params = new URLSearchParams();
    
-    // Add themes parameter if provided
+    
     if (themes && typeof themes === 'string') {
       params.append("themes", themes);
     }
    
-    // Add rating parameters if provided
+    
     if (ratingFrom && ratingTo && 
         typeof ratingFrom === 'string' && 
         typeof ratingTo === 'string') {
@@ -49,12 +49,12 @@ export default async function handler(
       params.append("ratingTo", ratingTo);
     }
    
-    // Append parameters to URL if any exist
+   
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
    
-    // Fetch from external API
+   
     const response = await fetch(url);
    
     if (!response.ok) {
@@ -63,7 +63,7 @@ export default async function handler(
    
     const data: PuzzleData = await response.json();
    
-    // Return the puzzle data
+   
     return res.status(200).json({
       success: true,
       data

@@ -29,7 +29,7 @@ The Chess GUI should fetch all possible data for given chess fen that LLMs/Agent
 
 ### 2. Resource Scoring
 
-The Chess GUI should than apply scoring to the data such that each data has mapped scored value
+The Chess GUI should apply scoring to the data such that each data has mapped scored value
 
 ### 3. Resource Prompting
 
@@ -49,7 +49,7 @@ The Chess GUI should do steps 1,2,3 for ALL possible resources for paticular con
 1) Chess GUI communicates with Engine resource via UCI to get best move and top 4 variations
 2) Chess GUI scores the data by formatting Engine eval of a varaition and sorts it by eval
 3) Chess GUI builds a valid resource prompt and uses XML <engine_analysis> </engine_analysis> tag for better formatting
-5) Chess GUI does same Step 1,2,3 for and other N themes and sents usery query and fen
+4) Chess GUI does same Step 1,2,3 for and other N themes and sents usery query and fen
 
 > Client sends builded prompt to CCPS
 ```
@@ -66,11 +66,48 @@ In the example above the LLM/Agent does not have access to engine data, and even
 1) Chess GUI queries chess database for top games
 2) Chess GUI scores the chess games by top GM games and adds WDL % scores
 3) Chess GUI builds a valid resource prompt and uses XML <chess_database> </chess_database> tag for better formatting
-5) Chess GUI does same Step 1,2,3 for N themes
+4) Chess GUI does same Step 1,2,3 for N themes
 
 > Client sends builded prompt to CCPS which includes the user query and the fen
 ```
 In the above example Client fetches chess databases which LLM doesn't have access to, and adds database context
+
+## Chess Context Protocol Server (CCPS)
+
+The server protocol aims to aid the communication between the CCPC (Client) to LLM directly, the server is 
+responsible for internal chess context such as board state and themes computation on behalf of LLM the CCPC (client) is requesting. The server is also responsible for running agentic workflows that aid LLM discover external resources on its own.
+
+### 0. Context Fetching
+
+The server should be able to receive the chess context, as well the position fen and the user query directly from the CCPC (Client).
+
+### 1. Agentic Support 
+
+The server should be able to run Agents, various tools the agent needs as well as system prompts that the agent will use to better infer the context that is fetched from the client. 
+
+### 2. Themes Computation
+
+The server should compute and score N chess themes on behalf of the agent, each computation must have a key-value pair of theme associated the score. The themes must be computed from both sides, as well as the generic board state and game state.
+
+### 3. Complete Prompt Injection & Exchange
+
+The server should inject CCPC (Client) as well as the step 2's theme computation position prompt to the agent, the output from the agent should be forwarded to the CCPC (Client)
+
+### Examples:
+
+Client sends engine context and expects LLM's output
+```
+> CCPC "<engine_analysis> .... </engine_analysis> <resource1> ... </resource1> ... <resourceN> ... </resourceN>"
+
+> CCPS computes board state, attacker defender ... N themes
+
+> CCPS builds prompt for previous theme computation
+
+> CCPS injects the prompt to agent
+
+> Agent "hi, in this position... " 
+
+```
 
 
 

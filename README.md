@@ -1,4 +1,4 @@
-## ChessAgine
+# ChessAgine
 
 <p align="center">
   <img src="/public/static/images/agineowl.png" alt="ChessAgine" width="200"/>
@@ -6,7 +6,7 @@
 
 Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine and chess databases to better align with position context, making LLMs chess aware.
 
-# Features
+## Features
 
 - Multi-AI Support: Compatible with OpenAI, Claude, and Gemini models
 - Chess-Aware AI: Advanced position analysis and contextual understanding via implementation of Chess Context Protocol (CCP)
@@ -17,12 +17,12 @@ Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get pers
 
 # Chess Context Protocol (CCP)
 
-ChessAgine is a **Chess Context Position Client (CCPC)** to the CCP, to read more about the protocol explore `/chessContextProtocol` This protocol allows Chess GUI to integrate engines and LLMs.
+ChessAgine is a **Chess Context Position Client (CCPC)** to the CCP, to read more about the protocol explore `/chessContextProtocol` This protocol allows Chess GUI to integrate engines and LLMs
 
-# Preview
+## Preview
 
 <p align="center">
-  <img src="/public/static/images/aginepreviewgh.png" alt="ChessAgine_Preview" width="500"/>
+  <img src="/public/static/images/aginepreviewgh.png" alt="ChessAgine_Preview" >
 </p>
 
 

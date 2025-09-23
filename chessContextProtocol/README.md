@@ -93,7 +93,7 @@ The server should compute and score N chess themes on behalf of the agent, each 
 
 The server should inject CCPC (Client) as well as the step 2's theme computation position prompt to the agent, the output from the agent should be forwarded to the CCPC (Client)
 
-### Examples:
+### Example:
 
 Client sends engine context and expects LLM's output
 ```
@@ -108,6 +108,11 @@ Client sends engine context and expects LLM's output
 > Agent "hi, in this position... " 
 
 ```
+
+Authors:
+@jalpp
+
+
 
 
 

@@ -17,7 +17,7 @@ Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get pers
 
 # Chess Context Protocol (CCP)
 
-ChessAgine is a **Chess Context Position Client (CCPC)** to the CCP, to read more about the protocol explore `/chessContextProtocol` This protocol allows Chess GUI to integrate engines and LLMs
+ChessAgine is a **Chess Context Protocol Client (CCPC)** to the CCP, to read more about the protocol explore `/chessContextProtocol` This protocol allows Chess GUI to integrate engines and LLMs
 
 ## Preview
 
@@ -45,5 +45,5 @@ with game reviews also https://github.com/noobpwnftw/chessdb
 
 - The Mastra devs who's Agent framework is being used to implement AI features https://mastra.ai/
 
-
-
+## ChessAgine Author:
+@jalpp

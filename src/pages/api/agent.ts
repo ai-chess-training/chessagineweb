@@ -15,7 +15,7 @@ interface ApiSettings {
   apiKey: string;
   language: string;
   ollamaBaseUrl?: string; // Optional custom Ollama URL
-  ollamaThinking?: boolean; // Optional: enable reasoning for models like qwen3
+
 }
 
 interface ResponseData {
@@ -125,6 +125,14 @@ export default async function handler(
         message: "API key is required for non-Ollama providers",
       });
     }
+    
+    if(rawApiSettings.provider == "ollama" && !rawApiSettings.ollamaBaseUrl){
+      return res.status(400).json(
+        {
+          message: "Ollama base ngrok endpoint required, please set up the url"
+        }
+      )
+    }
 
     if (!query || typeof query !== "string") {
       return res.status(400).json({
@@ -188,9 +196,6 @@ export default async function handler(
     if (apiSettings.provider === "ollama") {
       if (apiSettings.ollamaBaseUrl) {
         runtimeContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);
-      }
-      if (apiSettings.ollamaThinking !== undefined) {
-        runtimeContext.set("ollamaThinking", apiSettings.ollamaThinking);
       }
     }
 

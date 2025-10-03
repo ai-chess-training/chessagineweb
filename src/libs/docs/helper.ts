@@ -24,6 +24,8 @@ export interface ModelPricing {
   tier: 'Free' | 'Budget' | 'Balanced' | 'Premium';
 }
 
+
+
 export interface ChessScenario {
   name: string;
   description: string;
@@ -124,7 +126,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 };
 
 export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
-  // FREE Ollama Cloud Models (New!)
+ 
   {
     provider: 'Ollama',
     model: 'gpt-oss:20b-cloud',

@@ -58,6 +58,8 @@ import { purpleTheme } from '@/theme/theme';
 import { FaGear } from 'react-icons/fa6';
 import { ChessScenario, IntegrationItem, FAQ_ITEMS, MODEL_PRICING, MODEL_RECOMMENDATIONS, ModelPricing, ProviderConfig, PROVIDERS, TabPanelProps } from '@/libs/docs/helper';
 
+
+
 const CHESS_SCENARIOS: ChessScenario[] = [
   {
     name: 'Quick Move Analysis',
@@ -243,6 +245,7 @@ const ChessAgineDocumentation: React.FC = () => {
 
   const getCostColor = (cost: string) => {
     switch (cost) {
+      case 'Free': return 'success';
       case 'Low': return 'success';
       case 'Medium': return 'warning';
       case 'High': return 'error';
@@ -261,6 +264,7 @@ const ChessAgineDocumentation: React.FC = () => {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case 'Free': return 'success';
       case 'Budget': return 'success';
       case 'Balanced': return 'warning';
       case 'Premium': return 'error';
@@ -285,12 +289,108 @@ const ChessAgineDocumentation: React.FC = () => {
 
 
   const renderProviderSetup = (provider: ProviderConfig) => (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ color: purpleTheme.text.primary }}>
-          {provider.name} Setup Guide
-        </Typography>
-        
+  <Card sx={{ mb: 3 }}>
+    <CardContent>
+      <Typography variant="h6" gutterBottom sx={{ color: purpleTheme.text.primary }}>
+        {provider.name} Setup Guide
+      </Typography>
+
+      {provider.name === 'Ollama' ? (
+        <List dense>
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Download Ollama" />
+            <Button
+              variant="outlined"
+              size="small"
+              color="success"
+              startIcon={<LaunchIcon />}
+              href="https://ollama.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ ml: 2 }}
+            >
+              Download
+            </Button>
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Sign up to Ollama" />
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Install models locally using terminal or use cloud (-cloud models) in Ollama interface by chatting with them" />
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Download Ngrok" />
+            <Button
+              variant="outlined"
+              size="small"
+              color="success"
+              startIcon={<LaunchIcon />}
+              href="https://ngrok.com/download/"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ ml: 2 }}
+            >
+              Download
+            </Button>
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Authenticate ngrok in terminal by getting the token from in your dashboard" />
+             <Button
+              variant="outlined"
+              size="small"
+              color="success"
+              startIcon={<LaunchIcon />}
+              href="https://dashboard.ngrok.com/ "
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ ml: 2 }}
+            >
+              Open Dashboard
+            </Button>
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Point ngrok to port 11434 by running ngrok http 11434" />
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Paste the ngrok web link in ChessAgine settings" />
+          </ListItem>
+
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText primary="Start using it!" />
+          </ListItem>
+        </List>
+      ) : (
+       
         <List dense>
           <ListItem>
             <ListItemIcon>
@@ -311,24 +411,21 @@ const ChessAgineDocumentation: React.FC = () => {
               Get API Key
             </Button>
           </ListItem>
-          
+
           <ListItem>
             <ListItemIcon>
               <CheckCircleIcon sx={{ color: purpleTheme.success }} />
             </ListItemIcon>
             <ListItemText primary="Create a new API key" />
           </ListItem>
-          
+
           <ListItem>
             <ListItemIcon>
               <CheckCircleIcon sx={{ color: purpleTheme.success }} />
             </ListItemIcon>
-            <ListItemText 
-              primary="Copy your API key"
-              secondary={`Should start with: ${provider.keyPrefix}...`}
-            />
+            <ListItemText primary="Copy your API key" secondary={`Should start with: ${provider.keyPrefix}...`} />
           </ListItem>
-          
+
           <ListItem>
             <ListItemIcon>
               <CheckCircleIcon sx={{ color: purpleTheme.success }} />
@@ -336,40 +433,42 @@ const ChessAgineDocumentation: React.FC = () => {
             <ListItemText primary="Enter the key in ChessAgine settings" />
           </ListItem>
         </List>
+      )}
 
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" gutterBottom color="secondary">
-            Available Models:
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {provider.models.map((model) => (
-              <Chip 
-                key={model} 
-                label={model} 
-                size="small" 
-                variant="outlined"
-                sx={{ color: purpleTheme.text.primary, borderColor: purpleTheme.text.secondary }}
-              />
-            ))}
-          </Box>
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom color="secondary">
+          Available Models:
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {provider.models.map((model) => (
+            <Chip
+              key={model}
+              label={model}
+              size="small"
+              variant="outlined"
+              sx={{ color: purpleTheme.text.primary, borderColor: purpleTheme.text.secondary }}
+            />
+          ))}
         </Box>
+      </Box>
 
-        <Box sx={{ mt: 2 }}>
-          <Button
-            variant="text"
-            size="small"
-            color="success"
-            startIcon={<InfoIcon />}
-            href={provider.docsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View Documentation
-          </Button>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+      <Box sx={{ mt: 2 }}>
+        <Button
+          variant="text"
+          size="small"
+          color="success"
+          startIcon={<InfoIcon />}
+          href={provider.docsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View Documentation
+        </Button>
+      </Box>
+    </CardContent>
+  </Card>
+);
+
 
   const renderModelRecommendations = () => (
     <Grid container spacing={3}>
@@ -751,43 +850,52 @@ const ChessAgineDocumentation: React.FC = () => {
             </Typography>
           </Alert>
 
-          {/* Why Use Your Own API Key */}
           <Card sx={{ mb: 4 }}>
-            <CardContent>
-              <Typography variant="h5" gutterBottom color="primary.text">
-                Why Use Your Own API Key?
-              </Typography>
-              <List>
-                <ListItem>
-                  <ListItemIcon>
-                    <CostIcon color="success" />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Cost Control" 
-                    secondary="You pay only for what you use, directly to the provider"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <IntelligenceIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Model Choice" 
-                    secondary="Select any supported model based on your budget and needs"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <SecurityIcon sx={{ color: purpleTheme.text.accent }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Privacy & Security" 
-                    secondary="Direct connection to providers without intermediary costs or risks"
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
+  <CardContent>
+    <Typography variant="h5" gutterBottom color="primary.text">
+      Why Use Your Own API Key?
+    </Typography>
+    <List>
+      <ListItem>
+        <ListItemIcon>
+          <CostIcon color="success" />
+        </ListItemIcon>
+        <ListItemText 
+          primary="Cost Control" 
+          secondary="You pay only for what you use, directly to the provider, ChessAgine now supports Ollama pay $0 and use best LLM models."
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemIcon>
+          <IntelligenceIcon color="primary" />
+        </ListItemIcon>
+        <ListItemText 
+          primary="Model Choice" 
+          secondary="Select any supported model based on your budget and needs"
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemIcon>
+          <SecurityIcon sx={{ color: purpleTheme.text.accent }} />
+        </ListItemIcon>
+        <ListItemText 
+          primary="Privacy & Security" 
+          secondary="Direct connection to providers without intermediary costs or risks"
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemIcon>
+          <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+        </ListItemIcon>
+        <ListItemText 
+          primary="Ollama Simplicity" 
+          secondary="No API key required — run models locally or connect via ngrok/cloud for instant access"
+        />
+      </ListItem>
+    </List>
+  </CardContent>
+</Card>
+
 
           {/* Main Content Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

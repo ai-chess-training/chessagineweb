@@ -27,7 +27,7 @@ import { useLocalStorage } from 'usehooks-ts';
 
 // Types
 export interface ApiSettings {
-  provider: 'openai' | 'anthropic' | 'google';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama';
   model: string;
   apiKey: string;
   language: string;
@@ -48,7 +48,7 @@ interface LanguageOption {
   flag: string;
 }
 
-// Provider configurations
+
 const PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: 'OpenAI',
@@ -100,8 +100,28 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     website: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
   },
+  ollama: {
+    name: 'Ollama',
+    models: [
+      'qwen3:8b' 
+    , 'qwen3:4b'
+    ,'qwen3:30b'
+    ,'gpt-oss:20b'
+    ,'gpt-oss:120b'
+    ,'deepseek-v3.1:671b-cloud'
+    ,'gpt-oss:120b-cloud'
+    ,'gpt-oss:20b-cloud'
+    ],
+    keyPrefix: '',
+    website: 'https://docs.ollama.com/',
+    docsUrl: 'https://docs.ollama.com/',
+  },
+
+
 };
 
+
+ 
 // Language options
 const LANGUAGES: LanguageOption[] = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
@@ -147,8 +167,8 @@ const LANGUAGES: LanguageOption[] = [
 const ModelSetting: React.FC = () => {
   // Default settings to ensure controlled components
   const defaultSettings: ApiSettings = {
-    provider: 'openai',
-    model: '',
+    provider: 'ollama',
+    model: 'gpt-oss:20b-cloud',
     apiKey: '',
     language: 'English',
   };
@@ -497,7 +517,7 @@ const ModelSetting: React.FC = () => {
       </Card>
 
       {/* API Key Configuration */}
-      {tempSettings.provider && currentProviderConfig && (
+      {tempSettings.provider && currentProviderConfig && !tempSettings.provider.toLowerCase().includes("ollama") && (
         <Card 
           variant="outlined" 
           sx={{ 

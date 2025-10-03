@@ -10,10 +10,12 @@ import { PositionPrompter } from "@/server/mastra/tools/protocol/positionPrompte
 import { getAuth } from "@clerk/nextjs/server";
 
 interface ApiSettings {
-  provider: "openai" | "anthropic" | "google";
+  provider: "openai" | "anthropic" | "google" | "ollama";
   model: string;
   apiKey: string;
   language: string;
+  ollamaBaseUrl?: string; // Optional custom Ollama URL
+  ollamaThinking?: boolean; // Optional: enable reasoning for models like qwen3
 }
 
 interface ResponseData {
@@ -101,18 +103,26 @@ export default async function handler(
     if (!isAuthenticated) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    
     const { query, fen, mode, apiSettings } = req.body;
 
     const rawApiSettings = apiSettings as ApiSettings;
 
+    // Validation for API settings
     if (
       !rawApiSettings ||
       !rawApiSettings.provider ||
-      !rawApiSettings.model ||
-      !rawApiSettings.apiKey
+      !rawApiSettings.model
     ) {
       return res.status(400).json({
-        message: "API settings are required (provider, model, apiKey)",
+        message: "API settings are required (provider, model)",
+      });
+    }
+
+    // For Ollama, apiKey is not required
+    if (rawApiSettings.provider !== "ollama" && !rawApiSettings.apiKey) {
+      return res.status(400).json({
+        message: "API key is required for non-Ollama providers",
       });
     }
 
@@ -171,8 +181,18 @@ export default async function handler(
     const runtimeContext = new RuntimeContext();
     runtimeContext.set("provider", apiSettings.provider);
     runtimeContext.set("model", apiSettings.model);
-    runtimeContext.set("apiKey", apiSettings.apiKey);
+    runtimeContext.set("apiKey", apiSettings.apiKey || "");
     runtimeContext.set("lang", apiSettings.language);
+    
+    // Add Ollama-specific settings if provided
+    if (apiSettings.provider === "ollama") {
+      if (apiSettings.ollamaBaseUrl) {
+        runtimeContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);
+      }
+      if (apiSettings.ollamaThinking !== undefined) {
+        runtimeContext.set("ollamaThinking", apiSettings.ollamaThinking);
+      }
+    }
 
     let response;
     let maxTokens;

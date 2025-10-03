@@ -27,10 +27,11 @@ import { useLocalStorage } from 'usehooks-ts';
 
 // Types
 export interface ApiSettings {
-  provider: 'openai' | 'anthropic' | 'google';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama';
   model: string;
   apiKey: string;
   language: string;
+  ollamaBaseUrl?: string;
 }
 
 interface ProviderConfig {
@@ -48,7 +49,7 @@ interface LanguageOption {
   flag: string;
 }
 
-// Provider configurations
+
 const PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: 'OpenAI',
@@ -100,8 +101,28 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     website: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
   },
+  ollama: {
+    name: 'Ollama',
+    models: [
+      'qwen3:8b' 
+    , 'qwen3:4b'
+    ,'qwen3:30b'
+    ,'gpt-oss:20b'
+    ,'gpt-oss:120b'
+    ,'deepseek-v3.1:671b-cloud'
+    ,'gpt-oss:120b-cloud'
+    ,'gpt-oss:20b-cloud'
+    ],
+    keyPrefix: '',
+    website: 'https://docs.ollama.com/',
+    docsUrl: 'https://docs.ollama.com/',
+  },
+
+
 };
 
+
+ 
 // Language options
 const LANGUAGES: LanguageOption[] = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
@@ -147,8 +168,8 @@ const LANGUAGES: LanguageOption[] = [
 const ModelSetting: React.FC = () => {
   // Default settings to ensure controlled components
   const defaultSettings: ApiSettings = {
-    provider: 'openai',
-    model: '',
+    provider: 'ollama',
+    model: 'gpt-oss:20b-cloud',
     apiKey: '',
     language: 'English',
   };
@@ -497,7 +518,7 @@ const ModelSetting: React.FC = () => {
       </Card>
 
       {/* API Key Configuration */}
-      {tempSettings.provider && currentProviderConfig && (
+      {tempSettings.provider && currentProviderConfig && !tempSettings.provider.toLowerCase().includes("ollama") && (
         <Card 
           variant="outlined" 
           sx={{ 
@@ -587,6 +608,92 @@ const ModelSetting: React.FC = () => {
               >
                 <InfoIcon fontSize="small" />
                 Get your {currentProviderConfig.name} API key
+              </Link>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+       {/* API Key Configuration */}
+      {tempSettings.provider.toLowerCase().includes("ollama") && (
+        <Card 
+          variant="outlined" 
+          sx={{ 
+            mb: 3,
+            backgroundColor: colors.background.card,
+            borderColor: `${colors.secondary}60`,
+          }}
+        >
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <Typography 
+                variant="h6"
+                sx={{ color: colors.text.accent }}
+              >
+                Local LLM ngrok endpoint
+              </Typography>
+              <Chip 
+                size="small" 
+                label={currentProviderConfig.name}
+                sx={{
+                  backgroundColor: `${colors.secondary}30`,
+                  color: colors.text.primary,
+                  borderColor: colors.secondary,
+                }}
+                variant="outlined"
+              />
+            </Box>
+            
+            <TextField
+              fullWidth
+              label={`ngrok-endpoint`}
+              type={'text'}
+              value={tempSettings.ollamaBaseUrl || ''}
+              onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value })}
+              placeholder={`Enter your ngrok endpoint https:...`}
+              helperText={`Enter your ngrok endpoint https:..."`}
+              sx={{
+                '& .MuiInputBase-root': {
+                  backgroundColor: colors.background.input,
+                },
+                '& .MuiInputLabel-root': {
+                  color: colors.text.secondary,
+                },
+                '& .MuiOutlinedInput-root': {
+                  color: colors.text.primary,
+                  '& fieldset': {
+                    borderColor: `${colors.secondary}60`,
+                  },
+                  '&:hover fieldset': {
+                    borderColor: colors.secondary,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: colors.primary,
+                  },
+                },
+                '& .MuiFormHelperText-root': {
+                  color: colors.text.secondary,
+                },
+              }}
+            />
+            
+            <Box mt={2}>
+              <Link 
+                href={"https://www.chessagine.com/docs"} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 0.5,
+                  color: colors.accent,
+                  '&:hover': {
+                    color: colors.text.accent,
+                  }
+                }}
+              >
+                <InfoIcon fontSize="small" />
+                Read the docs to start the ngrok server to connect to local LLM 
               </Link>
             </Box>
           </CardContent>

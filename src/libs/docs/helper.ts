@@ -1,5 +1,3 @@
-
-
 export interface ProviderConfig {
   name: string;
   models: string[];
@@ -12,7 +10,7 @@ export interface ModelRecommendation {
   provider: string;
   model: string;
   useCase: string;
-  cost: 'Low' | 'Medium' | 'High';
+  cost: 'Free' | 'Low' | 'Medium' | 'High';
   performance: 'Good' | 'Better' | 'Best';
   reasoning: string;
 }
@@ -23,8 +21,10 @@ export interface ModelPricing {
   inputPrice: number; // per 1M tokens
   outputPrice: number; // per 1M tokens
   costPer200Requests: number;
-  tier: 'Budget' | 'Balanced' | 'Premium';
+  tier: 'Free' | 'Budget' | 'Balanced' | 'Premium';
 }
+
+
 
 export interface ChessScenario {
   name: string;
@@ -107,13 +107,82 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     website: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
   },
+  ollama: {
+    name: 'Ollama',
+    models: [
+      'qwen3:8b' 
+    , 'qwen3:4b'
+    ,'qwen3:30b'
+    ,'gpt-oss:20b'
+    ,'gpt-oss:120b'
+    ,'deepseek-v3.1:671b-cloud'
+    ,'gpt-oss:120b-cloud'
+    ,'gpt-oss:20b-cloud'
+    ],
+    keyPrefix: '',
+    website: 'https://docs.ollama.com/',
+    docsUrl: 'https://docs.ollama.com/',
+  },
 };
 
 export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
+ 
+  {
+    provider: 'Ollama',
+    model: 'gpt-oss:20b-cloud',
+    useCase: 'Free cloud chess analysis - no setup needed',
+    cost: 'Free',
+    performance: 'Better',
+    reasoning: 'Completely free cloud-based model with no API costs or local installation required'
+  },
+  {
+    provider: 'Ollama',
+    model: 'gpt-oss:120b-cloud',
+    useCase: 'Free advanced cloud analysis',
+    cost: 'Free',
+    performance: 'Best',
+    reasoning: 'Powerful free cloud model - premium quality analysis without any subscription fees'
+  },
+  {
+    provider: 'Ollama',
+    model: 'deepseek-v3.1:671b-cloud',
+    useCase: 'Free ultra-advanced cloud analysis',
+    cost: 'Free',
+    performance: 'Best',
+    reasoning: 'Massive free cloud model with exceptional reasoning - rivals premium paid models'
+  },
+  
+  // FREE Ollama Local Models
+  {
+    provider: 'Ollama',
+    model: 'qwen3:4b',
+    useCase: 'Free offline chess analysis for beginners',
+    cost: 'Free',
+    performance: 'Good',
+    reasoning: 'Run locally on your computer - works offline and perfect for learning basics'
+  },
+  {
+    provider: 'Ollama',
+    model: 'qwen3:8b',
+    useCase: 'Free offline balanced analysis',
+    cost: 'Free',
+    performance: 'Good',
+    reasoning: 'Great local option for intermediate players - no internet required after setup'
+  },
+  {
+    provider: 'Ollama',
+    model: 'gpt-oss:20b',
+    useCase: 'Free offline advanced analysis',
+    cost: 'Free',
+    performance: 'Better',
+    reasoning: 'Powerful local model for serious study - requires more RAM but fully private'
+  },
+  
+  // Budget Cloud Models
   {
     provider: 'OpenAI',
     model: 'gpt-5-nano',
-    useCase: 'quick analysis and chat about a game',
+    useCase: 'Quick analysis and chat about a game',
     cost: 'Low',
     performance: 'Good',
     reasoning: 'Extremely affordable with solid chess understanding for beginners'
@@ -121,28 +190,11 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
   {
     provider: 'OpenAI',
     model: 'gpt-4o-mini',
-    useCase: 'Budget-friendly analysis',
+    useCase: 'Budget-friendly cloud analysis',
     cost: 'Low',
     performance: 'Good',
     reasoning: 'Great balance of cost and chess understanding'
   },
-  {
-    provider: 'OpenAI',
-    model: 'gpt-5',
-    useCase: 'Advanced chess analysis',
-    cost: 'Medium',
-    performance: 'Better',
-    reasoning: 'Latest model with superior reasoning capabilities'
-  },
-  {
-    provider: 'OpenAI',
-    model: 'o1',
-    useCase: 'Deep chess training',
-    cost: 'High',
-    performance: 'Best',
-    reasoning: 'Exceptional reasoning and strategic depth for complex positions'
-  },
-
   {
     provider: 'Claude',
     model: 'claude-3-5-haiku',
@@ -150,6 +202,24 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     cost: 'Low',
     performance: 'Good',
     reasoning: 'Fast responses with solid chess knowledge'
+  },
+  {
+    provider: 'Gemini',
+    model: 'gemini-2.5-flash-lite',
+    useCase: 'Ultra-fast casual games',
+    cost: 'Low',
+    performance: 'Good',
+    reasoning: 'Quickest responses for rapid gameplay'
+  },
+  
+  // Balanced Models
+  {
+    provider: 'OpenAI',
+    model: 'gpt-5',
+    useCase: 'Advanced chess analysis',
+    cost: 'Medium',
+    performance: 'Better',
+    reasoning: 'Latest model with superior reasoning capabilities'
   },
   {
     provider: 'Claude',
@@ -160,33 +230,45 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     reasoning: 'Excellent reasoning with good cost efficiency'
   },
   {
-    provider: 'Claude',
-    model: 'claude-opus-4',
-    useCase: 'Ultimate chess analysis',
-    cost: 'High',
-    performance: 'Best',
-    reasoning: 'Latest and most capable Claude model for complex analysis'
-  },
-  {
-    provider: 'Gemini',
-    model: 'gemini-2.5-flash-lite',
-    useCase: 'Ultra-fast casual games',
-    cost: 'Low',
-    performance: 'Good',
-    reasoning: 'Quickest responses for rapid gameplay'
-  },
-  {
     provider: 'Gemini',
     model: 'gemini-2.5-pro',
     useCase: 'Deep position analysis',
     cost: 'Medium',
     performance: 'Best',
     reasoning: 'Advanced analysis with 1M token context window'
+  },
+  
+  // Premium Models
+  {
+    provider: 'OpenAI',
+    model: 'o1',
+    useCase: 'Deep chess training',
+    cost: 'High',
+    performance: 'Best',
+    reasoning: 'Exceptional reasoning and strategic depth for complex positions'
+  },
+  {
+    provider: 'Claude',
+    model: 'claude-opus-4',
+    useCase: 'Ultimate chess analysis',
+    cost: 'High',
+    performance: 'Best',
+    reasoning: 'Latest and most capable Claude model for complex analysis'
   }
 ];
 
 // Pricing data (current as of August 2025, verified from official provider pricing pages)
 export const MODEL_PRICING: ModelPricing[] = [
+  // Ollama Models (FREE - runs locally)
+  { provider: 'Ollama', model: 'qwen3:4b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'qwen3:8b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'qwen3:30b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'gpt-oss:20b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'gpt-oss:120b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'deepseek-v3.1:671b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'gpt-oss:120b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'gpt-oss:20b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  
   // OpenAI Models (Standard tier pricing)
   { provider: 'OpenAI', model: 'gpt-5-nano', inputPrice: 0.05, outputPrice: 0.40, costPer200Requests: 0.09, tier: 'Budget' },
   { provider: 'OpenAI', model: 'gpt-4o-mini', inputPrice: 0.15, outputPrice: 0.60, costPer200Requests: 0.18, tier: 'Budget' },
@@ -241,23 +323,38 @@ export const FAQ_ITEMS: FAQItem[] = [
     category: "general"
   },
   {
+    question: "Can I use ChessAgine completely free?",
+    answer: "Yes! ChessAgine now supports Ollama, which offers TWO free options: 1) Cloud models (gpt-oss:20b-cloud, gpt-oss:120b-cloud, deepseek-v3.1:671b-cloud) that run on Ollama's servers with zero cost - just connect and use, no installation needed! 2) Local models that run on your computer after installing Ollama. Both options provide unlimited chess analysis without any API costs or subscriptions.",
+    category: "cost"
+  },
+  {
+    question: "What's the difference between Ollama Cloud and Ollama Local models?",
+    answer: "Ollama Cloud models (with '-cloud' suffix) run on Ollama's free servers - you just connect ChessAgine and start analyzing, no setup required. Local models run on your own computer, giving you offline access and maximum privacy but requiring installation and adequate RAM. Both are completely free! Cloud models are easier to start with, while local models work without internet and keep everything private.",
+    category: "technical"
+  },
+  {
+    question: "What is Ollama and how do I use it with ChessAgine?",
+    answer: "Ollama provides free AI models in two ways: Cloud models are the easiest - just select an Ollama cloud model in ChessAgine and start using it immediately with no setup. For local models: 1) Install Ollama from ollama.com, 2) Download a model (like qwen3:8b), 3) Connect ChessAgine to your local Ollama instance. Cloud models are perfect for getting started instantly, while local models give you offline access.",
+    category: "technical"
+  },
+  {
     question: "Can ChessAgine help improve my chess rating?",
     answer: "While ChessAgine isn't a replacement for structured training or human coaching, it can definitely support your improvement journey. It can help you understand your games, explain tactical patterns, suggest areas to focus on, and provide practice scenarios. Think of it as a study companion that's available 24/7.",
     category: "general"
   },
   {
     question: "Can ChessAgine make mistakes or give incorrect analysis?",
-    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1 or GPT-5.",
+    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1, GPT-5, or Claude Opus-4. Free local models (Ollama) may have more limitations than premium cloud models.",
     category: "technical"
   },
-   {
-    question: "Is Chessagine trained on millions of data to output a better analysis?",
-    answer: "ChessAgine itself is not trained, it uses the base model's training to predict the next token, chessagine uses various AI engineering techniques to convert AI models into chess aware models",
+  {
+    question: "Is ChessAgine trained on millions of chess games?",
+    answer: "ChessAgine itself is not specially trained - it uses the base model's existing training to predict responses. ChessAgine applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, but ChessAgine enhances their chess capabilities through prompt engineering and integration techniques.",
     category: "technical"
   },
   {
     question: "How can I get more accurate results from ChessAgine?",
-    answer: "To improve accuracy: 1) Use higher-tier models (like GPT-5, Claude Opus-4, or o1) which generally provide better reasoning, 2) Be specific in your questions, 3) Ask follow-up questions if something seems unclear 4) Cross-reference important analysis with multiple sources. Remember, more powerful models cost more but typically give significantly better results.",
+    answer: "To improve accuracy: 1) Use higher-tier models (like GPT-5, Claude Opus-4, or o1) which generally provide better reasoning, 2) Be specific in your questions, 3) Ask follow-up questions if something seems unclear, 4) Cross-reference important analysis with multiple sources. For free options, larger Ollama models (like gpt-oss:20b or qwen3:30b) typically perform better than smaller ones, though they require more RAM.",
     category: "technical"
   },
   {
@@ -267,43 +364,52 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "Do different AI models give different quality results?",
-    answer: "Absolutely! More advanced models (like o1, GPT-5, Claude Opus-4) generally provide more accurate analysis, better strategic understanding, and fewer mistakes compared to budget models. If you're serious about chess improvement or need reliable analysis, investing in a premium model can make a significant difference in the quality of explanations and accuracy of suggestions.",
+    answer: "Absolutely! More advanced models (like o1, GPT-5, Claude Opus-4) generally provide more accurate analysis, better strategic understanding, and fewer mistakes compared to budget or free models. Free Ollama models are great for learning and casual analysis, but premium cloud models offer superior reasoning for serious chess study. If you need reliable analysis for important games, investing in a premium model can make a significant difference.",
     category: "technical"
   },
   {
+    question: "Should I use Ollama (free) or paid API models?",
+    answer: "It depends on your needs! Ollama is perfect for: learning basics, casual analysis, unlimited practice without cost concerns, and offline use. Paid APIs are better for: faster responses, more sophisticated analysis, limited computer resources, and professional-level chess study. Many users start with Ollama and upgrade to paid models for important analysis.",
+    category: "cost"
+  },
+  {
     question: "Why do I need my own API key instead of a subscription?",
-    answer: "Using your own API key gives you direct access to the latest AI models, complete cost control, and enhanced privacy. You only pay for what you use, can choose any supported model, and your conversations go directly to the AI provider without intermediaries.",
+    answer: "Using your own API key gives you direct access to the latest AI models, complete cost control, and enhanced privacy. You only pay for what you use, can choose any supported model, and your conversations go directly to the AI provider without intermediaries. Alternatively, you can use Ollama models completely free on your own computer.",
     category: "cost"
   },
   {
     question: "How much does it typically cost to use ChessAgine?",
-    answer: "Costs vary by model and usage. For casual use (a few analyses per day), expect $0.50-$3 per month. Heavy users might spend $5-$15 monthly. The cost analysis tab shows detailed breakdowns for different usage patterns and models.",
+    answer: "With Ollama: $0 - completely free! With cloud APIs: Costs vary by model and usage. For casual use (a few analyses per day), expect $0.50-$3 per month. Heavy users might spend $5-$15 monthly. The cost analysis tab shows detailed breakdowns for different usage patterns and models.",
     category: "cost"
   },
   {
-    question: "Where do I set up payment information to use Agine?",
-    answer: "In agine UI you can not set up payment method, you need to use the AI provider's Billing interface",
+    question: "Where do I set up payment information to use ChessAgine?",
+    answer: "For Ollama models: No payment needed - they're completely free. For cloud APIs: You set up payment directly with the AI provider (OpenAI, Anthropic, or Google), not within the ChessAgine UI. Visit your chosen provider's billing interface to add payment methods.",
     category: "cost"
   },
   {
     question: "Is my chess data and conversation history private?",
-    answer: "Your privacy depends on the AI provider you choose. ChessAgine doesn't store your conversations - they go directly between your browser and the AI provider. Check each provider's privacy policy for details on data handling and retention.",
+    answer: "Your privacy depends on the provider you choose. With Ollama, everything runs locally on your computer - maximum privacy. With cloud APIs, ChessAgine doesn't store your conversations - they go directly between your browser and the AI provider. Check each provider's privacy policy for details on data handling and retention.",
     category: "privacy"
   },
   {
     question: "Can I use multiple AI providers with ChessAgine?",
-    answer: "Yes! You can set up API keys for multiple providers and switch between them. This lets you use different models for different purposes - perhaps a fast, cheap model for quick questions and a more powerful model for deep analysis.",
+    answer: "Yes! You can set up Ollama for free local models AND add API keys for cloud providers, then switch between them. This lets you use different models for different purposes - perhaps Ollama for quick questions and a powerful cloud model for deep analysis. Mix and match based on your needs!",
     category: "technical"
   },
   {
     question: "What happens if I run out of API credits?",
-    answer: "If your API credits are exhausted, you'll need to add more funds to your provider account. ChessAgine will show you the error message from the provider, and you can add credits directly through their platform.",
+    answer: "If your API credits are exhausted, you'll need to add more funds to your provider account. ChessAgine will show you the error message from the provider, and you can add credits directly through their platform. Alternatively, switch to Ollama models which never run out since they're free and local.",
     category: "cost"
   },
   {
     question: "Can ChessAgine analyze games from chess.com or Lichess?",
     answer: "Yes! You can paste PGN games from any platform, and ChessAgine can analyze them. With the Lichess integration, you can also explore opening databases and get additional context for your games.",
     category: "technical"
+  },
+  {
+    question: "What computer specs do I need to run Ollama models?",
+    answer: "It varies by model size: qwen3:4b needs ~4GB RAM, qwen3:8b needs ~8GB RAM, and larger models like gpt-oss:120b need 64GB+ RAM. Most modern computers can run the smaller models (4b-8b) just fine. Start with a smaller model and upgrade if you have the resources and want better analysis quality.",
+    category: "technical"
   }
 ];
-

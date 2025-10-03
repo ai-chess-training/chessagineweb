@@ -28,6 +28,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { FaPuzzlePiece } from 'react-icons/fa6';
+import { GitHub } from '@mui/icons-material';
 
 export default function HomePage() {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -207,13 +208,15 @@ export default function HomePage() {
                   fontSize: { xs: '1.2rem', md: '1.5rem' }
                 }}
               >
-                Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine and chess databases to better align with position context, making LLMs chess aware.
+                Plug-and-play chess training with your choice of AI provider. Convert any LLM model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine and chess databases to better align with position context, making LLMs chess aware.
               </Typography>
             </Stack>
 
             {/* Feature Pills */}
             <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center" sx={{ mt: 4 }}>
               {[
+                'Ollama Integration',
+                'Open Source under GPL',
                 'Stockfish 17.1 Engine',
                 'Web Chess Search',
                 'Lichess Integration', 
@@ -386,80 +389,96 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Plug & Play Section */}
-      <Box py={16} bgcolor="#f5deb3">
-        <Container maxWidth="lg">
-          <Stack spacing={8} alignItems="center">
-            <Box textAlign="center">
-              <Typography 
-                variant="h2" 
-                fontWeight="bold" 
-                color="#7c3aed"
-                sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
-                gutterBottom
-              >
-                Plug & Play AI Integration
-              </Typography>
-              <Typography 
-                variant="h5" 
-                color="#5b21b6" 
-                sx={{ opacity: 0.8, fontSize: { xs: '1.2rem', md: '1.5rem' } }}
-              >
-                Use your own API key for complete control and privacy
-              </Typography>
-            </Box>
-
-            <Grid container spacing={4} justifyContent="center">
-              {[
-                {
-                  icon: <ApiIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
-                  title: 'Your API, Your Control',
-                  description: 'Connect OpenAI, Anthropic Claude, or Google Gemini with your own API key. Pay only for what you use.',
-                  color: '#e8f5e8'
-                },
-                {
-                  icon: <SecurityIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
-                  title: 'Privacy First',
-                  description: 'Your API keys are stored locally in your browser. We never see or store your credentials.',
-                  color: '#fff3e0'
-                },
-                {
-                  icon: <PsychologyIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
-                  title: 'Choose Your Model',
-                  description: 'From budget-friendly options to premium models - select the AI that fits your needs and budget.',
-                  color: '#f3e5f5'
-                }
-              ].map((card) => (
-                <Grid size={{ xs: 12, md: 4 }} key={card.title}>
-                  <Paper
-                    elevation={4}
-                    sx={{
-                      p: 4,
-                      textAlign: 'center',
-                      height: '100%',
-                      bgcolor: card.color,
-                      borderRadius: 3,
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 12px 30px rgba(124, 58, 237, 0.15)',
-                      },
-                    }}
-                  >
-                    <Box mb={2}>{card.icon}</Box>
-                    <Typography variant="h5" fontWeight="bold" color="#7c3aed" gutterBottom>
-                      {card.title}
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      {card.description}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          </Stack>
-        </Container>
+     {/* Plug & Play Section */}
+<Box py={16} bgcolor="#f5deb3">
+  <Container maxWidth="lg">
+    <Stack spacing={8} alignItems="center">
+      <Box textAlign="center">
+        <Typography 
+          variant="h2" 
+          fontWeight="bold" 
+          color="#7c3aed"
+          sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
+          gutterBottom
+        >
+          Plug & Play AI Integration
+        </Typography>
+        <Typography 
+          variant="h5" 
+          color="#5b21b6" 
+          sx={{ opacity: 0.8, fontSize: { xs: '1.2rem', md: '1.5rem' } }}
+        >
+          Use your own API key — or go free with Ollama local/cloud models (no key required!)
+        </Typography>
       </Box>
+
+      <Grid container spacing={4} justifyContent="center">
+        {[
+          {
+            icon: <ApiIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+            title: 'Your API, Your Control',
+            description: 'Connect OpenAI, Anthropic Claude, or Google Gemini with your own API key. Pay only for what you use',
+            color: '#e8f5e8'
+          },
+          {
+            icon: <SecurityIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+            title: 'Privacy First',
+            description: 'Your API keys are stored locally in your browser. We never see or store your credentials.',
+            color: '#fff3e0'
+          },
+          {
+            icon: <PsychologyIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+            title: 'Choose Your Model',
+            description: 'From free models on Ollama to premium models on Cloud - select the AI that fits your needs.',
+            color: '#f3e5f5'
+          },
+          {
+            icon: <StorageIcon sx={{ fontSize: 48, color: '#7c3aed' }} />,
+            title: 'Ollama Integration',
+            description: 'Run models locally or via Ollama cloud. No API key required. 100% free, open source.',
+            color: '#e0f7fa',
+            extra: (
+              <Chip 
+                label="Open Source" 
+                color="success" 
+                size="small" 
+                icon={<GitHub />} 
+                sx={{ mt: 2 }}
+              />
+            )
+          }
+        ].map((card) => (
+          <Grid size={{ xs: 12, md: 6, lg: 4 }}  key={card.title}>
+            <Paper
+              elevation={4}
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                height: '100%',
+                bgcolor: card.color,
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 30px rgba(124, 58, 237, 0.15)',
+                },
+              }}
+            >
+              <Box mb={2}>{card.icon}</Box>
+              <Typography variant="h5" fontWeight="bold" color="#7c3aed" gutterBottom>
+                {card.title}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                {card.description}
+              </Typography>
+              {card.extra}
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+    </Stack>
+  </Container>
+</Box>
 
       {/* Features Section */}
       <Box py={16} bgcolor="white">

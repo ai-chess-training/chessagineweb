@@ -906,6 +906,8 @@ const ChessAgineDocumentation: React.FC = () => {
             {renderFAQ()}
           </CustomTabPanel>
 
+          
+
           {/* Footer */}
           <Paper sx={{ p: 3, mt: 4 }}>
             <Typography variant="h6" gutterBottom color="primary.text">

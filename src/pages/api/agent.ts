@@ -31,6 +31,59 @@ interface ErrorResponseData {
   stack?: string;
 }
 
+// Helper function to extract meaningful error message
+function extractErrorMessage(error: unknown): string {
+  // Check for Error instance with message
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // Check for object with message property
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  
+  // Check for AI_APICallError structure with responseBody
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "responseBody" in error &&
+    typeof error.responseBody === "string"
+  ) {
+    try {
+      const parsed = JSON.parse(error.responseBody) as {
+        error?: { message?: string };
+      };
+      if (parsed?.error?.message) {
+        return parsed.error.message;
+      }
+    } catch {
+      // If parsing fails, continue to other checks
+    }
+  }
+  
+  // Check for nested error object
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "error" in error &&
+    typeof error.error === "object" &&
+    error.error !== null &&
+    "message" in error.error &&
+    typeof error.error.message === "string"
+  ) {
+    return error.error.message;
+  }
+  
+  // Fallback to string representation
+  return String(error);
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData | ErrorResponseData>
@@ -160,8 +213,12 @@ export default async function handler(
       }
     } catch (agentError) {
       console.error("Error from chess agent:", agentError);
+      
+      // Extract the actual error message
+      const errorMessage = extractErrorMessage(agentError);
+      
       return res.status(500).json({
-        message: `An error occurred on the ${apiSettings.provider} API, check the credit balance or try with new API key, make sure your API key is correct`,
+        message: errorMessage,
         maxTokens,
         provider: apiSettings.provider,
         model: apiSettings.model,
@@ -179,7 +236,7 @@ export default async function handler(
 
     return res.status(500).json({
       message: "Internal server error",
-      ...(process.env.NODE_ENV === "development" && { stack: error }),
+      ...(process.env.NODE_ENV === "development" && { stack: String(error) }),
     });
   }
 }

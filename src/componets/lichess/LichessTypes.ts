@@ -20,7 +20,7 @@ export const fetchUserRecentGames = async (
 ): Promise<UserGame[]> => {
     try {
         const response = await fetch(
-            `https://lichess.org/api/games/user/${username}?until=${Date.now()}&max=55&pgnInJson=true&sort=dateDesc`,
+            `https://lichess.org/api/games/user/${username}?until=${Date.now()}&max=20&pgnInJson=true&sort=dateDesc`,
             { method: "GET", headers: { accept: "application/x-ndjson" } }
         );
 

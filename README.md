@@ -1,4 +1,3 @@
-Here’s the **full README.md** with Ollama local usage included and polished up for clarity 🚀
 
 # ChessAgine
 

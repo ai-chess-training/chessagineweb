@@ -1,4 +1,4 @@
-import React, { CSSProperties } from "react";
+import React, { CSSProperties, JSX } from "react";
 import {
   Stack,
   Button,
@@ -54,6 +54,7 @@ import {
   DEFAULT_BOARD_SHOW_FEN,
   DEFAULT_BOARD_SIZE,
   getCurrentThemeColors,
+  PIECE_STYLE_TYPES,
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
@@ -133,6 +134,10 @@ export default function AiChessboardPanel({
     "board_ui_size",
     DEFAULT_BOARD_SIZE
   );
+  const [pieceType, setPieceType] = useLocalStorage<string>(
+    "board_piece_type",
+    "Cburnett"
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showCoordinates, setShowCoordinates] = useLocalStorage<boolean>(
     "board_show_coordinates",
@@ -151,7 +156,7 @@ export default function AiChessboardPanel({
   const [showEvalBar, setEvalBar] = useLocalStorage<boolean>(
     "board_ui_show_eval_bar",
     true
-  )
+  );
 
   const [showFen, setShowFen] = useLocalStorage<boolean>(
     "board_ui_show_fen",
@@ -732,6 +737,42 @@ export default function AiChessboardPanel({
     boardOrientation: getBoardOrientation(),
   });
 
+  const getCustomPieces = (
+    pieceSet: string
+  ): Record<
+    string,
+    ({ squareWidth }: { squareWidth: number }) => JSX.Element
+  > => {
+    const pieces = ["P", "N", "B", "R", "Q", "K"];
+    const colors = ["w", "b"];
+    const customPieces: Record<
+      string,
+      ({ squareWidth }: { squareWidth: number }) => JSX.Element
+    > = {};
+
+    colors.forEach((color) => {
+      pieces.forEach((piece) => {
+        const pieceKey = `${color}${piece}`;
+
+        let src: string;
+        if (pieceSet.toLowerCase() == 'cburnett' || !pieceSet) {
+          src = `/static/pieces/Cburnett/${pieceKey}.svg`;
+        } else {
+          src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
+        }
+
+        customPieces[pieceKey] = ({ squareWidth }) => (
+          <img
+            src={src}
+            style={{ width: squareWidth, height: squareWidth }}
+          />
+        );
+      });
+    });
+
+    return customPieces;
+  };
+
   return (
     <Box
       ref={containerRef}
@@ -816,11 +857,13 @@ export default function AiChessboardPanel({
         {gameReviewMode && gameInfo && <TopPlayerBar />}
         {/* Chessboard */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
-          {showEvalBar && !puzzleMode && <EvalBar
-            lineEval={stockfishAnalysisResult?.lines[0]} // Your position evaluation data
-            boardOrientation={getBoardOrientation()}
-            height={boardSize} // Match the board height
-          />}
+          {showEvalBar && !puzzleMode && (
+            <EvalBar
+              lineEval={stockfishAnalysisResult?.lines[0]} 
+              boardOrientation={getBoardOrientation()}
+              height={boardSize} // Match the board height
+            />
+          )}
           <Chessboard
             position={fen}
             onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
@@ -844,6 +887,7 @@ export default function AiChessboardPanel({
             customArrows={customArrows}
             boardWidth={boardSize}
             boardOrientation={getBoardOrientation()}
+            customPieces={getCustomPieces(pieceType)}
           />
         </Box>
         {gameReviewMode && gameInfo && <BottomPlayerBar />}
@@ -1207,6 +1251,48 @@ export default function AiChessboardPanel({
             </Box>
 
             <Box>
+              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                Piece Style
+              </Typography>
+              <FormControl size="small" fullWidth>
+                <InputLabel sx={{ color: "grey.300" }}>piece style</InputLabel>
+                <Select
+                  value={pieceType}
+                  onChange={(e) => setPieceType(e.target.value)}
+                  label="Pieces"
+                  sx={{
+                    color: "white",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255,255,255,0.2)",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255,255,255,0.3)",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#9c27b0",
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: "#2a2a2a",
+                        color: "white",
+                      },
+                    },
+                  }}
+                >
+                  {Object.entries(PIECE_STYLE_TYPES).map(
+                    ([key, piece]) => (
+                      <MenuItem key={key} value={key}>
+                        {piece.name}
+                      </MenuItem>
+                    )
+                  )}
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box>
               <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
                 Animation Speed: {animationDuration}ms
               </Typography>
@@ -1298,7 +1384,6 @@ export default function AiChessboardPanel({
                   </Stack>
                 )}
 
-                
                 {!puzzleMode && (
                   <Stack
                     direction="row"

@@ -59,7 +59,7 @@ export const BOARD_THEMES = {
   },
   green: {
     name: "Forest",
-    lightSquareColor: "#eeeed2",
+    lightSquareColor: "#bcbcafff",
     darkSquareColor: "#769656",
     bestMoveArrowColor: "#1b5e20",
     squareClickLegalColor: "rgba(27, 94, 32, 0.5)",
@@ -67,7 +67,7 @@ export const BOARD_THEMES = {
   },
   blue: {
     name: "Ocean",
-    lightSquareColor: "#dee3e6",
+    lightSquareColor: "#bec0c2ff",
     darkSquareColor: "#8ca2ad",
     bestMoveArrowColor: "#2e7d32",
     squareClickLegalColor: "rgba(46, 125, 50, 0.5)",
@@ -75,7 +75,7 @@ export const BOARD_THEMES = {
   },
   gray: {
     name: "Modern",
-    lightSquareColor: "#f5f5f5",
+    lightSquareColor: "#f5f5f5bc",
     darkSquareColor: "#504d4dff",
     bestMoveArrowColor: "#4caf50",
     squareClickLegalColor: "rgba(76, 175, 80, 0.5)",
@@ -91,6 +91,22 @@ export const BOARD_THEMES = {
   },
 } as const;
 
+
+export const PIECE_STYLE_TYPES = {
+  cburnett: { name: "Cburnett" },
+  Anime: { name: "Anime" },
+  Apollo: { name: "Apollo" },
+  Artemis: { name: "Artemis" },
+  Attack: { name: "Attack" },
+  Clash: { name: "Clash" },
+  Hades: { name: "Hades" },
+  Halloween: { name: "Halloween" },
+  Hera: { name: "Hera" },
+  Juno: { name: "Juno" },
+  Junpiter: { name: "Junpiter" },
+  Mars: { name: "Mars" },
+  Minerva: { name: "Minerva" },
+};
 
 export const getCurrentThemeColors = (themeName: string) => {
   return BOARD_THEMES[themeName as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;

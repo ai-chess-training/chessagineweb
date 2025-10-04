@@ -112,6 +112,8 @@ A huge thanks to everyone who helped make ChessAgine possible:
 * **ChessDB developers** [https://github.com/noobpwnftw/chessdb](https://github.com/noobpwnftw/chessdb) for billions of engine-analyzed positions in the cloud.
 * **Mastra devs** [https://mastra.ai/](https://mastra.ai/) for the Agent framework powering AI features.
 
+* **Chessboardmagic devs** [https://github.com/HollowLeaf1981/ChessPieces](Toan Hoang) for free open source chess pieces.
+
 ---
 
 ## Author

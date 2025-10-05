@@ -853,9 +853,18 @@ const ChessAgineDocumentation: React.FC = () => {
           <Card sx={{ mb: 4 }}>
   <CardContent>
     <Typography variant="h5" gutterBottom color="primary.text">
-      Why Use Your Own API Key?
+      ChessAgine API Settings
     </Typography>
     <List>
+      <ListItem>
+        <ListItemIcon>
+          <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+        </ListItemIcon>
+        <ListItemText 
+          primary="Ollama Free Usage" 
+          secondary="No API keys required run models locally or connect via ngrok/cloud for instant access and use ChessAgine for 100% Free!"
+        />
+      </ListItem>
       <ListItem>
         <ListItemIcon>
           <CostIcon color="success" />
@@ -883,15 +892,7 @@ const ChessAgineDocumentation: React.FC = () => {
           secondary="Direct connection to providers without intermediary costs or risks"
         />
       </ListItem>
-      <ListItem>
-        <ListItemIcon>
-          <CheckCircleIcon sx={{ color: purpleTheme.success }} />
-        </ListItemIcon>
-        <ListItemText 
-          primary="Ollama Simplicity" 
-          secondary="No API key required — run models locally or connect via ngrok/cloud for instant access"
-        />
-      </ListItem>
+      
     </List>
   </CardContent>
 </Card>

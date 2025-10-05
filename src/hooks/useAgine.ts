@@ -259,6 +259,7 @@ export default function useAgine(fen: string) {
             model: apiSettings.model,
             apiKey: apiSettings.apiKey,
             language: apiSettings.language,
+            isRouted: apiSettings.isRouted,
             ollamaBaseUrl: `${apiSettings.ollamaBaseUrl}/api`          
           }
         }),

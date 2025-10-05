@@ -1,22 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import {
-  chessAgine,
-  chessAnnotationAgent,
-  chessPuzzleAssistant,
-} from "@/server/mastra/agents";
+import { chessAgine } from "@/server/mastra/agents";
 import { getBoardState } from "@/server/mastra/tools/protocol/state";
 import { RuntimeContext } from "@mastra/core/di";
 import { PositionPrompter } from "@/server/mastra/tools/protocol/positionPrompter";
 import { getAuth } from "@clerk/nextjs/server";
-
-interface ApiSettings {
-  provider: "openai" | "anthropic" | "google" | "ollama";
-  model: string;
-  apiKey: string;
-  language: string;
-  ollamaBaseUrl?: string; // Optional custom Ollama URL
-
-}
+import { ApiSetting } from "@/server/mastra/agents/types";
 
 interface ResponseData {
   message: string;
@@ -33,14 +21,11 @@ interface ErrorResponseData {
   stack?: string;
 }
 
-// Helper function to extract meaningful error message
 function extractErrorMessage(error: unknown): string {
-  // Check for Error instance with message
   if (error instanceof Error) {
     return error.message;
   }
-  
-  // Check for object with message property
+
   if (
     typeof error === "object" &&
     error !== null &&
@@ -49,8 +34,7 @@ function extractErrorMessage(error: unknown): string {
   ) {
     return error.message;
   }
-  
-  // Check for AI_APICallError structure with responseBody
+
   if (
     typeof error === "object" &&
     error !== null &&
@@ -64,12 +48,9 @@ function extractErrorMessage(error: unknown): string {
       if (parsed?.error?.message) {
         return parsed.error.message;
       }
-    } catch {
-      // If parsing fails, continue to other checks
-    }
+    } catch {}
   }
-  
-  // Check for nested error object
+
   if (
     typeof error === "object" &&
     error !== null &&
@@ -81,8 +62,7 @@ function extractErrorMessage(error: unknown): string {
   ) {
     return error.error.message;
   }
-  
-  // Fallback to string representation
+
   return String(error);
 }
 
@@ -90,7 +70,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData | ErrorResponseData>
 ) {
-  // Only allow POST requests
   if (req.method !== "POST") {
     return res.status(405).json({
       message: "Method not allowed",
@@ -102,36 +81,31 @@ export default async function handler(
 
     if (!isAuthenticated) {
       return res.status(401).json({ message: "Unauthorized" });
+      
     }
+
     
+
     const { query, fen, mode, apiSettings } = req.body;
 
-    const rawApiSettings = apiSettings as ApiSettings;
+    const rawApiSettings = apiSettings as ApiSetting;
 
-    // Validation for API settings
-    if (
-      !rawApiSettings ||
-      !rawApiSettings.provider ||
-      !rawApiSettings.model
-    ) {
+    if (!rawApiSettings || !rawApiSettings.provider || !rawApiSettings.model) {
       return res.status(400).json({
         message: "API settings are required (provider, model)",
       });
     }
 
-    // For Ollama, apiKey is not required
     if (rawApiSettings.provider !== "ollama" && !rawApiSettings.apiKey) {
       return res.status(400).json({
         message: "API key is required for non-Ollama providers",
       });
     }
-    
-    if(rawApiSettings.provider == "ollama" && !rawApiSettings.ollamaBaseUrl){
-      return res.status(400).json(
-        {
-          message: "Ollama base ngrok endpoint required, please set up the url"
-        }
-      )
+
+    if (rawApiSettings.provider == "ollama" && !rawApiSettings.ollamaBaseUrl) {
+      return res.status(400).json({
+        message: "Ollama base ngrok endpoint required, please set up the url",
+      });
     }
 
     if (!query || typeof query !== "string") {
@@ -190,9 +164,10 @@ export default async function handler(
     runtimeContext.set("provider", apiSettings.provider);
     runtimeContext.set("model", apiSettings.model);
     runtimeContext.set("apiKey", apiSettings.apiKey || "");
+    runtimeContext.set("mode", mode);
+    runtimeContext.set("isRouted", apiSettings.isRouted)
     runtimeContext.set("lang", apiSettings.language);
-    
-    // Add Ollama-specific settings if provided
+
     if (apiSettings.provider === "ollama") {
       if (apiSettings.ollamaBaseUrl) {
         runtimeContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);
@@ -203,45 +178,18 @@ export default async function handler(
     let maxTokens;
 
     try {
-      switch (mode) {
-        case "position":
-          response = await chessAgine.generate(
-            [{ role: "user", content: aginePromptInject }],
-            {
-              runtimeContext,
-            }
-          );
-          maxTokens = response.usage.totalTokens || 0;
-          break;
-        case "annotation":
-          response = await chessAnnotationAgent.generate(
-            [{ role: "user", content: aginePromptInject }],
-            {
-              runtimeContext,
-            }
-          );
-          maxTokens = response.usage.totalTokens || 0;
-          break;
-        case "puzzle":
-          response = await chessPuzzleAssistant.generate(
-            [{ role: "user", content: aginePromptInject }],
-            {
-              runtimeContext,
-            }
-          );
-          maxTokens = response.usage.totalTokens || 0;
-          break;
-        default:
-          return res.status(400).json({
-            message: "Invalid mode specified",
-          });
-      }
+      response = await chessAgine.generate(
+        [{ role: "user", content: aginePromptInject }],
+        {
+          runtimeContext,
+        }
+      );
+      maxTokens = response.usage.totalTokens || 0;
     } catch (agentError) {
       console.error("Error from chess agent:", agentError);
-      
-      // Extract the actual error message
+
       const errorMessage = extractErrorMessage(agentError);
-      
+
       return res.status(500).json({
         message: errorMessage,
         maxTokens,

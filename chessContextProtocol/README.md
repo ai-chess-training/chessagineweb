@@ -1,4 +1,6 @@
 # Chess Context Protocol (CCP)
+version: v0.1
+date changed: Oct, 5, 2025
 
 Chess Context Protocol is designed to provide specifications on making LLMs and Agents chess-aware such that
 they are able to better communicate any chess related queries to end user via using context. This protocol
@@ -10,8 +12,16 @@ the client and server that make the LLM and agents chess domain knowledgeable.
 
 - this protocol DOES NOT aim to make LLM play chess or come up with best moves, rather its aimed to better communicate possible best moves with the integration of engines
 
-### Chess Context Definition
+### Definitions/Terms
+
+1) Chess Context:
 when we say chess context, it refers the concepts/themes/ideas for given chess position that may seem obvious to humans, but hard for an Agent or LLM to comprehend, this include things like where pieces are located, whats happening on the board, is this a opening position etc.
+
+2) Themes:
+A theme is any chess idea that can be computed in a small function on the behalf of LLM/Agent. For example, material balance or piece activity can be calculated easily that don't require LLM/Agent to perform such task.
+
+3) Resource:
+A resource is any entity that lives external to the Chess GUI and LLM/agent that provides neccessay chess context for paticular chess theme. For example an engine is a resource that provides best move lines for given fen.
 
 ## Chess Context Protocol Client (CCPC)
 
@@ -110,7 +120,7 @@ Client sends engine context and expects LLM's output
 ```
 
 Authors:
-@jalpp
+Jalp Panchal
 
 
 

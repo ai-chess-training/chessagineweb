@@ -10,6 +10,14 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 
 ---
 
+## Preview
+
+<p align="center">
+  <img src="/public/static/images/aginepreviewgh.png" alt="ChessAgine_Preview" >
+</p>
+
+
+
 ## Features
 
 - **Multi-AI Support**: Compatible with OpenAI, Claude, Gemini, and Ollama models  
@@ -98,13 +106,6 @@ This protocol allows Chess GUIs to integrate engines and LLMs seamlessly.
 
 
 
-## Preview
-
-<p align="center">
-  <img src="/public/static/images/aginepreviewgh.png" alt="ChessAgine_Preview" >
-</p>
-
-
 
 ## Open Source Software Credits
 
@@ -125,6 +126,6 @@ A huge thanks to everyone who helped make ChessAgine possible:
 
 ## Author
 
-ChessAgine by **@jalpp**
+ChessAgine by Jalp Panchal
 
 

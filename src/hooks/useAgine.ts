@@ -236,12 +236,14 @@ export default function useAgine(fen: string) {
     try {
       const token = await session?.getToken();
       
-      // Get API settings from localStorage
       const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
       
-      // Validate API settings
-      if (!apiSettings.apiKey) {
-        throw new Error('Please configure your API Key in the Settings page before using ChessAgine.');
+      if(!apiSettings.ollamaBaseUrl && apiSettings.provider == "ollama"){
+        throw new Error("Please configure your Ollama Ngrok local LLM endpoint in the settins page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.")
+      }
+      
+      if (!apiSettings.apiKey && apiSettings.provider != "ollama") {
+        throw new Error('Please configure your API Key in the Settings page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.');
       }
       
       const response = await fetch(`/api/agent`, {
@@ -594,22 +596,19 @@ ${board.toString()}
       playMode?: boolean,
     ): Promise<void> => {
       if (!state.chatInput.trim()) return;
-
       const userMessage = createChatMessage("user", fen, state.chatInput);
       const currentInput = state.chatInput;
-      
-      updateState({ 
+     
+      updateState({
         chatMessages: [...state.chatMessages, userMessage],
         chatInput: "",
-        chatLoading: true 
+        chatLoading: true
       });
-
       const currentFen = currentFenRef.current;
-
       try {
         const chessInstance = new Chess(currentFen);
         const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-        
+       
         const query = buildChatQuery(
           currentInput,
           currentFen,
@@ -620,35 +619,34 @@ ${board.toString()}
           puzzleQuery,
           playMode
         );
-
         const mode = puzzleMode === true || puzzleQuery
           ? "puzzle"
           : playMode
           ? "play"
           : "position";
-          
+         
         const result = await makeApiRequest(currentFen, query, mode);
         const assistantMessage = createChatMessage("assistant", fen,result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
-
-        updateState({ 
+        updateState({
           chatMessages: [...state.chatMessages, userMessage, assistantMessage],
-          chatLoading: false 
+          chatLoading: false
         });
       } catch (error) {
         console.error("Error sending chat message:", error);
         if (!(error instanceof Error && error.message === "Request cancelled")) {
+          const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
           const errorMessage = createChatMessage(
             "assistant",
             "",
-            "Sorry, there was an error processing your message. Please try again.",
+            errorMsg,
             undefined,
             undefined,
             undefined,
             (Date.now() + 1).toString()
           );
-          updateState({ 
+          updateState({
             chatMessages: [...state.chatMessages, userMessage, errorMessage],
-            chatLoading: false 
+            chatLoading: false
           });
         }
       }

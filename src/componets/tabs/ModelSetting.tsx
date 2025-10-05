@@ -31,7 +31,7 @@ import { LANGUAGES, PROVIDERS } from '@/libs/docs/helper';
 
 
 export interface ApiSettings {
-  provider: 'openai' | 'anthropic' | 'google' | 'ollama' | 'mistral' | 'xai';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama';
   model: string;
   apiKey: string;
   language: string;

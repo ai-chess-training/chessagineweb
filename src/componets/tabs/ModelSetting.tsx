@@ -15,6 +15,8 @@ import {
   CardContent,
   Link,
   Chip,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -22,163 +24,39 @@ import {
   VisibilityOff,
   Info as InfoIcon,
   Language as LanguageIcon,
+  SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
 import { useLocalStorage } from 'usehooks-ts';
+import { LANGUAGES, PROVIDERS } from '@/libs/docs/helper';
 
-// Types
+
 export interface ApiSettings {
-  provider: 'openai' | 'anthropic' | 'google' | 'ollama';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama' | 'mistral' | 'xai';
   model: string;
   apiKey: string;
   language: string;
+  isRouted: boolean;
   ollamaBaseUrl?: string;
 }
 
-interface ProviderConfig {
-  name: string;
-  models: string[];
-  keyPrefix: string;
-  website: string;
-  docsUrl: string;
-}
-
-interface LanguageOption {
-  code: string;
-  name: string;
-  nativeName: string;
-  flag: string;
-}
-
-
-const PROVIDERS: Record<string, ProviderConfig> = {
-  openai: {
-    name: 'OpenAI',
-    models: [
-      'gpt-4', 
-      'gpt-4-turbo', 
-      'gpt-3.5-turbo', 
-      'gpt-4o', 
-      'gpt-4o-mini', 
-      'o3', 
-      'o3-mini', 
-      'o1', 
-      'o1-mini', 
-      'o4-mini',
-      'gpt-5',
-      'gpt-5-mini',
-      'gpt-5-nano',
-      'gpt-4.1',
-      'gpt-4.1-mini',
-      'gpt-4.1-nano'
-    ],
-    keyPrefix: 'sk-',
-    website: 'https://platform.openai.com/api-keys',
-    docsUrl: 'https://platform.openai.com/docs/quickstart',
-  },
-  anthropic: {
-    name: 'Anthropic Claude',
-    models: [
-      'claude-sonnet-4-20250514',
-      'claude-opus-4-20250514',
-      'claude-3-5-sonnet-latest',
-      'claude-3-5-haiku-latest'
-    ],
-    keyPrefix: 'sk-ant-',
-    website: 'https://console.anthropic.com/settings/keys',
-    docsUrl: 'https://docs.anthropic.com/claude/docs/getting-started',
-  },
-  google: {
-    name: 'Google Gemini',
-    models: [
-      'gemini-1.5-pro',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro'
-    ],
-    keyPrefix: 'AIza',
-    website: 'https://aistudio.google.com/app/apikey',
-    docsUrl: 'https://ai.google.dev/docs',
-  },
-  ollama: {
-    name: 'Ollama',
-    models: [
-      'qwen3:8b' 
-    , 'qwen3:4b'
-    ,'qwen3:30b'
-    ,'gpt-oss:20b'
-    ,'gpt-oss:120b'
-    ,'deepseek-v3.1:671b-cloud'
-    ,'gpt-oss:120b-cloud'
-    ,'gpt-oss:20b-cloud'
-    ],
-    keyPrefix: '',
-    website: 'https://docs.ollama.com/',
-    docsUrl: 'https://docs.ollama.com/',
-  },
-
-
-};
-
-
- 
-// Language options
-const LANGUAGES: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
-  { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
-  { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
-  { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
-  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
-  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
-  { code: 'sv', name: 'Swedish', nativeName: 'Svenska', flag: '🇸🇪' },
-  { code: 'no', name: 'Norwegian', nativeName: 'Norsk', flag: '🇳🇴' },
-  { code: 'da', name: 'Danish', nativeName: 'Dansk', flag: '🇩🇰' },
-  { code: 'fi', name: 'Finnish', nativeName: 'Suomi', flag: '🇫🇮' },
-  { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
-  { code: 'cs', name: 'Czech', nativeName: 'Čeština', flag: '🇨🇿' },
-  { code: 'hu', name: 'Hungarian', nativeName: 'Magyar', flag: '🇭🇺' },
-  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
-  { code: 'he', name: 'Hebrew', nativeName: 'עברית', flag: '🇮🇱' },
-  { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
-  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩' },
-  { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu', flag: '🇲🇾' },
-  { code: 'tl', name: 'Filipino', nativeName: 'Filipino', flag: '🇵🇭' },
-  { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
-  { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' },
-  { code: 'bg', name: 'Bulgarian', nativeName: 'Български', flag: '🇧🇬' },
-  { code: 'ro', name: 'Romanian', nativeName: 'Română', flag: '🇷🇴' },
-  { code: 'hr', name: 'Croatian', nativeName: 'Hrvatski', flag: '🇭🇷' },
-  { code: 'sr', name: 'Serbian', nativeName: 'Српски', flag: '🇷🇸' },
-  { code: 'sk', name: 'Slovak', nativeName: 'Slovenčina', flag: '🇸🇰' },
-  { code: 'sl', name: 'Slovenian', nativeName: 'Slovenščina', flag: '🇸🇮' },
-  { code: 'et', name: 'Estonian', nativeName: 'Eesti', flag: '🇪🇪' },
-  { code: 'lv', name: 'Latvian', nativeName: 'Latviešu', flag: '🇱🇻' },
-  { code: 'lt', name: 'Lithuanian', nativeName: 'Lietuvių', flag: '🇱🇹' },
-];
 
 const ModelSetting: React.FC = () => {
-  // Default settings to ensure controlled components
+  
   const defaultSettings: ApiSettings = {
     provider: 'ollama',
     model: 'gpt-oss:20b-cloud',
     apiKey: '',
+    isRouted: false,
     language: 'English',
   };
 
-  // Local storage hooks
+  
   const [apiSettings, setApiSettings] = useLocalStorage<ApiSettings>('api-settings', defaultSettings);
 
-  // Component state
+  
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
+  
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [tempSettings, setTempSettings] = useState<ApiSettings>(() => ({
@@ -186,7 +64,7 @@ const ModelSetting: React.FC = () => {
     ...apiSettings,
   }));
 
-  // Update temp settings when apiSettings changes
+  
   useEffect(() => {
     setTempSettings(({
       ...defaultSettings,
@@ -194,30 +72,42 @@ const ModelSetting: React.FC = () => {
     }));
   }, [apiSettings]);
 
-  // Validation function
+  
   const validateApiKey = (provider: string, apiKey: string): boolean => {
     if (!provider || !apiKey) return false;
     
     const config = PROVIDERS[provider];
     if (!config) return false;
     
+    
+    if (provider === 'ollama') return true;
+    
+   
+    if (!config.keyPrefix) return true;
+    
     return apiKey.startsWith(config.keyPrefix);
   };
 
-  // Handle provider change
   const handleProviderChange = (provider: string) => {
     const config = PROVIDERS[provider];
-    setTempSettings({
+    const newSettings = {
       ...tempSettings,
       provider: provider as ApiSettings['provider'],
       model: config?.models[0] || '',
-    });
+    };
+
+    // Reset routing if switching to provider that doesn't support it
+    if (provider === 'ollama') {
+      newSettings.isRouted = false;
+    }
+
+    setTempSettings(newSettings);
     setValidationError('');
   };
 
-  // Handle save
+
   const handleSave = () => {
-    // Validation
+    
     if (!tempSettings.provider) {
       setValidationError('Please select a provider');
       return;
@@ -228,48 +118,70 @@ const ModelSetting: React.FC = () => {
       return;
     }
     
-    if (!tempSettings.apiKey) {
-      setValidationError('Please enter an API key');
-      return;
-    }
     
-    if (!validateApiKey(tempSettings.provider, tempSettings.apiKey)) {
-      const config = PROVIDERS[tempSettings.provider];
-      const expectedPrefix = config?.keyPrefix;
-      const providerName = config?.name;
-      setValidationError(`Invalid API key format. ${providerName || 'This provider'} keys should start with "${expectedPrefix}"`);
-      return;
+    if (tempSettings.provider !== 'ollama') {
+      if (!tempSettings.apiKey) {
+        setValidationError('Please enter an API key');
+        return;
+      }
+      
+      if (!validateApiKey(tempSettings.provider, tempSettings.apiKey)) {
+        const config = PROVIDERS[tempSettings.provider];
+        const expectedPrefix = config?.keyPrefix;
+        const providerName = config?.name;
+        if (expectedPrefix) {
+          setValidationError(`Invalid API key format. ${providerName || 'This provider'} keys should start with "${expectedPrefix}"`);
+        } else {
+          setValidationError(`Invalid API key format for ${providerName || 'this provider'}`);
+        }
+        return;
+      }
     }
 
-    // Save to localStorage
+   
+    if (tempSettings.isRouted) {
+      if (!tempSettings.apiKey) {
+        setValidationError('Please enter an OpenRouter API key when routing is enabled');
+        return;
+      }
+      
+      if (!tempSettings.apiKey.startsWith('sk-or-')) {
+        setValidationError('Invalid OpenRouter API key format. Keys should start with "sk-or-"');
+        return;
+      }
+    }
+
     setApiSettings(tempSettings);
+      
     setValidationError('');
     setSaveSuccess(true);
     
- 
-    // Hide success message after 3 seconds
+    
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  // Handle reset
+ 
   const handleReset = () => {
     setTempSettings(defaultSettings);
     setValidationError('');
   };
 
-  // Get available models for selected provider
+  
+
+
   const getAvailableModels = () => {
     if (!tempSettings.provider) return [];
     return PROVIDERS[tempSettings.provider]?.models || [];
   };
 
-  // Get current provider config
+  
   const currentProviderConfig = PROVIDERS[tempSettings.provider];
 
-  // Get selected language info
+
   const selectedLanguage = LANGUAGES.find(lang => lang.name === (tempSettings.language || 'English')) || LANGUAGES[0];
 
-  // Use theme colors or fallback to defaults
+  const supportsRouting = currentProviderConfig?.supportsRouting || false;
+
   const colors = {
     background: { card: '#1a1a1a', input: '#2a2a2a' },
     text: { primary: '#ffffff', secondary: '#cccccc', accent: '#bb86fc' },
@@ -281,24 +193,7 @@ const ModelSetting: React.FC = () => {
 
   return (
     <Box>
-      {/* Success Alert */}
-      {saveSuccess && (
-        <Alert 
-          severity="success" 
-          sx={{ 
-            mb: 3,
-            backgroundColor: `${colors.secondary}20`,
-            color: colors.text.primary,
-            '& .MuiAlert-icon': {
-              color: colors.accent,
-            },
-          }}
-        >
-          Settings saved successfully!
-        </Alert>
-      )}
-
-      {/* Validation Error */}
+       
       {validationError && (
         <Alert 
           severity="error" 
@@ -312,7 +207,6 @@ const ModelSetting: React.FC = () => {
         </Alert>
       )}
 
-      {/* Provider Selection */}
       <Card 
         variant="outlined" 
         sx={{ 
@@ -399,6 +293,7 @@ const ModelSetting: React.FC = () => {
                     sx: {
                       backgroundColor: colors.background.input,
                       color: colors.text.primary,
+                      maxHeight: 400,
                     },
                   },
                 }}
@@ -411,10 +306,57 @@ const ModelSetting: React.FC = () => {
               </Select>
             </FormControl>
           )}
+
+          
+          {supportsRouting && (
+            <Box mt={2}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={tempSettings.isRouted || false}
+                    onChange={(e) => setTempSettings({ ...tempSettings, isRouted: e.target.checked })}
+                    sx={{
+                      color: colors.text.secondary,
+                      '&.Mui-checked': {
+                        color: colors.primary,
+                      },
+                    }}
+                  />
+                }
+                label={
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <SwapHorizIcon fontSize="small" sx={{ color: colors.text.accent }} />
+                    <Typography sx={{ color: colors.text.primary }}>
+                      Use OpenRouter
+                    </Typography>
+                    <Chip 
+                      size="small" 
+                      label="Optional"
+                      sx={{
+                        backgroundColor: `${colors.secondary}30`,
+                        color: colors.text.primary,
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                  </Box>
+                }
+              />
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: colors.text.secondary, 
+                  ml: 4,
+                  display: 'block',
+                  fontStyle: 'italic'
+                }}
+              >
+                Route {tempSettings.model} requests through OpenRouter for unified API access and better reliability.
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
-      {/* Language Selection */}
       <Card 
         variant="outlined" 
         sx={{ 
@@ -517,8 +459,7 @@ const ModelSetting: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* API Key Configuration */}
-      {tempSettings.provider && currentProviderConfig && !tempSettings.provider.toLowerCase().includes("ollama") && (
+      {tempSettings.provider && currentProviderConfig && !tempSettings.provider.toLowerCase().includes("ollama") && !tempSettings.isRouted && (
         <Card 
           variant="outlined" 
           sx={{ 
@@ -554,7 +495,7 @@ const ModelSetting: React.FC = () => {
               value={tempSettings.apiKey || ''}
               onChange={(e) => setTempSettings({ ...tempSettings, apiKey: e.target.value })}
               placeholder={`Enter your ${currentProviderConfig.name} API key...`}
-              helperText={`Should start with "${currentProviderConfig.keyPrefix}"`}
+              helperText={currentProviderConfig.keyPrefix ? `Should start with "${currentProviderConfig.keyPrefix}"` : 'Enter your API key'}
               sx={{
                 '& .MuiInputBase-root': {
                   backgroundColor: colors.background.input,
@@ -614,7 +555,120 @@ const ModelSetting: React.FC = () => {
         </Card>
       )}
 
-       {/* API Key Configuration */}
+      
+      {tempSettings.isRouted && (
+        <Card 
+          variant="outlined" 
+          sx={{ 
+            mb: 3,
+            backgroundColor: colors.background.card,
+            borderColor: `${colors.primary}60`,
+            boxShadow: `0 0 10px ${colors.primary}30`,
+          }}
+        >
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <SwapHorizIcon sx={{ color: colors.text.accent }} />
+              <Typography 
+                variant="h6"
+                sx={{ color: colors.text.accent }}
+              >
+                OpenRouter API Key
+              </Typography>
+              <Chip 
+                size="small" 
+                label="Routing Enabled"
+                sx={{
+                  backgroundColor: `${colors.primary}30`,
+                  color: colors.text.primary,
+                  borderColor: colors.primary,
+                }}
+                variant="outlined"
+              />
+            </Box>
+            
+            <TextField
+              fullWidth
+              label="OpenRouter API Key"
+              type={showOpenRouterKey ? 'text' : 'password'}
+              value={tempSettings.apiKey || ''}
+              onChange={(e) => setTempSettings({ ...tempSettings, apiKey: e.target.value })}
+              placeholder="Enter your OpenRouter API key..."
+              helperText='Should start with "sk-or-"'
+              sx={{
+                '& .MuiInputBase-root': {
+                  backgroundColor: colors.background.input,
+                },
+                '& .MuiInputLabel-root': {
+                  color: colors.text.secondary,
+                },
+                '& .MuiOutlinedInput-root': {
+                  color: colors.text.primary,
+                  '& fieldset': {
+                    borderColor: `${colors.primary}60`,
+                  },
+                  '&:hover fieldset': {
+                    borderColor: colors.primary,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: colors.primary,
+                  },
+                },
+                '& .MuiFormHelperText-root': {
+                  color: colors.text.secondary,
+                },
+              }}
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    onClick={() => setShowOpenRouterKey(!showOpenRouterKey)}
+                    edge="end"
+                    sx={{ color: colors.text.secondary }}
+                  >
+                    {showOpenRouterKey ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                ),
+              }}
+            />
+            
+            <Box mt={2}>
+              <Link 
+                href="https://openrouter.ai/keys" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 0.5,
+                  color: colors.accent,
+                  '&:hover': {
+                    color: colors.text.accent,
+                  }
+                }}
+              >
+                <InfoIcon fontSize="small" />
+                Get your OpenRouter API key
+              </Link>
+            </Box>
+
+            <Alert 
+              severity="info" 
+              sx={{ 
+                mt: 2,
+                backgroundColor: `${colors.primary}10`,
+                color: colors.text.primary,
+                '& .MuiAlert-icon': {
+                  color: colors.primary,
+                },
+              }}
+            >
+              Your {currentProviderConfig.name} {tempSettings.model} requests will be routed through OpenRouter. 
+              This provides unified API access and may offer better reliability and fallback options.
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
+
       {tempSettings.provider.toLowerCase().includes("ollama") && (
         <Card 
           variant="outlined" 
@@ -646,12 +700,12 @@ const ModelSetting: React.FC = () => {
             
             <TextField
               fullWidth
-              label={`ngrok-endpoint`}
-              type={'text'}
+              label="ngrok-endpoint"
+              type="text"
               value={tempSettings.ollamaBaseUrl || ''}
               onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value })}
-              placeholder={`Enter your ngrok endpoint https:...`}
-              helperText={`Enter your ngrok endpoint https:..."`}
+              placeholder="Enter your ngrok endpoint https:..."
+              helperText="Enter your ngrok endpoint https:..."
               sx={{
                 '& .MuiInputBase-root': {
                   backgroundColor: colors.background.input,
@@ -679,7 +733,7 @@ const ModelSetting: React.FC = () => {
             
             <Box mt={2}>
               <Link 
-                href={"https://www.chessagine.com/docs"} 
+                href="https://www.chessagine.com/docs" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 sx={{ 
@@ -698,6 +752,22 @@ const ModelSetting: React.FC = () => {
             </Box>
           </CardContent>
         </Card>
+      )}
+
+      {saveSuccess && (
+        <Alert 
+          severity="success" 
+          sx={{ 
+            mb: 3,
+            backgroundColor: `${colors.secondary}20`,
+            color: colors.text.primary,
+            '& .MuiAlert-icon': {
+              color: colors.accent,
+            },
+          }}
+        >
+          Settings saved successfully!
+        </Alert>
       )}
 
       {/* Action Buttons */}

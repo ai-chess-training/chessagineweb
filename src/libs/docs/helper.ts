@@ -4,7 +4,10 @@ export interface ProviderConfig {
   keyPrefix: string;
   website: string;
   docsUrl: string;
+  supportsRouting: boolean;
 }
+
+
 
 export interface ModelRecommendation {
   provider: string;
@@ -55,20 +58,71 @@ export interface IntegrationItem {
   link?: string;
 }
 
+interface LanguageOption {
+  code: string;
+  name: string;
+  nativeName: string;
+  flag: string;
+}
+
+
+// Language options
+export const LANGUAGES: LanguageOption[] = [
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
+  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
+  { code: 'sv', name: 'Swedish', nativeName: 'Svenska', flag: '🇸🇪' },
+  { code: 'no', name: 'Norwegian', nativeName: 'Norsk', flag: '🇳🇴' },
+  { code: 'da', name: 'Danish', nativeName: 'Dansk', flag: '🇩🇰' },
+  { code: 'fi', name: 'Finnish', nativeName: 'Suomi', flag: '🇫🇮' },
+  { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
+  { code: 'cs', name: 'Czech', nativeName: 'Čeština', flag: '🇨🇿' },
+  { code: 'hu', name: 'Hungarian', nativeName: 'Magyar', flag: '🇭🇺' },
+  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
+  { code: 'he', name: 'Hebrew', nativeName: 'עברית', flag: '🇮🇱' },
+  { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩' },
+  { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu', flag: '🇲🇾' },
+  { code: 'tl', name: 'Filipino', nativeName: 'Filipino', flag: '🇵🇭' },
+  { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
+  { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' },
+  { code: 'bg', name: 'Bulgarian', nativeName: 'Български', flag: '🇧🇬' },
+  { code: 'ro', name: 'Romanian', nativeName: 'Română', flag: '🇷🇴' },
+  { code: 'hr', name: 'Croatian', nativeName: 'Hrvatski', flag: '🇭🇷' },
+  { code: 'sr', name: 'Serbian', nativeName: 'Српски', flag: '🇷🇸' },
+  { code: 'sk', name: 'Slovak', nativeName: 'Slovenčina', flag: '🇸🇰' },
+  { code: 'sl', name: 'Slovenian', nativeName: 'Slovenščina', flag: '🇸🇮' },
+  { code: 'et', name: 'Estonian', nativeName: 'Eesti', flag: '🇪🇪' },
+  { code: 'lv', name: 'Latvian', nativeName: 'Latviešu', flag: '🇱🇻' },
+  { code: 'lt', name: 'Lithuanian', nativeName: 'Lietuvių', flag: '🇱🇹' },
+];
+
+
 
 export const PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: 'OpenAI',
     models: [
-      'gpt-4',
-      'gpt-4-turbo',
-      'gpt-3.5-turbo',
-      'gpt-4o',
-      'gpt-4o-mini',
-      'o3',
-      'o3-mini',
-      'o1',
-      'o1-mini',
+      'gpt-4', 
+      'gpt-4-turbo', 
+      'gpt-3.5-turbo', 
+      'gpt-4o', 
+      'gpt-4o-mini', 
+      'o3', 
+      'o3-mini', 
+      'o1', 
+      'o1-mini', 
       'o4-mini',
       'gpt-5',
       'gpt-5-mini',
@@ -80,18 +134,23 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     keyPrefix: 'sk-',
     website: 'https://platform.openai.com/api-keys',
     docsUrl: 'https://platform.openai.com/docs/quickstart',
+    supportsRouting: true,
   },
   anthropic: {
-    name: 'Claude',
+    name: 'Anthropic Claude',
     models: [
       'claude-sonnet-4-20250514',
       'claude-opus-4-20250514',
       'claude-3-5-sonnet-latest',
-      'claude-3-5-haiku-latest'
+      'claude-3-5-haiku-latest',
+      'claude-3.7-sonnet',
+      'claude-opus-4.1',
+      'claude-sonnet-4.5'
     ],
     keyPrefix: 'sk-ant-',
     website: 'https://console.anthropic.com/settings/keys',
     docsUrl: 'https://docs.anthropic.com/claude/docs/getting-started',
+    supportsRouting: true,
   },
   google: {
     name: 'Google Gemini',
@@ -106,22 +165,24 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     keyPrefix: 'AIza',
     website: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
+    supportsRouting: true,
   },
   ollama: {
     name: 'Ollama',
     models: [
-      'qwen3:8b' 
-    , 'qwen3:4b'
-    ,'qwen3:30b'
-    ,'gpt-oss:20b'
-    ,'gpt-oss:120b'
-    ,'deepseek-v3.1:671b-cloud'
-    ,'gpt-oss:120b-cloud'
-    ,'gpt-oss:20b-cloud'
+      'qwen3:8b',
+      'qwen3:4b',
+      'qwen3:30b',
+      'gpt-oss:20b',
+      'gpt-oss:120b',
+      'deepseek-v3.1:671b-cloud',
+      'gpt-oss:120b-cloud',
+      'gpt-oss:20b-cloud'
     ],
     keyPrefix: '',
     website: 'https://docs.ollama.com/',
     docsUrl: 'https://docs.ollama.com/',
+    supportsRouting: false,
   },
 };
 

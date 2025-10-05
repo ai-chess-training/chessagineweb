@@ -33,6 +33,7 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import { GitHub } from "@mui/icons-material";
 
 export default function NavBar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -64,9 +65,18 @@ export default function NavBar() {
       href: "/docs", 
       icon: <FaBook />
     },
+    {
+      label: "Github",
+      href: "https://github.com/jalpp/chessagineweb",
+      icon: <GitHub/>
+    },
+    {
+      label: "Discord",
+      href: "https://discord.gg/3RpEnvmZwp",
+      icon: <FaDiscord />,
+    },
   ];
 
-  // Authenticated navigation links (only for signed-in users)
   const authNavLinks = [
     { 
       label: "Analyze Position", 
@@ -90,13 +100,7 @@ export default function NavBar() {
     },
   ];
 
-  const externalLinks = [
-    {
-      label: "Discord",
-      href: "https://discord.gg/3RpEnvmZwp",
-      icon: <FaDiscord />,
-    },
-  ];
+  
 
   return (
     <>
@@ -150,19 +154,6 @@ export default function NavBar() {
                   </Button>
                 ))}
 
-                {/* External links */}
-                {externalLinks.map((link) => (
-                  <Button
-                    key={link.href}
-                    color="inherit"
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    startIcon={link.icon}
-                  >
-                    {link.label}
-                  </Button>
-                ))}
               </SignedIn>
 
               {/* Auth buttons for signed out users */}
@@ -261,29 +252,6 @@ export default function NavBar() {
               ))}
 
               <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
-              
-              {/* External links */}
-              {externalLinks.map((link) => (
-                <ListItem
-                  key={link.href}
-                  component="a"
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    textDecoration: "none",
-                    color: "inherit",
-                    "&:hover": {
-                      bgcolor: "rgba(255, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
-                    {link.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={link.label} />
-                </ListItem>
-              ))}
             </SignedIn>
 
             {/* Auth section for signed out users */}

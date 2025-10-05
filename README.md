@@ -22,7 +22,7 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 
 
 
-## Providers
+## Providers & Routers
 
 ChessAgine works with multiple AI providers:
 
@@ -36,6 +36,13 @@ ChessAgine works with multiple AI providers:
 > ✅ Use Ollama for free, local, and open source AI integration without needing API keys.
 
 
+
+| Router   | API Key Required | Example Models                                   |
+|------------|-----------------|-------------------------------------------------|
+| OpenRouter     | ✅ Yes          | gpt-4, gpt-4o, gpt-5, o1, o3, claude-sonnet-4, claude-3.5-haiku,                       |
+
+
+> ✅ ChessAgine now supports Open router to connect to multiple providers at a time
 
 ## Using Ollama Locally (No API Key Required)
 

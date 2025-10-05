@@ -53,6 +53,7 @@ import {
   School as LearnIcon,
   SupportAgent as SupportIcon,
   OpenInNew as OpenIcon,
+  SwapHorizontalCircleOutlined,
 } from '@mui/icons-material';
 import { purpleTheme } from '@/theme/theme';
 import { FaGear } from 'react-icons/fa6';
@@ -853,7 +854,7 @@ const ChessAgineDocumentation: React.FC = () => {
           <Card sx={{ mb: 4 }}>
   <CardContent>
     <Typography variant="h5" gutterBottom color="primary.text">
-      ChessAgine API Settings
+      ChessAgine Settings
     </Typography>
     <List>
       <ListItem>
@@ -861,8 +862,17 @@ const ChessAgineDocumentation: React.FC = () => {
           <CheckCircleIcon sx={{ color: purpleTheme.success }} />
         </ListItemIcon>
         <ListItemText 
-          primary="Ollama Free Usage" 
+          primary="Ollama Support" 
           secondary="No API keys required run models locally or connect via ngrok/cloud for instant access and use ChessAgine for 100% Free!"
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemIcon>
+          <SwapHorizontalCircleOutlined color='success'/>
+        </ListItemIcon>
+        <ListItemText 
+          primary="OpenRouter Support" 
+          secondary="Use one single router to load funds and use multiple AI models via OpenRouter"
         />
       </ListItem>
       <ListItem>
@@ -871,12 +881,12 @@ const ChessAgineDocumentation: React.FC = () => {
         </ListItemIcon>
         <ListItemText 
           primary="Cost Control" 
-          secondary="You pay only for what you use, directly to the provider, ChessAgine now supports Ollama pay $0 and use best LLM models."
+          secondary="You pay only for what you use, directly to the provider or the router"
         />
       </ListItem>
       <ListItem>
         <ListItemIcon>
-          <IntelligenceIcon color="primary" />
+          <IntelligenceIcon color="success" />
         </ListItemIcon>
         <ListItemText 
           primary="Model Choice" 
@@ -885,19 +895,16 @@ const ChessAgineDocumentation: React.FC = () => {
       </ListItem>
       <ListItem>
         <ListItemIcon>
-          <SecurityIcon sx={{ color: purpleTheme.text.accent }} />
+          <SecurityIcon color='success' />
         </ListItemIcon>
         <ListItemText 
           primary="Privacy & Security" 
           secondary="Direct connection to providers without intermediary costs or risks"
         />
       </ListItem>
-      
     </List>
   </CardContent>
 </Card>
-
-
           {/* Main Content Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs 
@@ -973,11 +980,12 @@ const ChessAgineDocumentation: React.FC = () => {
                       <Typography variant="body2" color="text.secondary" paragraph>
                         {provider.models.length} available models
                       </Typography>
-                      <Typography variant="body2" gutterBottom sx={{ color: purpleTheme.text.primary }}>
-                        API Key Format: <code>{provider.keyPrefix}...</code>
+                      <Typography variant="body2" color="text.secondary" paragraph>
+                        {provider.supportsRouting ? 'Supports OpenRouter': 'No OpenRouter Support'}
                       </Typography>
                       <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        <Button
+                        {provider.name != "Ollama" && (
+                          <Button
                           size="small"
                           variant="outlined"
                           color="success"
@@ -988,6 +996,7 @@ const ChessAgineDocumentation: React.FC = () => {
                         >
                           Get API Key
                         </Button>
+                        )}
                         <Button
                           size="small"
                           variant="text"
@@ -997,8 +1006,21 @@ const ChessAgineDocumentation: React.FC = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Docs
+                          {provider.name} Docs
                         </Button>
+                        {provider.supportsRouting && (
+                          <Button
+                          size="small"
+                          variant="text"
+                          color="success"
+                          startIcon={<InfoIcon />}
+                          href={"https://openrouter.ai/docs/quickstart"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          OpenRouter Docs
+                        </Button>
+                        )}
                       </Box>
                     </CardContent>
                   </Card>

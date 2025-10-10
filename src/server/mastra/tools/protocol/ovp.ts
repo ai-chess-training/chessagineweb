@@ -10,7 +10,7 @@ interface ThemeScore {
     kingSafety: number;
 }
 
-interface ThemeChange {
+export interface ThemeChange {
     theme: string;
     initialScore: number;
     finalScore: number;
@@ -18,7 +18,7 @@ interface ThemeChange {
     percentChange: number;
 }
 
-interface VariationAnalysis {
+export interface VariationAnalysis {
     themeChanges: ThemeChange[];
     overallChange: number;
     strongestImprovement: ThemeChange | null;

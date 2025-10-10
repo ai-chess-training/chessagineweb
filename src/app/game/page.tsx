@@ -63,6 +63,7 @@ import {
 } from "@/libs/game/helper";
 import { purpleTheme } from "@/theme/theme";
 import { MoveAnalysis } from "@/hooks/useGameReview";
+import { useGameTheme } from "@/hooks/useGameTheme";
 
 // Types for game review history
 interface SavedGameReview {
@@ -160,6 +161,11 @@ export default function PGNUploaderPage() {
     legalMoves,
     handleFutureMoveLegalClick,
   } = useAgine(fen);
+
+  const {
+    gameReviewTheme,
+    analyzeGameTheme,
+  } = useGameTheme();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -346,6 +352,8 @@ export default function PGNUploaderPage() {
       setLlmAnalysisResult(null);
       setComment("");
       setGameReview([]);
+      generateGameReview(moveList);
+      analyzeGameTheme(cleanedPGN);
     } catch (err) {
       console.log(err);
       alert("Invalid PGN input");
@@ -372,6 +380,8 @@ export default function PGNUploaderPage() {
       setLlmAnalysisResult(null);
       setComment("");
       setGameReview([]);
+      generateGameReview(moveList);
+      analyzeGameTheme(pgn);
       setInputsVisible(false);
     } catch (err) {
       console.log(err);
@@ -430,7 +440,8 @@ export default function PGNUploaderPage() {
         setLlmAnalysisResult(null);
         setComment("");
         setGameReview([]);
-
+        generateGameReview(moveList);
+        analyzeGameTheme(fetchedPgn);
         setInputsVisible(false);
 
         console.log("Game loaded successfully:", {
@@ -973,6 +984,7 @@ export default function PGNUploaderPage() {
                               goToMove={goToMove}
                               comment={comment}
                               gameInfo={gameInfo}
+                              gameReviewTheme={gameReviewTheme}
                               generateGameReview={generateGameReview}
                               gameReviewLoading={gameReviewLoading}
                               gameReviewProgress={gameReviewProgress}

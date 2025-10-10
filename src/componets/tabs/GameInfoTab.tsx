@@ -15,6 +15,7 @@ import {
 import { User, Clock, Calendar, Trophy, Info } from "lucide-react";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/hooks/useGameReview";
+import { GameReviewTheme } from "./GameReviewDialog";
 
 function GameInfoTab({
   moves,
@@ -25,6 +26,7 @@ function GameInfoTab({
   generateGameReview,
   gameReviewLoading,
   gameReview,
+  gameReviewTheme,
   handleMoveCoachClick,
   handleMoveAnnontateClick,
   handleGameReviewClick,
@@ -35,6 +37,7 @@ function GameInfoTab({
   currentMoveIndex: number;
   goToMove: (index: number) => void;
   comment: string;
+  gameReviewTheme: GameReviewTheme | null;
   generateGameReview: (moves: string[]) => void;
   gameReviewLoading: boolean;
   gameReview: MoveAnalysis[];
@@ -78,7 +81,7 @@ function GameInfoTab({
   return (
     <Box sx={{ bgcolor: "#1a1a1a"}}>
       <Stack spacing={3}>
-        {/* Game Info Icon - Left Aligned */}
+        
         <Box sx={{ display: "flex", justifyContent: "flex-start", p: 2 }}>
           <IconButton
             onClick={() => setGameInfoOpen(true)}
@@ -225,6 +228,7 @@ function GameInfoTab({
           gameReview={gameReview}
           generateGameReview={async () => generateGameReview(moves)}
           moves={moves}
+          gameReviewTheme={gameReviewTheme}
           handleMoveCoachClick={handleMoveCoachClick}
           chatLoading={chatLoading}
           gameReviewProgress={gameReviewProgress}

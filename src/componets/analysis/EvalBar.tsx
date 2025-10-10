@@ -13,19 +13,17 @@ export const EvalBar: React.FC<EvalBarProps> = ({
   boardOrientation = "white",
   height = 400,
 }) => {
-  // Convert engine eval -> percentage (always from White’s perspective)
+  
   const getEvalPercentage = (): number => {
     if (!lineEval) return 50;
 
     if (lineEval.mate !== undefined) {
-      // Mate = full tilt
+     
       return lineEval.mate > 0 ? 100 : 0;
     }
 
     if (lineEval.cp !== undefined) {
-      // Clamp eval between -10 and +10 pawns
       const evalInPawns = Math.max(-10, Math.min(10, lineEval.cp / 100));
-      // Map -10 → 0%, 0 → 50%, +10 → 100%
       return 50 + evalInPawns * 5;
     }
 
@@ -55,9 +53,8 @@ export const EvalBar: React.FC<EvalBarProps> = ({
   const evalPercentage = getEvalPercentage();
   const evalText = getEvalText();
 
-  // Flip bar if board is black-oriented
   const whitePercentage =
-    boardOrientation === "black" ? 100 - evalPercentage : evalPercentage;
+    boardOrientation === "black" ? evalPercentage : evalPercentage;
 
   return (
     <Box
@@ -71,7 +68,7 @@ export const EvalBar: React.FC<EvalBarProps> = ({
         backgroundColor: "#000",
       }}
     >
-      {/* White side */}
+  
       <Box
         sx={{
           position: "absolute",
@@ -84,7 +81,7 @@ export const EvalBar: React.FC<EvalBarProps> = ({
         }}
       />
 
-      {/* Eval text */}
+     
       <Tooltip
         title={`Depth: ${lineEval?.depth || 0} | Best move: ${bestMove}${
           lineEval?.nps ? ` | NPS: ${lineEval.nps.toLocaleString()}` : ""
@@ -121,7 +118,7 @@ export const EvalBar: React.FC<EvalBarProps> = ({
         </Box>
       </Tooltip>
 
-      {/* Result percentages indicator (optional) */}
+      
       {lineEval?.resultPercentages && (
         <Tooltip
           title={`Win: ${lineEval.resultPercentages.win}% | Draw: ${lineEval.resultPercentages.draw}% | Loss: ${lineEval.resultPercentages.loss}%`}

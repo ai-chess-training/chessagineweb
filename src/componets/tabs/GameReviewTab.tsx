@@ -26,6 +26,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
+import EvalGraph from "./EvalGraph";
+import { GameReviewDialog, GameReviewTheme } from "./GameReviewDialog";
 
 export interface MoveStats {
   Best: number;
@@ -40,6 +42,7 @@ export interface MoveStats {
 interface GameReviewTabProps {
   gameReview: MoveAnalysis[] | null;
   generateGameReview: (moves: string[]) => Promise<void>;
+  gameReviewTheme: GameReviewTheme | null;
   moves: string[];
   gameReviewLoading: boolean;
   gameReviewProgress: number;
@@ -113,6 +116,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   handleMoveCoachClick,
   handleMoveAnnontateClick,
   handleGameReviewClick,
+  gameReviewTheme,
   chatLoading,
   comment,
   whiteTitle,
@@ -450,6 +454,9 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             </CardContent>
           </Card>
         )}
+
+        <EvalGraph moves={gameReview}/>
+        <GameReviewDialog gameReview={gameReviewTheme} />
       </Stack>
     </Box>
   );

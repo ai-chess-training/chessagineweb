@@ -1,5 +1,5 @@
 import { deepPurple, indigo, purple } from "@mui/material/colors";
-
+import { createTheme } from "@mui/material";
 export const purpleTheme = {
   primary: deepPurple[500],
   primaryDark: deepPurple[700],
@@ -18,3 +18,79 @@ export const purpleTheme = {
   },
   success: "#4caf50",
 };
+
+export const docsTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: purpleTheme.primary,
+      dark: purpleTheme.primaryDark,
+    },
+    secondary: {
+      main: purpleTheme.secondary,
+    },
+    background: {
+      default: purpleTheme.background.main,
+      paper: purpleTheme.background.paper,
+    },
+    text: {
+      primary: purpleTheme.text.primary,
+      secondary: purpleTheme.text.secondary,
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: purpleTheme.background.card,
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: purpleTheme.background.paper,
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: `1px solid ${purpleTheme.background.input}`,
+          color: purpleTheme.text.primary,
+        },
+        head: {
+          backgroundColor: purpleTheme.background.input,
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiAccordion: {
+      styleOverrides: {
+        root: {
+          backgroundColor: purpleTheme.background.card,
+          '&:before': {
+            display: 'none',
+          },
+        },
+      },
+    },
+  },
+});

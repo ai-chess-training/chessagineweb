@@ -21,6 +21,7 @@ import { renderFAQ } from "@/componets/docs/RenderFaq";
 import { renderHeader } from "@/componets/docs/RenderChessAgineHeader";
 import { renderSupportedProvider } from "@/componets/docs/RenderSupportedProvider";
 import { docsTheme } from "@/theme/theme";
+import MCPdocs from "@/componets/docs/RenderMCPDocs";
 
 const ChessAgineDocumentation = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -50,6 +51,7 @@ const ChessAgineDocumentation = () => {
               <Tab label="Supported Providers" />
               <Tab label="Integrations" />
               <Tab label="FAQ" />
+              <Tab label="ChessAgine MCP"/>
             </Tabs>
           </Box>
 
@@ -85,6 +87,10 @@ const ChessAgineDocumentation = () => {
 
           <TabPanel value={selectedTab} index={5}>
             {renderFAQ()}
+          </TabPanel>
+
+          <TabPanel value={selectedTab} index={6}>
+            <MCPdocs/>
           </TabPanel>
 
           <Paper sx={{ p: 3, mt: 4 }}>

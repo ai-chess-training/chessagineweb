@@ -27,7 +27,7 @@ import ApiIcon from "@mui/icons-material/Api";
 import SecurityIcon from "@mui/icons-material/Security";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { FaPuzzlePiece } from "react-icons/fa6";
+import { FaPuzzlePiece, FaQuestion } from "react-icons/fa6";
 import { SwapCallsOutlined } from "@mui/icons-material";
 
 export default function HomePage() {
@@ -88,8 +88,15 @@ export default function HomePage() {
                   icon: <FaPuzzlePiece style={{ fontSize: 48 }} />,
                   title: "Interactive Puzzles",
                   description:
-                    "Do Random Lichess puzzles interactivly with Agine",
+                    "Do chess theme based Lichess puzzles interactivly with Agine",
                   onClick: () => router.push("/puzzle"),
+                },
+                {
+                  icon: <FaQuestion style={{ fontSize: 48 }} />,
+                  title: "Docs",
+                  description:
+                    "Stuck on how to use ChessAgine GUI?, read the docs to set up your API key",
+                  onClick: () => router.push("/docs"),
                 },
               ].map((card) => (
                 <Card

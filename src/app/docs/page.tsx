@@ -20,7 +20,7 @@ import { renderCostsAnalysis } from "@/componets/docs/RenderCostBreakdown";
 import { renderFAQ } from "@/componets/docs/RenderFaq";
 import { renderHeader } from "@/componets/docs/RenderChessAgineHeader";
 import { renderSupportedProvider } from "@/componets/docs/RenderSupportedProvider";
-import { docsTheme } from "@/theme/theme";
+import { agineTheme as docsTheme} from "@/theme/theme";
 import MCPdocs from "@/componets/docs/RenderMCPDocs";
 
 const ChessAgineDocumentation = () => {

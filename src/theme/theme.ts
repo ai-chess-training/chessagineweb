@@ -19,7 +19,7 @@ export const purpleTheme = {
   success: "#4caf50",
 };
 
-export const docsTheme = createTheme({
+export const agineTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {

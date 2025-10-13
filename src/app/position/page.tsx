@@ -29,6 +29,8 @@ import { useSession } from "@clerk/nextjs";
 import { ChessDBDisplay } from "@/componets/tabs/Chessdb";
 import LegalMoveTab from "@/componets/tabs/LegalMoveTab";
 import { purpleTheme } from "@/theme/theme";
+import Loader from "@/componets/loading/Loader";
+import Warning from "@/componets/loading/SignUpWarning";
 
 export default function PositionPage() {
   const session = useSession();
@@ -83,40 +85,12 @@ export default function PositionPage() {
     requestAnalysis,
   } = useAgine(fen);
 
-  // Show a spinner while session is loading
   if (!session.isLoaded) {
-    return (
-      <Box
-        sx={{
-          p: 4,
-          display: "flex",
-          justifyContent: "center",
-          backgroundColor: purpleTheme.background.main,
-          minHeight: "100vh",
-        }}
-      >
-        <CircularProgress sx={{ color: purpleTheme.accent }} />
-      </Box>
-    );
+    return <Loader />;
   }
 
-  // If user is not signed in, redirect them to sign-in page
   if (!session.isSignedIn) {
-    return (
-      <Box
-        sx={{
-          p: 4,
-          display: "flex",
-          justifyContent: "center",
-          backgroundColor: purpleTheme.background.main,
-          minHeight: "100vh",
-        }}
-      >
-        <Typography variant="h6" sx={{ color: purpleTheme.text.primary }}>
-          Please sign in to view this page.
-        </Typography>
-      </Box>
-    );
+    return <Warning />;
   }
 
   return (
@@ -375,7 +349,7 @@ export default function PositionPage() {
                       />
                     </AccordionDetails>
                   </Accordion>
-                   <Accordion
+                  <Accordion
                     expanded={activeAnalysisTab === 3}
                     onChange={() =>
                       setActiveAnalysisTab(activeAnalysisTab === 3 ? -1 : 3)

@@ -28,7 +28,7 @@ import SecurityIcon from "@mui/icons-material/Security";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { FaPuzzlePiece } from "react-icons/fa6";
-import { GitHub, SwapCallsOutlined } from "@mui/icons-material";
+import { SwapCallsOutlined } from "@mui/icons-material";
 
 export default function HomePage() {
   const { isSignedIn, isLoaded, user } = useUser();

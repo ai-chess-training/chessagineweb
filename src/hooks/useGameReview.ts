@@ -5,7 +5,7 @@ import { LineEval } from "@/stockfish/engine/engine";
 import { Color } from "chess.js";
 import { CandidateMove } from "../componets/tabs/Chessdb";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
-import { percentToNumber } from "@/libs/game/helper";
+
 
 export type MoveQuality =
   | "Best"

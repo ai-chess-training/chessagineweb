@@ -42,7 +42,7 @@ import { calculateChatPrice } from "@/libs/docs/helper";
 import { useLocalStorage } from "usehooks-ts";
 import { DEFAULT_CHAT_AUTOSCROLL, DEFAULT_CHAT_COMPACT_VIEW, DEFAULT_CHAT_FONT_SIZE, DEFAULT_CHAT_DIMENSIONS, DEFAULT_CHAT_SHOW_TIMESTAMP, DEFAULT_CHAT_SPEECH_PITCH, DEFAULT_CHAT_SPEECH_RATE, DEFAULT_CHAT_SPEECH_VOICE, DEFAULT_CHAT_SPEECH_VOLUME, DEFAULT_CHAT_TECHNICAL_INFO } from "@/libs/setting/helper";
 
-interface ChatTabProps {
+export interface ChatTabProps {
   sessionMode: boolean;
   setSessionMode: (checked: boolean) => void;
   clearChatHistory: () => void;

@@ -17,6 +17,23 @@ import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { GameReviewTheme } from "./GameReviewDialog";
 
+export interface GameInfoTabProp {
+  moves: string[];
+  currentMoveIndex: number;
+  goToMove: (index: number) => void;
+  comment: string;
+  gameReviewTheme: GameReviewTheme | null;
+  generateGameReview: (moves: string[]) => void;
+  gameReviewLoading: boolean;
+  gameReview: MoveAnalysis[];
+  gameReviewProgress: number;
+  gameInfo: Record<string, string>;
+  chatLoading: boolean;
+  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
+  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
+  handleGameReviewClick: (gameReview: MoveAnalysis[], gameInfo: string) => void;
+}
+
 function GameInfoTab({
   moves,
   currentMoveIndex,
@@ -32,22 +49,7 @@ function GameInfoTab({
   handleGameReviewClick,
   gameReviewProgress,
   chatLoading,
-}: {
-  moves: string[];
-  currentMoveIndex: number;
-  goToMove: (index: number) => void;
-  comment: string;
-  gameReviewTheme: GameReviewTheme | null;
-  generateGameReview: (moves: string[]) => void;
-  gameReviewLoading: boolean;
-  gameReview: MoveAnalysis[];
-  gameReviewProgress: number;
-  gameInfo: Record<string, string>;
-  chatLoading: boolean;
-  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
-  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
-  handleGameReviewClick: (gameReview: MoveAnalysis[], gameInfo: string) => void;
-}) {
+}: GameInfoTabProp) {
   const [gameInfoOpen, setGameInfoOpen] = useState(false);
 
   const formatTimeControl = (timeControl: string) => {

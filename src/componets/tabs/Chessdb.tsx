@@ -158,7 +158,7 @@ export function useChessDB(fen: string) {
 }
 
 // Component props interface
-interface ChessDBDisplayProps {
+export interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
   loading?: boolean;
   title?: string;

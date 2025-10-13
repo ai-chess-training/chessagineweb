@@ -24,7 +24,7 @@ import Slider from "../stockfish/Slider";
 import { EngineName } from "@/stockfish/engine/engine";
 import { useLocalStorage } from "usehooks-ts";
 
-interface StockfishAnalysisProps {
+export interface StockfishAnalysisProps {
     stockfishAnalysisResult: PositionEval | null;
     stockfishLoading: boolean;
     engineDepth: number;

@@ -13,9 +13,9 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 ## Preview
 
 <p align="center">
-  <img src="/public/static/images/aginepreviewgh.png" alt="ChessAgine_Preview" >
+  <img src="/public/static/images/agineuiupdate.png" alt="ChessAgine_Preview" >
 </p>
-
+(Agine analyzing position using Ollama and gpt-oss models)
 
 
 ## Features
@@ -96,15 +96,15 @@ Unlike other providers, **no API key is required**.
 * `gpt-oss:20b`, `gpt-oss:120b`
 * Cloud versions: `deepseek-v3.1:671b-cloud`, `gpt-oss:20b-cloud`, `gpt-oss:120b-cloud`
 
-
-
 ## Chess Context Protocol (CCP)
 
 ChessAgine is a **Chess Context Protocol Client (CCPC)** to the CCP.
 To read more about the protocol, explore `/chessContextProtocol`.
 This protocol allows Chess GUIs to integrate engines and LLMs seamlessly.
 
-
+## ChessAgine MCP
+ChessAgine has a comprehensive MCP server that brings CCP to your MCP Client like Claude desktop,
+to install the server, read more [here](https://github.com/jalpp/chessagine-mcp)
 
 
 ## Open Source Software Credits
@@ -120,7 +120,7 @@ A huge thanks to everyone who helped make ChessAgine possible:
 * **ChessDB developers** [https://github.com/noobpwnftw/chessdb](https://github.com/noobpwnftw/chessdb) for billions of engine-analyzed positions in the cloud.
 * **Mastra devs** [https://mastra.ai/](https://mastra.ai/) for the Agent framework powering AI features.
 
-* **Chessboardmagic devs** [https://github.com/HollowLeaf1981/ChessPieces](Toan Hoang) for free open source chess pieces.
+* **Chessboardmagic devs** [Toan Hoang](https://github.com/HollowLeaf1981/ChessPieces) for free open source chess pieces.
 
 ---
 

@@ -50,6 +50,8 @@ import { Refresh, SkipNext } from "@mui/icons-material";
 import Slider from "@/componets/stockfish/Slider";
 import { useLocalStorage } from "usehooks-ts";
 import { PuzzleData, PuzzleQuery, PUZZLE_THEMES, DIFFICULTY_THEMES } from "@/libs/puzzle/helper";
+import Loader from "@/componets/loading/Loader";
+import Warning from "@/componets/loading/SignUpWarning";
 
 export default function PuzzlePage() {
   const session = useSession();
@@ -267,17 +269,7 @@ export default function PuzzlePage() {
     handleEngineLineClick,
   } = useAgine(fen);
 
-  // Handle theme selection
-  // const handleThemeSelection = useCallback(() => {
-  //   setThemeDialogOpen(false);
-  //   if (selectedThemes.length > 0) {
-  //     fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500);
-  //   } else {
-  //     fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
-  //   }
-  // }, [selectedThemes]);
-
-  // Handle quick theme selection
+  
   const handleQuickThemeChange = useCallback(
     (event: SelectChangeEvent<string>) => {
       const theme = event.target.value;
@@ -581,25 +573,15 @@ export default function PuzzlePage() {
     setMoveSquares({});
   }, [puzzleData]);
 
-  // Show a spinner while session is loading
-  if (!session.isLoaded) {
-    return (
-      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // If user is not signed in, redirect them to sign-in page
-  if (!session.isSignedIn) {
-    return (
-      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-        <Typography variant="h6" color="wheat">
-          Please sign in to view this page.
-        </Typography>
-      </Box>
-    );
-  }
+  
+   if (!session.isLoaded) {
+      return <Loader />;
+    }
+  
+    if (!session.isSignedIn) {
+      return <Warning />;
+    }
+  
 
   return (
     <>

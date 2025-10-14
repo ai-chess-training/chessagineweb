@@ -42,7 +42,7 @@ import { calculateChatPrice } from "@/libs/docs/helper";
 import { useLocalStorage } from "usehooks-ts";
 import { DEFAULT_CHAT_AUTOSCROLL, DEFAULT_CHAT_COMPACT_VIEW, DEFAULT_CHAT_FONT_SIZE, DEFAULT_CHAT_DIMENSIONS, DEFAULT_CHAT_SHOW_TIMESTAMP, DEFAULT_CHAT_SPEECH_PITCH, DEFAULT_CHAT_SPEECH_RATE, DEFAULT_CHAT_SPEECH_VOICE, DEFAULT_CHAT_SPEECH_VOLUME, DEFAULT_CHAT_TECHNICAL_INFO } from "@/libs/setting/helper";
 
-interface ChatTabProps {
+export interface ChatTabProps {
   sessionMode: boolean;
   setSessionMode: (checked: boolean) => void;
   clearChatHistory: () => void;
@@ -76,8 +76,8 @@ interface SavedPosition {
 
 
 const sessionPrompts = [
-  "What do you think about this position?",
-  "Any ideas for my next move?",
+  "How does Silman's imbalances apply here?",
+  "How does Fine's chess principles apply here?",
   "How would you play this?",
   "What catches your eye here?",
   "Is this looking good or bad?",
@@ -88,7 +88,7 @@ const sessionPrompts = [
   "See anything interesting?",
   "Thoughts on the position?",
   "Which move feels right to you?",
-  "What's your take on this setup?",
+  "What do you think about this position?",
 ];
 
 const puzzlePrompts = [

@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { Settings as SettingsIcon, Gavel} from "@mui/icons-material";
 
-interface LegalMoveTabProps {
+export interface LegalMoveTabProps {
   legalMoves: string[];
   handleFutureMoveLegalClick: (move: string) => void;
   disabled?: boolean;

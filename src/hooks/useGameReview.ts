@@ -6,6 +6,7 @@ import { Color } from "chess.js";
 import { CandidateMove } from "../componets/tabs/Chessdb";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 
+
 export type MoveQuality =
   | "Best"
   | "Very Good"
@@ -196,6 +197,10 @@ const useGameReview = (
     }
   }, []);
 
+  function percentToNumber(percentStr: string): number {
+  return parseFloat(percentStr.replace('%', '').trim());
+}
+
   const generateGameReview = useCallback(
     async (gameNotation: string[]): Promise<void> => {
       setGameReviewLoading(true);
@@ -306,11 +311,9 @@ const useGameReview = (
             const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
             sanBestMove = moveObjSan ? moveObjSan.san : undefined;
           } else {
-            preMoveWinRate = centipawnToWinRate(Number(chessDbEvals[0].score));
+            preMoveWinRate = percentToNumber(chessDbEvals[0].winrate);
             evalMove = Number(chessDbEvals[0].score || 0);
-            secondBestWinRate = chessDbEvals[1].score
-              ? centipawnToWinRate(Number(chessDbEvals[1].score))
-              : undefined;
+            secondBestWinRate = percentToNumber(chessDbEvals[0].winrate);
             bestMove = chessDbEvals[0].uci;
             sanBestMove = chessDbEvals[0].san;
           }

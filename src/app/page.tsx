@@ -27,8 +27,8 @@ import ApiIcon from "@mui/icons-material/Api";
 import SecurityIcon from "@mui/icons-material/Security";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { FaPuzzlePiece } from "react-icons/fa6";
-import { GitHub, SwapCallsOutlined } from "@mui/icons-material";
+import { FaPuzzlePiece, FaQuestion } from "react-icons/fa6";
+import { SwapCallsOutlined } from "@mui/icons-material";
 
 export default function HomePage() {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -88,8 +88,15 @@ export default function HomePage() {
                   icon: <FaPuzzlePiece style={{ fontSize: 48 }} />,
                   title: "Interactive Puzzles",
                   description:
-                    "Do Random Lichess puzzles interactivly with Agine",
+                    "Do chess theme based Lichess puzzles interactivly with Agine",
                   onClick: () => router.push("/puzzle"),
+                },
+                {
+                  icon: <FaQuestion style={{ fontSize: 48 }} />,
+                  title: "Docs",
+                  description:
+                    "Stuck on how to use ChessAgine GUI?, read the docs to set up your API key",
+                  onClick: () => router.push("/docs"),
                 },
               ].map((card) => (
                 <Card
@@ -258,7 +265,7 @@ export default function HomePage() {
                 "Ollama Support",
                 "Open Source under GPL",
                 "Stockfish 17.1 Engine",
-                "Web Chess Search",
+                "MCP Server",
                 "Lichess Integration",
                 "Free Game Reviews",
                 "Interactive Puzzles",
@@ -447,6 +454,11 @@ export default function HomePage() {
           </Stack>
         </Container>
       </Box>
+
+        
+
+      
+
       {/* Plug & Play Section */}
       <Box py={16} bgcolor="#f5deb3">
         <Container maxWidth="lg">
@@ -689,7 +701,130 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Why Choose Section */}
+      <Box py={16} bgcolor="#f8f9ff">
+        <Container maxWidth="lg">
+          <Stack spacing={8} alignItems="center">
+            <Box textAlign="center" maxWidth="900px">
+              <Typography
+                variant="h2"
+                fontWeight="bold"
+                color="#7c3aed"
+                sx={{ fontSize: { xs: "2.5rem", md: "3.5rem" } }}
+                gutterBottom
+              >
+                ChessAgine MCP
+              </Typography>
+              <Typography
+                variant="h5"
+                color="#5b21b6"
+                sx={{ opacity: 0.8, fontSize: { xs: "1.2rem", md: "1.5rem" }, mb: 4 }}
+              >
+                Model Context Protocol server that transforms Claude AI into a chess expert
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ fontSize: "1.1rem", lineHeight: 1.8, textAlign: "left" }}
+              >
+                ChessAgine MCP is a powerful integration that connects Claude AI directly to chess engines, databases, and analysis tools through Anthropic Model Context Protocol. Instead of using a separate web interface, you can chat with Claude in Claude.ai or the Claude desktop app and get the same professional chess analysis capabilities - all within your natural conversation with Claude.
+              </Typography>
+            </Box>
+
+            <Grid container spacing={4} sx={{ mt: 2 }}>
+              {[
+                {
+                  title: "Native Claude Integration",
+                  description: "Use ChessAgine directly in Claude.ai or Claude Desktop app - no separate interface needed. Just chat naturally with Claude about chess.",
+                  color: "#e8f5e9",
+                },
+                {
+                  title: "Stockfish 17.1 Analysis",
+                  description: "Access world-class engine analysis directly through Claude. Get position evaluations, best moves, and tactical insights in real-time.",
+                  color: "#e3f2fd",
+                },
+                {
+                  title: "Lichess Database Access",
+                  description: "Query the Lichess master games database, fetch your recent games, and explore opening variations - all through simple conversation.",
+                  color: "#f3e5f5",
+                },
+                {
+                  title: "Interactive Puzzle Training",
+                  description: "Solve Lichess puzzles with Claude as your coach. Get hints, explanations, and adaptive difficulty based on your skill level.",
+                  color: "#fff3e0",
+                },
+                {
+                  title: "Comprehensive Game Reviews",
+                  description: "Upload PGN files and receive detailed analysis with theme progression tracking, critical moments identification, and improvement suggestions.",
+                  color: "#fce4ec",
+                },
+                {
+                  title: "Chess Knowledge Base",
+                  description: "Access Silman's Imbalances, Fine's 30 Principles, endgame theory, and practical checklists to enhance your understanding.",
+                  color: "#e0f7fa",
+                },
+              ].map((card) => (
+                <Grid size={{ xs: 12, md: 6 }} key={card.title}>
+                  <Paper
+                    elevation={3}
+                    sx={{
+                      p: 4,
+                      height: "100%",
+                      bgcolor: card.color,
+                      borderRadius: 3,
+                      borderLeft: "4px solid #7c3aed",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        transform: "translateX(8px)",
+                        boxShadow: "0 8px 24px rgba(124, 58, 237, 0.15)",
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color="#7c3aed"
+                      gutterBottom
+                    >
+                      {card.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6 }}
+                    >
+                      {card.description}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+            <Button
+              variant="contained"
+              size="large"
+              sx={{
+                bgcolor: "#f5deb3",
+                color: "#7c3aed",
+                "&:hover": {
+                  bgcolor: "#f0d798",
+                  transform: "translateY(-4px)",
+                  boxShadow: "0 12px 30px rgba(245, 222, 179, 0.4)",
+                },
+                px: 8,
+                py: 3,
+                fontSize: "1.4rem",
+                fontWeight: "bold",
+                borderRadius: 3,
+                transition: "all 0.3s ease",
+              }}
+              onClick={() => router.push("/docs")}
+            >
+              Install MCP Server
+            </Button>
+          </Stack>
+        </Container>
+      </Box>
+
+      
       <Box py={16} bgcolor="#f5deb3">
         <Container maxWidth="lg">
           <Stack spacing={12}>

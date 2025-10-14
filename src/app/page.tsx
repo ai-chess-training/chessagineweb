@@ -265,7 +265,7 @@ export default function HomePage() {
                 "Ollama Support",
                 "Open Source under GPL",
                 "Stockfish 17.1 Engine",
-                "Web Chess Search",
+                "MCP Server",
                 "Lichess Integration",
                 "Free Game Reviews",
                 "Interactive Puzzles",
@@ -798,6 +798,28 @@ export default function HomePage() {
                 </Grid>
               ))}
             </Grid>
+            <Button
+              variant="contained"
+              size="large"
+              sx={{
+                bgcolor: "#f5deb3",
+                color: "#7c3aed",
+                "&:hover": {
+                  bgcolor: "#f0d798",
+                  transform: "translateY(-4px)",
+                  boxShadow: "0 12px 30px rgba(245, 222, 179, 0.4)",
+                },
+                px: 8,
+                py: 3,
+                fontSize: "1.4rem",
+                fontWeight: "bold",
+                borderRadius: 3,
+                transition: "all 0.3s ease",
+              }}
+              onClick={() => router.push("/docs")}
+            >
+              Install MCP Server
+            </Button>
           </Stack>
         </Container>
       </Box>

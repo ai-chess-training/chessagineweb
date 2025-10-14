@@ -76,8 +76,8 @@ interface SavedPosition {
 
 
 const sessionPrompts = [
-  "What do you think about this position?",
-  "Any ideas for my next move?",
+  "How does Silman's imbalances apply here?",
+  "How does Fine's chess principles apply here?",
   "How would you play this?",
   "What catches your eye here?",
   "Is this looking good or bad?",
@@ -88,7 +88,7 @@ const sessionPrompts = [
   "See anything interesting?",
   "Thoughts on the position?",
   "Which move feels right to you?",
-  "What's your take on this setup?",
+  "What do you think about this position?",
 ];
 
 const puzzlePrompts = [

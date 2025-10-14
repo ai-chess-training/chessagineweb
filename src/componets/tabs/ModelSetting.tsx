@@ -702,7 +702,7 @@ const ModelSetting: React.FC = () => {
               fullWidth
               type="text"
               value={tempSettings.ollamaBaseUrl || ''}
-              onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value })}
+              onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value.trim() })}
               placeholder="Enter your ngrok endpoint https:..."
               helperText="Enter your ngrok endpoint https:..."
               sx={{

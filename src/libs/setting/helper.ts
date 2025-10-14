@@ -106,6 +106,7 @@ export const PIECE_STYLE_TYPES = {
   Junpiter: { name: "Junpiter" },
   Mars: { name: "Mars" },
   Minerva: { name: "Minerva" },
+  Cyborg: {name: "Cyborg"}
 };
 
 export const getCurrentThemeColors = (themeName: string) => {
